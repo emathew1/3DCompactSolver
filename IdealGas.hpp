@@ -47,6 +47,7 @@ class IdealGas{
     } 
 
     void solveMu(double *T, double *mu);
+    void solveAmu(double *T, double *Amu);
     void solveU(double *rho, double *rhoU, double *U);
     void solvep(double *rho, double *rhoE, double *U, double *V, double *W, double *p);
     void solveT(double *rho, double *p, double *T);

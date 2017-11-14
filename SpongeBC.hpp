@@ -1,6 +1,7 @@
 #ifndef _SPONGEBCH_
 #define _SPONGEBCH_
 
+#include <iostream>
 #include "Macros.hpp"
 #include "Domain.hpp"
 #include "IdealGas.hpp"
@@ -14,7 +15,7 @@ class SpongeBC{
 	IdealGas *idealGas;
 	BC *bc;
 
-	int Nx, Ny, Nz;
+	int Nx, Ny, Nz, N;
 
 	double avgT;
 	double epsP;
@@ -32,6 +33,9 @@ class SpongeBC{
 	double *spongeRhoEAvg;
     
 	SpongeBC(Domain *domain, IdealGas *idealGas, BC *bc){
+
+	    std::cout << endl;
+	    std::cout << " > Sponge BC found, initializing Sponge average fields and strength fields..." << std::endl;
 	
 	    this->domain = domain;
 	    this->idealGas = idealGas;
@@ -40,6 +44,7 @@ class SpongeBC{
 	    this->Nx = domain->Nx;
 	    this->Ny = domain->Ny;
 	    this->Nz = domain->Nz;
+	    N = Nx*Ny*Nz;
 
 	    sigma 	  = new double[Nx*Ny*Nz];
 	    spongeRhoAvg  = new double[Nx*Ny*Nz];
@@ -64,7 +69,7 @@ class SpongeBC{
 		        double spongeX = (spongeLX - domain->x[i])/spongeLX;
 		        FOR_Y{
 			    FOR_Z{
-			        int ii = GET3DINDEX;
+			        int ii = GET3DINDEX_XYZ;
 			        sigma[ii] = fmax(spongeStrength*(0.068*pow(spongeX, 2.0) + 0.845*pow(spongeX, 8.0)), sigma[ii]);
 			    }
 		        }
@@ -78,7 +83,7 @@ class SpongeBC{
 		        double spongeX = (domain->x[i] - (domain->Lx - spongeLX))/spongeLX;
 		        FOR_Y{
 			    FOR_Z{
-			        int ii = GET3DINDEX;
+			        int ii = GET3DINDEX_XYZ;
 			        sigma[ii] = fmax(spongeStrength*(0.068*pow(spongeX, 2.0) + 0.845*pow(spongeX, 8.0)), sigma[ii]);
 			    }
 		        }
@@ -92,7 +97,7 @@ class SpongeBC{
 		        double spongeY = (spongeLY - domain->y[j])/spongeLY;
 		        FOR_X{
 			    FOR_Z{
-			        int ii = GET3DINDEX;
+			        int ii = GET3DINDEX_XYZ;
 			        sigma[ii] = fmax(spongeStrength*(0.068*pow(spongeY, 2.0) + 0.845*pow(spongeY, 8.0)), sigma[ii]);
 			    }
 		        }
@@ -106,7 +111,7 @@ class SpongeBC{
 		        double spongeY = (domain->y[j] - (domain->Ly - spongeLY))/spongeLY;
 		        FOR_X{
 			    FOR_Z{
-			        int ii = GET3DINDEX;
+			        int ii = GET3DINDEX_XYZ;
 			        sigma[ii] = fmax(spongeStrength*(0.068*pow(spongeY, 2.0) + 0.845*pow(spongeY, 8.0)), sigma[ii]);
 			    }
 		        }
@@ -120,7 +125,7 @@ class SpongeBC{
 		        double spongeZ = (spongeLZ - domain->z[k])/spongeLZ;
 		        FOR_X{
 			    FOR_Y{
-			        int ii = GET3DINDEX;
+			        int ii = GET3DINDEX_XYZ;
 			        sigma[ii] = fmax(spongeStrength*(0.068*pow(spongeZ, 2.0) + 0.845*pow(spongeZ, 8.0)), sigma[ii]);
 			    }
 		        }
@@ -134,13 +139,17 @@ class SpongeBC{
 		        double spongeZ = (domain->z[k] - (domain->Lz - spongeLZ))/spongeLZ;
 		        FOR_X{
 			    FOR_Y{
-			        int ii = GET3DINDEX;
+			        int ii = GET3DINDEX_XYZ;
 			        sigma[ii] = fmax(spongeStrength*(0.068*pow(spongeZ, 2.0) + 0.845*pow(spongeZ, 8.0)), sigma[ii]);
 			    }
 		        }
 		    }
 		}
 	    }    
+
+
+
+	    std::cout << " > Done initializing sponge!" << std::endl;
 
 	}
 

@@ -6,6 +6,12 @@ void IdealGas::solveMu(double *T, double *mu){
     }
 }
 
+void IdealGas::solveAmu(double *T, double *Amu){
+    FOR_XYZ{
+	Amu[ip] = 0.76*(mu_ref/pow(T_ref, 0.76))*pow(T[ip], 0.76-1.0);
+    }
+}
+
 void IdealGas::solveU(double *rho, double *rhoU, double *U){
     FOR_XYZ{
         U[ip] = rhoU[ip]/rho[ip];

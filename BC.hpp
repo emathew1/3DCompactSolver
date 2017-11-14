@@ -28,7 +28,75 @@ class BC{
 	    this->bcZ0 = bcZ0;
 	    this->bcZ1 = bcZ1;
 
-	    std::cout << " >Initializing boundary conditions..." << std::endl;
+	    std::cout << endl;
+	    std::cout << " > Initializing boundary conditions..." << std::endl;
+	
+	    std::cout << " >     X BOUNDARY CONDITIONS    " << std::endl;
+	    if(bcXType == PERIODIC_SOLVE){
+		std::cout << " > ----------PERIODIC---------- " << std::endl;
+	    }else{
+		if(bcX0 == SPONGE){
+		    std::cout << " > X0=SPG";
+		}else if(bcX0 == ADIABATIC_WALL){
+		    std::cout << " > X0=ABW";
+		}else if(bcX0 == MOVING_WALL){
+		    std::cout << " > X0=MOW";
+		}
+
+		if(bcX1 == SPONGE){
+		    std::cout << "----------------SPG=X1" << std::endl;
+		}else if(bcX1 == ADIABATIC_WALL){
+		    std::cout << "----------------ABW=X1" << std::endl;
+		}else if(bcX1 == MOVING_WALL){
+		    std::cout << "----------------MOW=X1" << std::endl;
+		}
+
+	    }
+
+	    std::cout << " >     Y BOUNDARY CONDITIONS    " << std::endl;
+	    if(bcYType == PERIODIC_SOLVE){
+		std::cout << " > ----------PERIODIC---------- " << std::endl;
+	    }else{
+		if(bcY0 == SPONGE){
+		    std::cout << " > Y0=SPG";
+		}else if(bcY0 == ADIABATIC_WALL){
+		    std::cout << " > Y0=ABW";
+		}else if(bcY0 == MOVING_WALL){
+		    std::cout << " > Y0=MOW";
+		}
+
+		if(bcY1 == SPONGE){
+		    std::cout << "----------------SPG=Y1" << std::endl;
+		}else if(bcY1 == ADIABATIC_WALL){
+		    std::cout << "----------------ABW=Y1" << std::endl;
+		}else if(bcY1 == MOVING_WALL){
+		    std::cout << "----------------MOW=Y1" << std::endl;
+		}
+
+	    }
+
+	    std::cout << " >     Z BOUNDARY CONDITIONS    " << std::endl;
+	    if(bcZType == PERIODIC_SOLVE){
+		std::cout << " > ----------PERIODIC---------- " << std::endl;
+	    }else{
+		if(bcZ0 == SPONGE){
+		    std::cout << " > Z0=SPG";
+		}else if(bcZ0 == ADIABATIC_WALL){
+		    std::cout << " > Z0=ABW";
+		}else if(bcZ0 == MOVING_WALL){
+		    std::cout << " > Z0=MOW";
+		}
+
+		if(bcZ1 == SPONGE){
+		    std::cout << "----------------SPG=Z1" << std::endl;
+		}else if(bcZ1 == ADIABATIC_WALL){
+		    std::cout << "----------------ABW=Z1" << std::endl;
+		}else if(bcZ1 == MOVING_WALL){
+		    std::cout << "----------------MOW=Z1" << std::endl;
+		}
+	     }
+	
+
 	}
 
 };
