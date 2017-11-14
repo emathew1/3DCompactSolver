@@ -1,3 +1,6 @@
+#ifndef _UTILSH_
+#define _UTILSH_
+
 #include <math.h>
 #include <cstring>
 #include <iostream>
@@ -12,3 +15,5 @@ void transposeMatrix_Fast1(const double *in, int n, int p, double *out, int bloc
 void transposeMatrix_Fast2(const double *in, int n, int p, double *out, int blocksize);
 void getRange(double *phi, std::string dataName, int Nx, int Ny);
 double fRand(double fMin, double fMax);
+
+#endif

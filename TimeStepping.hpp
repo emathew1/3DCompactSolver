@@ -1,6 +1,8 @@
 #ifndef _TIMESTEPPINGH_
 #define _TIMESTEPPINGH_
 
+#include <iostream>
+
 class TimeStepping{
 
     public:
@@ -20,9 +22,8 @@ class TimeStepping{
 	    this->maxTime = maxTime;
 	    this->filterStep = filterStep;
 
-	    cout << endl;
-	    cout << " >Initializing time dependent options..." << endl;
-	    cout << " >Using " << endl;
+	    std::cout << std::endl;
+	    std::cout << " >Initializing time dependent options..." << std::endl;
 
 	}
 };

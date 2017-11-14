@@ -1,3 +1,6 @@
+#ifndef _SPONGEBCH_
+#define _SPONGEBCH_
+
 #include "Macros.hpp"
 #include "Domain.hpp"
 #include "IdealGas.hpp"
@@ -142,3 +145,5 @@ class SpongeBC{
 	}
 
 };
+
+#endif

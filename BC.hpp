@@ -1,6 +1,8 @@
 #ifndef _BCH_
 #define _BCH_
 
+#include <iostream>
+
 class BC{
 
     public:
@@ -26,6 +28,7 @@ class BC{
 	    this->bcZ0 = bcZ0;
 	    this->bcZ1 = bcZ1;
 
+	    std::cout << " >Initializing boundary conditions..." << std::endl;
 	}
 
 };

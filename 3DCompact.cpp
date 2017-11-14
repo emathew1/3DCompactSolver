@@ -23,13 +23,13 @@ int main(int argc, char *argv[]){
     cout << endl;
 
     //Initialize the Domain
-    int Nx = 10, 
-	Ny = 10, 
-	Nz = 10;
+    int Nx = 128, 
+	Ny = 128, 
+	Nz = 128;
     double Lx = 1.0, 
 	   Ly = 1.0, 
 	   Lz = 1.0;
-    Domain *domain = new Domain(Nx, Ny, Nz, Lx, Ly, Lz);
+    Domain *dom = new Domain(Nx, Ny, Nz, Lx, Ly, Lz);
 
     //Time Stepping info intialization
     TimeStepping::TimeSteppingType timeSteppingType = TimeStepping::CONST_CFL;
@@ -37,7 +37,7 @@ int main(int argc, char *argv[]){
     int maxTimeStep = 10;
     double maxTime  = 10.0;
     int filterStep  = 5;
-    TimeStepping *timeStepping = new TimeStepping(timeSteppingType, CFL, maxTimeStep, maxTime, filterStep);
+    TimeStepping *ts = new TimeStepping(timeSteppingType, CFL, maxTimeStep, maxTime, filterStep);
 
     //Boundary Condition Info
     BC::BCType bcXType = BC::PERIODIC_SOLVE; 
@@ -58,7 +58,8 @@ int main(int argc, char *argv[]){
     //Initialize the Solver
     double alphaF = 0.48;
     double mu_ref = 0.0001;
-    CSolver *cSolver = new CSolver(domain, bc, timeStepping, alphaF, mu_ref); 
- 
+    CSolver *cs = new CSolver(dom, bc, ts, alphaF, mu_ref); 
+//    cs->initializeSolverData(); 
+
     return 0;
 }

@@ -1,11 +1,13 @@
 #ifndef _DOMAINH_
 #define _DOMAINH_
 
+#include <iostream>
+
 class Domain{
 
     public:
 
-        int Nx, Ny, Nz;
+        int Nx, Ny, Nz, N;
         double *x, *y, *z;
         double Lx, Ly, Lz;
 	double dx, dy, dz;
@@ -16,6 +18,7 @@ class Domain{
 	this->Nx = Nx;
 	this->Ny = Ny;
 	this->Nz = Nz;
+	N = Nx*Ny*Nz;
 
 	this->Lx = Lx;
 	this->Ly = Ly;
@@ -41,9 +44,9 @@ class Domain{
 	dy = y[1]-y[0];
 	dz = z[1]-z[0];
 
-	cout << " >Domain initialization..." << endl;
-	cout << " >Domain: " << Lx << "x" << Ly << "x" << Lz << endl;
-	cout << " >Mesh: " << Nx << "x" << Ny << "x" << Nz << endl;
+	std::cout << " >Domain initialization..." << std::endl;
+	std::cout << " >Domain: " << Lx << "x" << Ly << "x" << Lz << std::endl;
+	std::cout << " >Mesh: " << Nx << "x" << Ny << "x" << Nz << std::endl;
 
     }
 

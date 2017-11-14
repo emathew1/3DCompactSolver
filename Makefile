@@ -1,25 +1,25 @@
 CC=g++
 
 # CFLAGS will be the options passed to the compiler. 
-CFLAGS= -O3 -std=c++11 
+CFLAGS= -O3 -std=c++11
 #CFLAGS= -g -std=c++11 -fopenmp 
-OBJECTS  = 3DCompact.o Utils.o CSolver.o IdealGas.o SpongeBC.o TimeStepping.o BC.o Macros.o
+OBJECTS  = 3DCompact.o Utils.o CSolver.o IdealGas.o 
 
-all: 3DCompact
+all: 3D_HOCFD
 
-2D_HOCFD:  $(OBJECTS)
+3D_HOCFD:  $(OBJECTS)
 	$(CC) $(CFLAGS) $(OBJECTS) -o $@ 
 
-3DCompact.o: 3DCompact.cpp Utils.hpp BC.hpp TimeStepping.hpp CSolver.hpp
+3DCompact.o: 3DCompact.cpp Macros.hpp Utils.hpp BC.hpp TimeStepping.hpp CSolver.hpp
 	$(CC) $(CFLAGS) -c $< 
 
 Utils.o: Utils.cpp Utils.hpp
 	$(CC) $(CFLAGS) -c $<
 
-CSolver.o: CSolver.hpp Macros.hpp Utils.hpp BC.hpp TimeStepping.hpp IdealGas.hpp SpongeBC.hpp
+CSolver.o: CSolver.cpp CSolver.hpp Macros.hpp Utils.hpp BC.hpp TimeStepping.hpp IdealGas.hpp SpongeBC.hpp
 	$(CC) $(CFLAGS) -c $<
 
-IdealGas.o: Macros.hpp Domain.hpp IdealGas.cpp 
+IdealGas.o: IdealGas.cpp IdealGas.hpp
 	$(CC) $(CFLAGS) -c $<
 
 clean: 

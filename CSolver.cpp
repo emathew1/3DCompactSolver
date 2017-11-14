@@ -1,109 +1,10 @@
-#ifndef _CSOLVERH_
-#define _CSOLVERH_
+#include "CSolver.hpp"
 
-#include "Macros.hpp"
-#include "Utils.hpp"
-#include "BC.hpp"
-#include "TimeStepping.hpp"
-#include "IdealGas.hpp"
-#include "SpongeBC.hpp"
-
-class CSolver{
-
-    public:
-
-	Domain *dom;
-	BC *bc;
-	TimeStepping *ts;
-	IdealGas *ig;
-	double alphaF;
-	double mu_ref;
-
-	//Make local copies for macros...
-	int Nx, Ny, Nz, N;
-
-	//initial conditions
-	double *rho0, 
-	         *U0,
-	         *V0,
-		 *W0,
-		 *p0;
-	
-	//non-conserved data
-	double  *U, 
-		*V,
-		*W,
-	        *T,
-		*p,
-	       *mu,
-		*k, 
-	      *sos;
-
-	//derivatives of data
-	double *Ux, *Uy, *Uz;
-	double *Vx, *Vy, *Vz;
-	double *Wx, *Wy, *Wz;
-
-	double *Uxx, *Uyy, *Uzz;
-	double *Vxx, *Vyy, *Vzz;
-	double *Wxx, *Wyy, *Wzz;
-
-	double *Uxy, *Uxz, *Uyz;
-	double *Vxy, *Vxz, *Vyz;
-	double *Wxy, *Wxz, *Wyz;
-
-	double *Tx,  *Ty,  *Tz;
-	double *Txx, *Tyy, *Tzz;
-
-	double *contEulerX, *contEulerY, *contEulerZ;
-	double *momXEulerX, *momXEulerY, *momXEulerZ;
-	double *momYEulerX, *momYEulerY, *momYEulerZ;
-	double *momZEulerX, *momZEulerY, *momZEulerZ;
-	double *engyEulerX, *engyEulerY, *engyEulerZ;
-
-	double *rho1,  *rhok,  *rhok2,  *rho2; 
-	double *rhoU1, *rhoUk, *rhoUk2, *rhoU2; 
-	double *rhoV1, *rhoVk, *rhoVk2, *rhoV2; 
-	double *rhoW1, *rhoWk, *rhoWk2, *rhoW2; 
-	double *rhoE1, *rhoEk, *rhoEk2, *rhoE2;
-
-	bool spongeFlag;
-	SpongeBC *spg; 
-
-
-
-	CSolver(Domain *dom, BC *bc, TimeStepping *ts, double alphaF, double mu_ref){
-
-	    //Take in input information and initialize data structures...
-	    this->dom = dom;
-	    this->bc = bc;
-	    this->ts = ts;
-	    this->alphaF = alphaF;
-	    this->mu_ref = mu_ref;
-
-	    ig = new IdealGas(dom);
-
-	    Nx = dom->Nx;
-	    Ny = dom->Ny;
-	    Nz = dom->Nz;
-	    N  = dom->N;
-
-	    initializeSolverData();		    	    
-
-
-	}
-
-
-	void initializeSolverData();
-
-};
-
-/*
 void CSolver::initializeSolverData(){
 
     cout << " > Allocating Solver Arrays..." << endl;
-    long unsigned int workSize = 0;
-    workSize = 68 * N * 8;
+    double workSize = 0;
+    workSize = 68.0 * (double)N * 8.0;
     cout << " > Need " << workSize/1024.0/1024.0/1024.0 << " Gb of memory to allocated solver arrays " << endl;
 
     //3
@@ -209,7 +110,7 @@ void CSolver::initializeSolverData(){
     rhoWk  = new double[N];
     rhoWk2 = new double[N];
     rhoW2  = new double[N];
-
+ 
     //68
     rhoE1  = new double[N];
     rhoEk  = new double[N];
@@ -217,5 +118,3 @@ void CSolver::initializeSolverData(){
     rhoE2  = new double[N];
 
 }
-*/
-#endif
