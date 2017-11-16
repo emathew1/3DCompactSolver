@@ -8,8 +8,8 @@ class Derivatives{
 
     public:
 
-	int Nx, Ny, Nz;
-	double dx, dy, Nz;
+	int Nx, Ny, Nz, N;
+	double dx, dy, dz, dd;
 
         //First Derivative
 
@@ -53,6 +53,17 @@ class Derivatives{
 
 	    this->currentDir = currentDir;
 
+	    if(currentDir == DIRX){
+		N  = Nx;
+		dd = dx;
+	    }else if(currentDir == DIRY){
+		N  = Ny;
+		dd = dy;
+	    }else if(currentDir == DIRZ){
+		N  = Nz;
+		dd = dz; 
+	    }
+
 	    //1st Derivative coefficients
 	    alpha_1D = 1.0/3.0;
 	    a_1D     = 14.0/9.0;
@@ -93,32 +104,56 @@ class Derivatives{
 	    c2_2D =   6.0/5.0;
 
 
-	    diag_1D     = new double[Nx]; 
-	    offlower_1D = new double[Nx];
-	    offupper_1D = new double[Nx];
+	    diag_1D     = new double[N]; 
+	    offlower_1D = new double[N];
+	    offupper_1D = new double[N];
 
-	    diag_2D     = new double[Nx]; 
-	    offlower_2D = new double[Nx];
-	    offupper_2D = new double[Nx];
+	    diag_2D     = new double[N]; 
+	    offlower_2D = new double[N];
+	    offupper_2D = new double[N];
 
 	//Left off here!     
   
-	FOR_X{ //Not correct...
+	for(int ip = 0; ip < N; ip++){ //Not correct...
 	    diag_1D[ip] = 1.0;
-	    offlower_1D[ip]  = alpha;
-	    offupper_1D[ip]  = alpha;
+	    offlower_1D[ip]  = alpha_1D;
+	    offupper_1D[ip]  = alpha_1D;
 	}
 
-	for(int ip = 0; ip < Ny; ip++){
-	    diagy[ip] = 1.0;
-	    offy1[ip]  = alpha;
-	    offy2[ip]  = alpha;
+	for(int ip = 0; ip < N; ip++){
+	    diag_2D[ip] = 1.0;
+	    offlower_2D[ip]  = alpha_2D;
+	    offupper_2D[ip]  = alpha_2D;
 	}
+
+	if(bcType == BC::DIRICHLET_SOLVE){
+	    offupper_1D[0] = alpha11_1D;  
+	    offupper_1D[1] = alpha22_1D;
+	    offlower_1D[1] = alpha21_1D;
+
+	    offlower_1D[N-1] = alpha11_1D;
+	    offlower_1D[N-2] = alpha22_1D;
+	    offlower_1D[N-1] = alpha21_1D;
+
+	    offupper_2D[0] = alpha11_2D;  
+	    offupper_2D[1] = alpha22_2D;
+	    offlower_2D[1] = alpha21_2D;
+
+	    offlower_2D[N-1] = alpha11_2D;
+	    offlower_2D[N-2] = alpha22_2D;
+	    offlower_2D[N-1] = alpha21_2D;
+	}	
+
 
     }
 
+    //Need a cleaner way of passing these things...
+    void multRHS1stDerivPeriodic(double dh, double *phi, int N, double *RHSvec);
+    void multRHS2ndDerivPeriodic(double dh, double *phi, int N, double *RHSvec);
+    void multRHS1stDerivDirichlet(double dh, double *phi, int N, double *RHSvec);
+    void multRHS2ndDerivDirichlet(double dh, double *phi, int N, double *RHSvec);
 
-    void multRHSDerivPeriodic(double dh, double *phi, int N, double *RHSvec);
+
     void CompactDYPeriodic(double *phi, double *dphidy);
     void CompactDXPeriodic(double *phi, double *dphidx);
 
