@@ -36,12 +36,13 @@ class Derivatives{
 	//T6 Dirichlet Coefficients w/ T4 at edge
 	double alpha11_2D, alpha21_2D, alpha22_2D;
 	double a1_2D, b1_2D, c1_2D, d1_2D, e1_2D;
-	double a2_2D, b2_2D, c2_2D; 
+	double a2_2D, b2_2D, c2_2D, d2_2D, e2_2D, f2_2D; 
 
 	double *diag_2D, *offlower_2D, *offupper_2D;
 	enum Direct {DIRX, DIRY, DIRZ};
 	Direct currentDir;
 
+	BC::BCType bcType;
 
 	//Constructor
         Derivatives(Domain *dom, BC::BCType bcType, Direct currentDir){
@@ -54,6 +55,8 @@ class Derivatives{
 	    this->dz = dom->dz;
 
 	    this->currentDir = currentDir;
+
+	    this->bcType = bcType;
 
 	    if(currentDir == DIRX){
 		N  = Nx;
@@ -92,18 +95,23 @@ class Derivatives{
 	    a_2D     = 12.0/11.0;
 	    b_2D     = 3.0/11.0;
 
+	    //4th order here
    	    alpha11_2D = 10.0;
 	    a1_2D =  145.0/12.0;
-	    b1_2D =   76.0/3.0;
+	    b1_2D =  -76.0/3.0;
 	    c1_2D =   29.0/2.0;
 	    d1_2D =   -4.0/3.0;
  	    e1_2D =    1.0/12.0;
 
-	    alpha21_2D = 1.0/10.0;
-	    alpha22_2D = 1.0/10.0;
-	    a2_2D =   6.0/5.0;
-	    b2_2D = -12.0/5.0;
-	    c2_2D =   6.0/5.0;
+	    //6th order here...
+	    alpha21_2D = 2.0/11.0;
+	    alpha22_2D = -131.0/22.0;
+	    a2_2D =  177.0/88.0;
+	    b2_2D = -507.0/44.0;
+	    c2_2D =  783.0/44.0;
+	    d2_2D = -201.0/22.0;
+	    e2_2D =  81.0/88.0;
+	    f2_2D =  -3.0/44.0;
 
 
 	    diag_1D     = new double[N]; 
@@ -135,7 +143,7 @@ class Derivatives{
 
 	    offlower_1D[N-1] = alpha11_1D;
 	    offlower_1D[N-2] = alpha22_1D;
-	    offlower_1D[N-1] = alpha21_1D;
+	    offupper_1D[N-2] = alpha21_1D;
 
 	    offupper_2D[0] = alpha11_2D;  
 	    offupper_2D[1] = alpha22_2D;
@@ -143,11 +151,15 @@ class Derivatives{
 
 	    offlower_2D[N-1] = alpha11_2D;
 	    offlower_2D[N-2] = alpha22_2D;
-	    offlower_2D[N-1] = alpha21_2D;
+	    offupper_2D[N-2] = alpha21_2D;
 	}	
 
 
     }
+
+    //Function's to call...
+    void calc1stDeriv(double *phi, double *dphi);
+    void calc2ndDeriv(double *phi, double *dphi);
 
     //Need a cleaner way of passing these things...
     void multRHS1stDerivPeriodic(double dh, double *phi, int N, double *RHSvec);

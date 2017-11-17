@@ -83,6 +83,8 @@ class CSolver{
 	SpongeBC *spg; 
 	enum Eqn {CONT, XMOM, YMOM, ZMOM, ENGY};
 
+	Derivatives *derivX, *derivY, *derivZ;
+
 	//Constructor to use for this class...
 	CSolver(Domain *dom, BC *bc, TimeStepping *ts, double alphaF, double mu_ref){
 
@@ -115,6 +117,11 @@ class CSolver{
 		spongeFlag = true;
 		spg = new SpongeBC(dom, ig, bc);
 	    }
+
+	    //Initialize our derivative calculations for each direction...
+	    derivX = new Derivatives(dom, bc->bcXType, Derivatives::DIRX);
+	    derivY = new Derivatives(dom, bc->bcYType, Derivatives::DIRY);
+	    derivZ = new Derivatives(dom, bc->bcZType, Derivatives::DIRZ);
 
 	}
 

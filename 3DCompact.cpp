@@ -26,12 +26,12 @@ int main(int argc, char *argv[]){
     /////////////////////////
     //Initialize the Domain//
     /////////////////////////
-    int    Nx = 128, 
-	   Ny = 128, 
-	   Nz = 128;
-    double Lx = 1.0, 
-	   Ly = 1.0, 
-	   Lz = 1.0;
+    int    Nx = 32, 
+	   Ny = 32, 
+	   Nz = 32;
+    double Lx = 2.0*M_PI*((double)Nx - 1.0)/(double(Nx)), 
+	   Ly = 2.0*M_PI*((double)Ny - 1.0)/(double(Ny)), 
+	   Lz = 2.0*M_PI*((double)Nz - 1.0)/(double(Nz));
     Domain *dom = new Domain(Nx, Ny, Nz, Lx, Ly, Lz);
 
 
@@ -92,6 +92,32 @@ int main(int argc, char *argv[]){
     cs->setInitialConditions();
  
     cs->calcDtFromCFL();
+
+    double *test = new double[Nx];
+    double *dtest = new double[Nx];
+    FOR_X{
+	test[i] = sin(cs->dom->x[i]);
+	dtest[i] = 0.0;
+    }
+  
+    cs->derivX->calc2ndDeriv(test, dtest);
+
+    FOR_X{
+	cout << test[i] << " " << dtest[i] << endl;
+    }
+
+    FOR_Y{
+	test[j] = sin(cs->dom->y[j]);
+	dtest[j] = 0.0;
+    }
+  
+    cs->derivY->calc2ndDeriv(test, dtest);
+    cout << endl;
+    FOR_Y{
+	cout << test[j] << " " << dtest[j] << endl;
+    }
+
+
 
     return 0;
 }
