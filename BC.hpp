@@ -28,7 +28,7 @@ class BC{
 	    this->bcZ0 = bcZ0;
 	    this->bcZ1 = bcZ1;
 
-	    std::cout << endl;
+	    std::cout << std::endl;
 	    std::cout << " > Initializing boundary conditions..." << std::endl;
 	
 	    std::cout << " >     X BOUNDARY CONDITIONS    " << std::endl;

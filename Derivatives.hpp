@@ -1,6 +1,8 @@
 #include <math.h>
 #include <cstring>
 #include <iostream>
+#include "Domain.hpp"
+#include "BC.hpp"
 #include "Utils.hpp"
 
 class Derivatives{
@@ -154,10 +156,8 @@ class Derivatives{
     void multRHS2ndDerivDirichlet(double dh, double *phi, int N, double *RHSvec);
 
 
-    void CompactDYPeriodic(double *phi, double *dphidy);
-    void CompactDXPeriodic(double *phi, double *dphidx);
-
-    void multRHSDerivDirichlet(double dh, double *phi, int N, double *RHSvec);
-    void CompactDYDirichlet(double *phi, double *dphidy);
-    void CompactDXDirichlet(double *phi, double *dphidx);
+    void Compact1stPeriodic(double *phi, double *dphidx);
+    void Compact2ndPeriodic(double *phi, double *dphidx);
+    void Compact1stDirichlet(double *phi, double *dphidx);
+    void Compact2ndDirichlet(double *phi, double *dphidx);
 };

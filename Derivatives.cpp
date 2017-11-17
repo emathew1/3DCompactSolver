@@ -1,35 +1,31 @@
 #include "Derivatives.hpp"
 
-using namespace std;
+void Derivatives::multRHS1stDerivPeriodic(double dh, double *phi, int N, double *RHSvec){
 
-void Derivatives::multRHSDerivPeriodic(double dh, double *phi, int N, double *RHSvec){
+    double cc2 = -b_1D/4.0;
+    double cc3 = -a_1D/2.0;
+    double cc4 =  a_1D/2.0;
+    double cc5 =  b_1D/4.0;
 
-    double c1 = -c/6.0;
-    double c2 = -b/4.0;
-    double c3 = -a/2.0;
-    double c4 =  a/2.0;
-    double c5 =  b/4.0;
-    double c6 =  c/6.0;
-
-    RHSvec[0] = c1*phi[N-3] + c2*phi[N-2] + c3*phi[N-1] + \
-                        c4*phi[1] + c5*phi[2] + c6*phi[3];
-    RHSvec[1] = c1*phi[N-2] + c2*phi[N-1] + c3*phi[0] + \
-                        c4*phi[2] + c5*phi[3] + c6*phi[4];
-    RHSvec[2] = c1*phi[N-1] + c2*phi[0] + c3*phi[1] + \
-                        c4*phi[3] + c5*phi[4] + c6*phi[5];
+    RHSvec[0] = cc2*phi[N-2] + cc3*phi[N-1] + \
+                        cc4*phi[1] + cc5*phi[2];
+    RHSvec[1] = cc2*phi[N-1] + cc3*phi[0] + \
+                        cc4*phi[2] + cc5*phi[3];
+    RHSvec[2] = cc2*phi[0] + cc3*phi[1] + \
+                        cc4*phi[3] + cc5*phi[4];
 
     for(int ip = 3; ip < N-3; ip++){
-        RHSvec[ip] = c1*phi[ip-3] + c2*phi[ip-2] + c3*phi[ip-1] + \
-                        c4*phi[ip+1] + c5*phi[ip+2] + c6*phi[ip+3];
+        RHSvec[ip] = cc2*phi[ip-2] + cc3*phi[ip-1] + \
+                        cc4*phi[ip+1] + cc5*phi[ip+2];
 
     }
 
-    RHSvec[N-3] = c1*phi[N-6] + c2*phi[N-5] + c3*phi[N-4] + \
-                        c4*phi[N-2] + c5*phi[N-1] + c6*phi[0];
-    RHSvec[N-2] = c1*phi[N-5] + c2*phi[N-4] + c3*phi[N-3] + \
-                        c4*phi[N-1] + c5*phi[0] + c6*phi[1];
-    RHSvec[N-1] = c1*phi[N-4] + c2*phi[N-3] + c3*phi[N-2] + \
-                        c4*phi[0] + c5*phi[1] + c6*phi[2];
+    RHSvec[N-3] = cc2*phi[N-5] + cc3*phi[N-4] + \
+                        cc4*phi[N-2] + cc5*phi[N-1];
+    RHSvec[N-2] = cc2*phi[N-4] + cc3*phi[N-3] + \
+                        cc4*phi[N-1] + cc5*phi[0];
+    RHSvec[N-1] = cc2*phi[N-3] + cc3*phi[N-2] + \
+                        cc4*phi[0] + cc5*phi[1];
 
     for(int ip = 0; ip < N; ip++){
         RHSvec[ip] /= dh;
@@ -37,55 +33,49 @@ void Derivatives::multRHSDerivPeriodic(double dh, double *phi, int N, double *RH
 
 }
 
-void Derivatives::CompactDYPeriodic(double *phi, double *dphidy){
 
-    double RHSvec[Ny];
-//    #pragma omp parallel for private(RHSvec)
-    for(int ip = 0 ; ip < Nx; ip++){
-        double *phiPointer = &phi[ip*Ny];
-        multRHSDerivPeriodic(dy, phiPointer, Ny, RHSvec);
-        cyclic(offy1, diagy, offy2, alpha, alpha, RHSvec, Ny, &dphidy[ip*Ny]);
+void Derivatives::multRHS2ndDerivPeriodic(double dh, double *phi, int N, double *RHSvec){
+
+    double cc1 =  b_2D/4.0;
+    double cc2 =  a_2D;
+    double cc3 =  -(b_2D/2.0 + 2.0*a_2D);
+    double cc4 =  a_2D;
+    double cc5 =  b_2D/4.0;
+
+    RHSvec[0] = cc1*phi[N-2] + cc2*phi[N-1] + cc3*phi[0] + \
+                        cc4*phi[1] + cc5*phi[2];
+    RHSvec[1] = cc1*phi[N-1] + cc2*phi[0]   + cc3*phi[1] + \
+                        cc4*phi[2] + cc5*phi[3];
+
+    for(int ip = 2; ip < N-2; ip++){
+        RHSvec[ip] = cc1*phi[ip-2] + cc2*phi[ip-1] + cc3*phi[ip] + \
+                        cc4*phi[ip+1] + cc5*phi[ip+2];
+
+    }
+
+    RHSvec[N-2] = cc1*phi[N-4] + cc2*phi[N-3] + cc3*phi[N-2] + \
+                        cc4*phi[N-1] + cc5*phi[0];
+    RHSvec[N-1] = cc1*phi[N-3] + cc2*phi[N-2] + cc3*phi[N-1] + \
+                        cc4*phi[0] + cc5*phi[1];
+
+    for(int ip = 0; ip < N; ip++){
+        RHSvec[ip] /= dh*dh;
     }
 
 }
 
-void Derivatives::CompactDXPeriodic(double *phi, double *dphidx){
-
-    double *phiTrans = new double[Nx*Ny];
-
-    double *dphidxTrans = new double[Nx*Ny];
-    transposeMatrix(phi, Nx, Ny, phiTrans);
-    //transposeMatrix_Fast2(phi, Nx, Ny, phiTrans, 60);
+void Derivatives::multRHS1stDerivDirichlet(double dh, double *phi, int N, double *RHSvec){
 
 
-    double RHSvec[Nx];
-    #pragma omp parallel for private(RHSvec)
-    for(int ip = 0 ; ip < Ny; ip++){
-        double *phiPointer = &phiTrans[ip*Nx];
-        multRHSDerivPeriodic(dx, phiPointer, Nx, RHSvec);
-        cyclic(offx1, diagx, offx2, alpha, alpha, RHSvec, Nx, &dphidxTrans[ip*Nx]);
-    }
-    delete[] phiTrans;
+    double cc2 = -b_1D/4.0;
+    double cc3 = -a_1D/2.0;
+    double cc4 =  a_1D/2.0;
+    double cc5 =  b_1D/4.0;
 
-    transposeMatrix(dphidxTrans, Ny, Nx, dphidx);
-    //transposeMatrix_Fast2(dphidxTrans, Ny, Nx, dphidx, 60);
-    delete[] dphidxTrans;
-}
-
-void Derivatives::multRHSDerivDirichlet(double dh, double *phi, int N, double *RHSvec){
-
-
-    double cc1 = -c/6.0;
-    double cc2 = -b/4.0;
-    double cc3 = -a/2.0;
-    double cc4 =  a/2.0;
-    double cc5 =  b/4.0;
-    double cc6 =  c/6.0;
-
-    RHSvec[0] = a1*phi[0] + b1*phi[1] + c1*phi[2] + \
-                        d1*phi[3] + e1*phi[4] + f1*phi[5];
-    RHSvec[1] = a2*phi[0] + b2*phi[1] + c2*phi[2] + \
-                        d2*phi[3] + e2*phi[4];
+    RHSvec[0] = a1_1D*phi[0] + b1_1D*phi[1] + c1_1D*phi[2] + \
+                        d1_1D*phi[3] + e1_1D*phi[4] + f1_1D*phi[5];
+    RHSvec[1] = a2_1D*phi[0] + b2_1D*phi[1] + c2_1D*phi[2] + \
+                        d2_1D*phi[3] + e2_1D*phi[4];
 
     for(int ip = 2; ip < N-2; ip++){
         RHSvec[ip] = cc2*phi[ip-2] + cc3*phi[ip-1] + \
@@ -93,10 +83,10 @@ void Derivatives::multRHSDerivDirichlet(double dh, double *phi, int N, double *R
 
     }
 
-    RHSvec[N-2] = -e2*phi[N-5] - d2*phi[N-4] - \
-                        c2*phi[N-3] - b2*phi[N-2] - a2*phi[N-1];
-    RHSvec[N-1] = -f1*phi[N-6] - e1*phi[N-5] - d1*phi[N-4] - \
-                        c1*phi[N-3] - b1*phi[N-2] - a1*phi[N-1];
+    RHSvec[N-2] = -e2_1D*phi[N-5] - d2_1D*phi[N-4] - \
+                        c2_1D*phi[N-3] - b2_1D*phi[N-2] - a2_1D*phi[N-1];
+    RHSvec[N-1] = -f1_1D*phi[N-6] - e1_1D*phi[N-5] - d1_1D*phi[N-4] - \
+                        c1_1D*phi[N-3] - b1_1D*phi[N-2] - a1_1D*phi[N-1];
 
     for(int ip = 0; ip < N; ip++){
         RHSvec[ip] /= dh;
@@ -104,44 +94,75 @@ void Derivatives::multRHSDerivDirichlet(double dh, double *phi, int N, double *R
 
 }
 
-void Derivatives::CompactDYDirichlet(double *phi, double *dphidy){
+void Derivatives::multRHS2ndDerivDirichlet(double dh, double *phi, int N, double *RHSvec){
+
+
+    double cc1 =  b_2D/4.0;
+    double cc2 =  a_2D;
+    double cc3 =  -(b_2D/2.0 + 2.0*a_2D);
+    double cc4 =  a_2D;
+    double cc5 =  b_2D/4.0;
+
+
+    RHSvec[0] = a1_2D*phi[0] + b1_2D*phi[1] + c1_2D*phi[2] + \
+                        d1_2D*phi[3] + e1_2D*phi[4];
+    RHSvec[1] = a2_2D*phi[0] + b2_2D*phi[1] + c2_2D*phi[2];
+
+    for(int ip = 2; ip < N-2; ip++){
+        RHSvec[ip] = cc1*phi[ip-2] + cc2*phi[ip-1] + cc3*phi[ip] +\
+                        cc4*phi[ip+1] + cc5*phi[ip+2];
+
+    }
+
+
+    RHSvec[N-2] = c2_2D*phi[N-3] + b2_2D*phi[N-2] + a2_2D*phi[N-1];
+    RHSvec[N-1] = e1_2D*phi[N-5] + d1_2D*phi[N-4] + \
+                        c1_2D*phi[N-3] + b1_2D*phi[N-2] + a1_2D*phi[N-1];
+
+    for(int ip = 0; ip < N; ip++){
+        RHSvec[ip] /= dh*dh;
+    }
+
+}
+
+
+void Derivatives::Compact1stPeriodic(double *phi, double *dphidy){
+
+    double RHSvec[Ny];
+    multRHS1stDerivPeriodic(dd, phi, N, RHSvec);
+    cyclic(offlower_1D, diag_1D, offupper_1D, alpha_1D, alpha_1D, RHSvec, N, dphidy);
+
+}
+
+void Derivatives::Compact2ndPeriodic(double *phi, double *dphidy){
+
+    double RHSvec[Ny];
+    multRHS2ndDerivPeriodic(dd, phi, N, RHSvec);
+    cyclic(offlower_2D, diag_2D, offupper_2D, alpha_2D, alpha_2D, RHSvec, N, dphidy);
+
+}
+
+
+void Derivatives::Compact1stDirichlet(double *phi, double *dphidy){
 
     double RHSvec[Ny];
     double *work = new double[Ny];
 
-//    #pragma omp parallel for private(RHSvec)
-    for(int ip = 0 ; ip < Nx; ip++){
-        double *phiPointer = &phi[ip*Ny];
-        multRHSDerivDirichlet(dy, phiPointer, Ny, RHSvec);
-        solveTri(offy1, diagy, offy2, RHSvec, &dphidy[ip*Ny], work, Ny);
-    }
+    multRHS1stDerivDirichlet(dd, phi, N, RHSvec);
+    solveTri(offlower_1D, diag_1D, offlower_1D, RHSvec, dphidy, work, N);
 
     delete[] work;
 }
 
-void Derivatives::CompactDXDirichlet(double *phi, double *dphidx){
 
-    double *phiTrans = new double[Nx*Ny];
+void Derivatives::Compact2ndDirichlet(double *phi, double *dphidy){
 
-    double *dphidxTrans = new double[Nx*Ny];
-    transposeMatrix(phi, Nx, Ny, phiTrans);
-    //transposeMatrix_Fast2(phi, Nx, Ny, phiTrans, 60);
+    double RHSvec[Ny];
+    double *work = new double[Ny];
 
+    multRHS2ndDerivDirichlet(dd, phi, N, RHSvec);
+    solveTri(offlower_2D, diag_2D, offlower_2D, RHSvec, dphidy, work, N);
 
-    double RHSvec[Nx];
-    double *work = new double[Nx];
-
-    #pragma omp parallel for private(RHSvec)
-    for(int ip = 0 ; ip < Ny; ip++){
-        double *phiPointer = &phiTrans[ip*Nx];
-        multRHSDerivDirichlet(dx, phiPointer, Nx, RHSvec);
-        solveTri(offx1, diagx, offx2, RHSvec, &dphidxTrans[ip*Nx], work, Nx);
-    }
-    delete[] phiTrans;
     delete[] work;
-
-    transposeMatrix(dphidxTrans, Ny, Nx, dphidx);
-    //transposeMatrix_Fast2(dphidxTrans, Ny, Nx, dphidx, 60);
-    delete[] dphidxTrans;
 }
 

@@ -7,6 +7,7 @@
 #include "TimeStepping.hpp"
 #include "IdealGas.hpp"
 #include "SpongeBC.hpp"
+#include "Derivatives.hpp"
 
 class CSolver{
 
