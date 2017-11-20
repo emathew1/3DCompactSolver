@@ -65,8 +65,8 @@ void Filter::multRHSDirichletFilter(double *phi, double *RHSvec){
 
     double aa0 = a0_6;
     double aa1 = a1_6/2.0;
-    double aa2 = a1_6/2.0;
-    double aa3 = a1_6/2.0;
+    double aa2 = a2_6/2.0;
+    double aa3 = a3_6/2.0;
 
     double cc0 = a0_8;
     double cc1 = a1_8/2.0;
@@ -97,7 +97,7 @@ void Filter::multRHSDirichletFilter(double *phi, double *RHSvec){
 
 void Filter::FilterPeriodic(double *phi, double *phiF){
 
-    double RHSvec[Ny];
+    double RHSvec[N];
     multRHSPeriodicFilter(phi, RHSvec);
     cyclic(offlowerF, diagF, offupperF, alphaF, alphaF, RHSvec, N, phiF);
 
@@ -106,8 +106,8 @@ void Filter::FilterPeriodic(double *phi, double *phiF){
 void Filter::FilterDirichlet(double *phi, double *phiF){
     
 
-    double RHSvec[Ny];
-    double *work = new double[Ny];
+    double RHSvec[N];
+    double *work = new double[N];
 
     multRHSDirichletFilter(phi, RHSvec);
     solveTri(offlowerF, diagF, offupperF, RHSvec, phiF, work, N);

@@ -27,7 +27,7 @@ int main(int argc, char *argv[]){
     //Initialize the Domain//
     /////////////////////////
     int    Nx = 32, 
-	   Ny = 32, 
+	   Ny = 64, 
 	   Nz = 32;
     double Lx = 2.0*M_PI*((double)Nx - 1.0)/(double(Nx)), 
 	   Ly = 2.0*M_PI*((double)Ny - 1.0)/(double(Ny)), 
@@ -71,7 +71,7 @@ int main(int argc, char *argv[]){
     /////////////////////////
     //Initialize the Solver//
     /////////////////////////
-    double alphaF = 0.48;
+    double alphaF = 0.49;
     double mu_ref = 0.0001;
     CSolver *cs   = new CSolver(dom, bc, ts, alphaF, mu_ref); 
 
@@ -100,24 +100,30 @@ int main(int argc, char *argv[]){
 	dtest[i] = 0.0;
     }
   
-    cs->filtX->compactFilter(test, dtest);
+    cs->derivX->calc1stDeriv(test, dtest);
 
     FOR_X{
 	cout << test[i] << " " << dtest[i] << endl;
     }
 
+    double *testy = new double[Ny];
+    double *dtesty = new double[Ny];
+
     FOR_Y{
-	test[j] = sin(cs->dom->y[j]);
-	dtest[j] = 0.0;
+	testy[j] = sin(cs->dom->y[j]);
+	dtesty[j] = 0.0;
     }
   
-    cs->filtY->compactFilter(test, dtest);
+    cs->derivY->calc2ndDeriv(testy, dtesty);
     cout << endl;
     FOR_Y{
-	cout << test[j] << " " << dtest[j] << endl;
+	cout << testy[j] << " " << dtesty[j] << endl;
     }
 
-
+    delete[] test;
+    delete[] testy;
+    delete[] dtest;
+    delete[] dtesty;
 
     return 0;
 }
