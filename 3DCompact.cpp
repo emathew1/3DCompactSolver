@@ -1,3 +1,4 @@
+#include <omp.h>
 #include <cmath>
 #include <cstring>
 #include <iostream>
@@ -22,12 +23,21 @@ int main(int argc, char *argv[]){
     cout << "----------------------------------" << endl;
     cout << endl;
 
+    #pragma omp parallel
+    {
+      int threadCount = omp_get_num_threads();
+      int threadID    = omp_get_thread_num();
+      if(threadCount > 1 && threadID == 0){
+          cout << "Running with OpenMP using " << threadCount << " threads" << endl;
+      }
+    }
+
 
     /////////////////////////
     //Initialize the Domain//
     /////////////////////////
-    int    Nx = 32, 
-	   Ny = 64, 
+    int    Nx = 100, 
+	   Ny = 100, 
 	   Nz = 32;
     double Lx = 2.0*M_PI*((double)Nx - 1.0)/(double(Nx)), 
 	   Ly = 2.0*M_PI*((double)Ny - 1.0)/(double(Ny)), 
@@ -92,37 +102,67 @@ int main(int argc, char *argv[]){
  
     cs->calcDtFromCFL();
 
-    double *test = new double[Nx];
-    double *dtest = new double[Nx];
+    double test[Nx*1000];
+    double dtest[Nx*1000];
     FOR_X{
-	test[i] = sin(cs->dom->x[i]);
-	dtest[i] = 0.0;
+	for(int ip = 0; ip < 1000; ip++){
+	    test[ip*Nx+i] = sin(cs->dom->x[i]);
+	    dtest[ip*Nx+i] = 0.0;
+	}
     }
-  
-    cs->derivX->calc1stDeriv(test, dtest);
 
+    auto  t1 = std::chrono::system_clock::now();
+    #pragma omp parallel for 
+    for(int jp = 0; jp < 1000; jp++){
+	double *testpoint = &test[jp*Nx];
+	double *dtestpoint = &dtest[jp*Nx];
+        cs->derivX->calc1stDeriv(testpoint, dtestpoint);
+    }
+    auto  t2 = std::chrono::system_clock::now();
+    auto  t3 = t2-t1;
+
+    cout << "1st derivative:  " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000/(double)1000 << endl;
+
+    t1 = std::chrono::system_clock::now();
+    for(int jp = 0; jp < 1000; jp++){
+	double *testpoint = &test[jp*Nx];
+	double *dtestpoint = &dtest[jp*Nx];
+        cs->derivX->calc1stDeriv(testpoint, dtestpoint);
+    }
+    t2 = std::chrono::system_clock::now();
+    cout << "1st derivative:  " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000/(double)1000 << endl;
+
+
+/*
     FOR_X{
 	cout << test[i] << " " << dtest[i] << endl;
     }
-
-    double *testy = new double[Ny];
-    double *dtesty = new double[Ny];
+*/
+    double testy[Ny*1000];
+    double dtesty[Ny*1000];
 
     FOR_Y{
-	testy[j] = sin(cs->dom->y[j]);
-	dtesty[j] = 0.0;
+	for(int ip = 0; ip < 1000; ip++){
+	    testy[ip*Ny + j] = sin(cs->dom->y[j]);
+	    dtesty[ip*Ny + j] = 0.0;
+	}
     }
-  
-    cs->derivY->calc2ndDeriv(testy, dtesty);
+
+    t1 = std::chrono::system_clock::now();
+    #pragma omp parallel for 
+    for(int jp = 0; jp < 1000; jp++){ 
+	double *testypoint = &testy[jp*Ny]; 
+	double *dtestypoint = &dtesty[jp*Ny]; 
+        cs->derivY->calc2ndDeriv(testypoint, dtestypoint);
+    }
+    t2 = std::chrono::system_clock::now();
+    cout << "2nd Derivative: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000/(double)1000 << endl;
+/*
     cout << endl;
     FOR_Y{
 	cout << testy[j] << " " << dtesty[j] << endl;
     }
-
-    delete[] test;
-    delete[] testy;
-    delete[] dtest;
-    delete[] dtesty;
+*/
 
     return 0;
 }

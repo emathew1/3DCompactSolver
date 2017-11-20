@@ -171,26 +171,20 @@ void Derivatives::Compact2ndPeriodic(double *phi, double *dphidy){
 
 void Derivatives::Compact1stDirichlet(double *phi, double *dphidy){
 
-    double *RHSvec = new double[N];
-    double *work = new double[N];
+    double RHSvec[N];
+    double work[N];
 
     multRHS1stDerivDirichlet(dd, phi, N, RHSvec);
     solveTri(offlower_1D, diag_1D, offupper_1D, RHSvec, dphidy, work, N);
-
-    delete[] work;
-    delete[] RHSvec;
 }
 
 
 void Derivatives::Compact2ndDirichlet(double *phi, double *dphidy){
 
-    double *RHSvec = new double[N];
-    double *work = new double[N];
+    double RHSvec[N];
+    double work[N];
 
     multRHS2ndDerivDirichlet(dd, phi, N, RHSvec);
     solveTri(offlower_2D, diag_2D, offupper_2D, RHSvec, dphidy, work, N);
-
-    delete[] work;
-    delete[] RHSvec;
 }
 

@@ -21,20 +21,15 @@ void solveTri(double a[], double b[], double c[], double d[], double x[], double
 void cyclic(double *a, double *b, double *c, double alpha, double beta, double *r, int n, double *x)
 {
         unsigned long i;
-        double fact,gamma,*bb,*u,*z;
+        double fact,gamma,bb[n],u[n],z[n],work[n];
 
         if (n <= 2) cout << "n too small in cyclic" << endl;
-
-        bb = new double[n];
-        u  = new double[n];
-        z  = new double[n];
 
         gamma = -b[0];
         for (i=0;i<n;i++) bb[i]=b[i];
         bb[0]=b[0]-gamma;
         bb[n-1]=b[n-1]-alpha*beta/gamma;
 
-        double *work = new double[n];
         solveTri(a,bb,c,r,x,work,n);
 
         for (i=0;i<n;i++) u[i]=0.0;
@@ -47,10 +42,6 @@ void cyclic(double *a, double *b, double *c, double alpha, double beta, double *
 
         for (i=0;i<n;i++) x[i] -= fact*z[i];
 
-        delete[] z;
-        delete[] u;
-        delete[] bb;
-        delete[] work;
 }
 
 void transposeMatrix(double *in, int Nx, int Ny, double *out){
