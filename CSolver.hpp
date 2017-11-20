@@ -126,6 +126,7 @@ class CSolver{
 	    derivY = new Derivatives(dom, bc->bcYType, Derivatives::DIRY);
 	    derivZ = new Derivatives(dom, bc->bcZType, Derivatives::DIRZ);
 
+	    //Initialize the filters we're going to use for each direction
 	    filtX  = new Filter(alphaF, dom, bc->bcXType, Derivatives::DIRX);
 	    filtY  = new Filter(alphaF, dom, bc->bcYType, Derivatives::DIRY);
 	    filtZ  = new Filter(alphaF, dom, bc->bcZType, Derivatives::DIRZ);

@@ -75,7 +75,6 @@ int main(int argc, char *argv[]){
     double mu_ref = 0.0001;
     CSolver *cs   = new CSolver(dom, bc, ts, alphaF, mu_ref); 
 
-    cs->initializeSolverData(); 
 
 
     ///////////////////////////////
