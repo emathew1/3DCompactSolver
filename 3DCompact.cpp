@@ -100,7 +100,7 @@ int main(int argc, char *argv[]){
 	dtest[i] = 0.0;
     }
   
-    cs->derivX->calc2ndDeriv(test, dtest);
+    cs->filtX->compactFilter(test, dtest);
 
     FOR_X{
 	cout << test[i] << " " << dtest[i] << endl;
@@ -111,7 +111,7 @@ int main(int argc, char *argv[]){
 	dtest[j] = 0.0;
     }
   
-    cs->derivY->calc2ndDeriv(test, dtest);
+    cs->filtY->compactFilter(test, dtest);
     cout << endl;
     FOR_Y{
 	cout << test[j] << " " << dtest[j] << endl;

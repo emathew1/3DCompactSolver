@@ -1,3 +1,6 @@
+#ifndef _DERIVATIVESH_
+#define _DERIVATIVESH_
+
 #include <math.h>
 #include <cstring>
 #include <iostream>
@@ -173,3 +176,5 @@ class Derivatives{
     void Compact1stDirichlet(double *phi, double *dphidx);
     void Compact2ndDirichlet(double *phi, double *dphidx);
 };
+
+#endif

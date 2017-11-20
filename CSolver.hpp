@@ -8,6 +8,7 @@
 #include "IdealGas.hpp"
 #include "SpongeBC.hpp"
 #include "Derivatives.hpp"
+#include "Filter.hpp"
 
 class CSolver{
 
@@ -84,6 +85,8 @@ class CSolver{
 	enum Eqn {CONT, XMOM, YMOM, ZMOM, ENGY};
 
 	Derivatives *derivX, *derivY, *derivZ;
+	Filter *filtX, *filtY, *filtZ;
+
 
 	//Constructor to use for this class...
 	CSolver(Domain *dom, BC *bc, TimeStepping *ts, double alphaF, double mu_ref){
@@ -122,6 +125,10 @@ class CSolver{
 	    derivX = new Derivatives(dom, bc->bcXType, Derivatives::DIRX);
 	    derivY = new Derivatives(dom, bc->bcYType, Derivatives::DIRY);
 	    derivZ = new Derivatives(dom, bc->bcZType, Derivatives::DIRZ);
+
+	    filtX  = new Filter(alphaF, dom, bc->bcXType, Derivatives::DIRX);
+	    filtY  = new Filter(alphaF, dom, bc->bcYType, Derivatives::DIRY);
+	    filtZ  = new Filter(alphaF, dom, bc->bcZType, Derivatives::DIRZ);
 
 	}
 
