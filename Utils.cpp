@@ -78,6 +78,67 @@ void transposeMatrix_Fast2(const double *in, int n, int p, double *out, int bloc
     }
 }
 
+void transposeXYZtoYZX(const double *in, int Nx, int Ny, int Nz, double *out){
+
+    for(int ip = 0; ip < Nx; ip++){
+	for(int kp = 0; kp < Nz; kp++){
+	    for(int jp = 0; jp < Ny; jp++){
+		out[ip*Nz*Ny + kp*Ny + jp] = in[kp*Ny*Nx + jp*Nx + ip];
+	    }
+	}
+    }
+
+} 
+
+void transposeYZXtoZXY(const double *in, int Nx, int Ny, int Nz, double *out){
+
+    for(int jp = 0; jp < Ny; jp++){
+    	for(int ip = 0; ip < Nx; ip++){
+	    for(int kp = 0; kp < Nz; kp++){
+		out[jp*Nx*Nz + ip*Nz + kp] = in[ip*Nz*Ny + kp*Ny + jp];
+	    }
+	}
+    }
+
+}
+
+void transposeXYZtoZXY(const double *in, int Nx, int Ny, int Nz, double *out){
+
+    for(int jp = 0; jp < Ny; jp++){
+    	for(int ip = 0; ip < Nx; ip++){
+	    for(int kp = 0; kp < Nz; kp++){
+		out[jp*Nx*Nz + ip*Nz + kp] = in[kp*Nx*Ny + jp*Nx + ip];
+	    }
+	}
+    }
+
+}
+
+
+void transposeZXYtoXYZ(const double *in, int Nx, int Ny, int Nz, double *out){
+
+    for(int kp = 0; kp < Nz; kp++){
+        for(int jp = 0; jp < Ny; jp++){
+    	    for(int ip = 0; ip < Nx; ip++){
+		out[kp*Nx*Ny + jp*Nx + ip] = in[jp*Nx*Nz + ip*Nz + kp];
+	    }
+	}
+    }
+
+}
+
+void transposeYZXtoXYZ(const double *in, int Nx, int Ny, int Nz, double *out){
+
+    for(int kp = 0; kp < Nz; kp++){
+    	for(int jp = 0; jp < Ny; jp++){
+	    for(int ip = 0; ip < Nx; ip++){
+		out[kp*Nx*Ny + jp*Nx + ip] = in[ip*Nz*Ny + kp*Ny + jp];
+	    }
+	}
+    }
+}
+
+
 void getRange(double *phi, std::string dataName, int Nx, int Ny){
     double dataMin = 1000000;
     double dataMax = -1000000;

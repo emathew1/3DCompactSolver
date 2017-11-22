@@ -13,6 +13,14 @@ void cyclic(double *a, double *b, double *c, double alpha, double beta,
 void transposeMatrix(double *in, int Nx, int Ny, double *out);
 void transposeMatrix_Fast1(const double *in, int n, int p, double *out, int block);
 void transposeMatrix_Fast2(const double *in, int n, int p, double *out, int blocksize);
+
+void transposeXYZtoYZX(const double *in, int Nx, int Ny, int Nz, double *out);
+void transposeXYZtoZXY(const double *in, int Nx, int Ny, int Nz, double *out);
+void transposeYZXtoZXY(const double *in, int Nx, int Ny, int Nz, double *out);
+void transposeZXYtoXYZ(const double *in, int Nx, int Ny, int Nz, double *out);
+void transposeYZXtoXYZ(const double *in, int Nx, int Ny, int Nz, double *out);
+
+
 void getRange(double *phi, std::string dataName, int Nx, int Ny);
 double fRand(double fMin, double fMax);
 

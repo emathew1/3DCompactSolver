@@ -1,4 +1,4 @@
-#include <omp.h>
+//#include <omp.h>
 #include <cmath>
 #include <cstring>
 #include <iostream>
@@ -22,7 +22,7 @@ int main(int argc, char *argv[]){
     cout << " 3D 6th-Order Compressible Solver " << endl;
     cout << "----------------------------------" << endl;
     cout << endl;
-
+/*
     #pragma omp parallel
     {
       int threadCount = omp_get_num_threads();
@@ -31,14 +31,14 @@ int main(int argc, char *argv[]){
           cout << "Running with OpenMP using " << threadCount << " threads" << endl;
       }
     }
-
+*/
 
     /////////////////////////
     //Initialize the Domain//
     /////////////////////////
-    int    Nx = 100, 
-	   Ny = 100, 
-	   Nz = 32;
+    int    Nx = 128, 
+	   Ny = 128, 
+	   Nz = 128;
     double Lx = 2.0*M_PI*((double)Nx - 1.0)/(double(Nx)), 
 	   Ly = 2.0*M_PI*((double)Ny - 1.0)/(double(Ny)), 
 	   Lz = 2.0*M_PI*((double)Nz - 1.0)/(double(Nz));
@@ -102,67 +102,52 @@ int main(int argc, char *argv[]){
  
     cs->calcDtFromCFL();
 
-    double test[Nx*1000];
-    double dtest[Nx*1000];
-    FOR_X{
-	for(int ip = 0; ip < 1000; ip++){
-	    test[ip*Nx+i] = sin(cs->dom->x[i]);
-	    dtest[ip*Nx+i] = 0.0;
-	}
+
+    double *Test1 = new double[Nx*Ny*Nz];
+    double *Test2 = new double[Nx*Ny*Nz];
+    double *Test3 = new double[Nx*Ny*Nz];
+
+    int i, j, k;
+    FOR_XYZ{
+	Test1[GET3DINDEX_XYZ] = 1.0;
+	Test2[GET3DINDEX_XYZ] = 1.0;
+	Test3[GET3DINDEX_XYZ] = 1.0;
     }
 
-    auto  t1 = std::chrono::system_clock::now();
-    #pragma omp parallel for 
-    for(int jp = 0; jp < 1000; jp++){
-	double *testpoint = &test[jp*Nx];
-	double *dtestpoint = &dtest[jp*Nx];
-        cs->derivX->calc1stDeriv(testpoint, dtestpoint);
+
+    auto t1 = std::chrono::system_clock::now();
+    FOR_XYZ{
+	Test1[GET3DINDEX_XYZ] = Test2[GET3DINDEX_XYZ]/Test3[GET3DINDEX_XYZ];
     }
-    auto  t2 = std::chrono::system_clock::now();
-    auto  t3 = t2-t1;
-
-    cout << "1st derivative:  " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000/(double)1000 << endl;
-
-    t1 = std::chrono::system_clock::now();
-    for(int jp = 0; jp < 1000; jp++){
-	double *testpoint = &test[jp*Nx];
-	double *dtestpoint = &dtest[jp*Nx];
-        cs->derivX->calc1stDeriv(testpoint, dtestpoint);
-    }
-    t2 = std::chrono::system_clock::now();
-    cout << "1st derivative:  " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000/(double)1000 << endl;
-
-
-/*
-    FOR_X{
-	cout << test[i] << " " << dtest[i] << endl;
-    }
-*/
-    double testy[Ny*1000];
-    double dtesty[Ny*1000];
-
-    FOR_Y{
-	for(int ip = 0; ip < 1000; ip++){
-	    testy[ip*Ny + j] = sin(cs->dom->y[j]);
-	    dtesty[ip*Ny + j] = 0.0;
-	}
-    }
+    auto t2 = std::chrono::system_clock::now();
+    cout << "SIMPLE MATH TEST: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
 
     t1 = std::chrono::system_clock::now();
-    #pragma omp parallel for 
-    for(int jp = 0; jp < 1000; jp++){ 
-	double *testypoint = &testy[jp*Ny]; 
-	double *dtestypoint = &dtesty[jp*Ny]; 
-        cs->derivY->calc2ndDeriv(testypoint, dtestypoint);
-    }
+    transposeXYZtoYZX(Test1, Nx, Ny, Nz, Test2);
     t2 = std::chrono::system_clock::now();
-    cout << "2nd Derivative: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000/(double)1000 << endl;
-/*
-    cout << endl;
-    FOR_Y{
-	cout << testy[j] << " " << dtesty[j] << endl;
-    }
-*/
+    cout << "Trans XYZ to YZX: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+
+    t1 = std::chrono::system_clock::now();
+    transposeYZXtoZXY(Test2, Nx, Ny, Nz, Test3);
+    t2 = std::chrono::system_clock::now();
+    cout << "Trans YZX to ZXY: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+
+    t1 = std::chrono::system_clock::now();
+    transposeZXYtoXYZ(Test3, Nx, Ny, Nz, Test1);
+    t2 = std::chrono::system_clock::now();
+    cout << "Trans ZXY to XYZ: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+
+    t1 = std::chrono::system_clock::now();
+    transposeYZXtoXYZ(Test3, Nx, Ny, Nz, Test1);
+    t2 = std::chrono::system_clock::now();
+    cout << "Trans YZX to XYZ: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+
+    t1 = std::chrono::system_clock::now();
+    cs->preStepDerivatives(0);
+    t2 = std::chrono::system_clock::now();
+    cout << "preStepDerivatives: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+
+
 
     return 0;
 }

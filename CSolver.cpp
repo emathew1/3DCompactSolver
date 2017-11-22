@@ -297,4 +297,608 @@ void CSolver::preStepBCHandling(double *rho, double *rhoU, double *rhoV, double 
 
 }
 
+void CSolver::preStepDerivatives(int rkStep){
+
+    ///////////////////
+    // X-DERIVATIVES //
+    ///////////////////
+
+    //First we'll do all of the X-Direction derivatives since we're in XYZ order
+ 
+    FOR_Z{
+	FOR_Y{
+	   double *dataIn, *dataOutd1, *dataOutd2;
+	   dataIn     =   &U[k*Nx*Ny + j*Nx];
+	   dataOutd1  =  &Ux[k*Nx*Ny + j*Nx];
+	   dataOutd2  = &Uxx[k*Nx*Ny + j*Nx];
+	   derivX->calc1stDeriv(dataIn, dataOutd1);
+	   derivX->calc2ndDeriv(dataIn, dataOutd2);
+	}
+    }
+  
+    FOR_Z{
+	FOR_Y{
+	   double *dataIn, *dataOutd1, *dataOutd2;
+	   dataIn    =   &V[k*Nx*Ny + j*Nx];
+	   dataOutd1 =  &Vx[k*Nx*Ny + j*Nx];
+	   dataOutd2 = &Vxx[k*Nx*Ny + j*Nx];
+	   derivX->calc1stDeriv(dataIn, dataOutd1);
+	   derivX->calc2ndDeriv(dataIn, dataOutd2);
+	}
+    }
+
+    FOR_Z{
+	FOR_Y{
+	   double *dataIn, *dataOutd1, *dataOutd2;
+	   dataIn    =   &W[k*Nx*Ny + j*Nx];
+	   dataOutd1 =  &Wx[k*Nx*Ny + j*Nx];
+	   dataOutd2 = &Wxx[k*Nx*Ny + j*Nx];
+	   derivX->calc1stDeriv(dataIn, dataOutd1);
+	   derivX->calc2ndDeriv(dataIn, dataOutd2);
+	}
+    }
+
+    FOR_Z{
+	FOR_Y{
+	   double *dataIn, *dataOutd1, *dataOutd2;
+	   dataIn    =   &T[k*Nx*Ny + j*Nx];
+	   dataOutd1 =  &Tx[k*Nx*Ny + j*Nx];
+	   dataOutd2 = &Txx[k*Nx*Ny + j*Nx];
+	   derivX->calc1stDeriv(dataIn, dataOutd1);
+	   derivX->calc2ndDeriv(dataIn, dataOutd2);
+	}
+    }
+
+    double *temp = new double[Nx*Ny*Nz];
+
+    //Calculate the Euler component...
+
+//!!!!! 
+    //WHICH RHOU! etc. NEEDS TO CHANGE WITH THE RKSTEP!!!!
+//!!!!!
+
+    FOR_Z{
+	FOR_Y{
+	   double *dataIn, *dataOutd1, *dataOutd2;
+	   dataIn    =      &rhoU1[k*Nx*Ny + j*Nx];
+	   dataOutd1 = &contEulerX[k*Nx*Ny + j*Nx];
+	   derivX->calc1stDeriv(dataIn, dataOutd1);
+	}
+    }
+
+    FOR_XYZ temp[ip] = rhoU1[ip]*U[ip] + p[ip];
+    
+
+    FOR_Z{
+	FOR_Y{
+	   double *dataIn, *dataOutd1, *dataOutd2;
+	   dataIn    =       &temp[k*Nx*Ny + j*Nx];
+	   dataOutd1 = &momXEulerX[k*Nx*Ny + j*Nx];
+	   derivX->calc1stDeriv(dataIn, dataOutd1);
+	}
+    }
+
+    FOR_XYZ temp[ip] = rhoV1[ip]*U[ip];
+    
+
+    FOR_Z{
+	FOR_Y{
+	   double *dataIn, *dataOutd1, *dataOutd2;
+	   dataIn    =       &temp[k*Nx*Ny + j*Nx];
+	   dataOutd1 = &momYEulerX[k*Nx*Ny + j*Nx];
+	   derivX->calc1stDeriv(dataIn, dataOutd1);
+	}
+    }
+
+    FOR_XYZ temp[ip] = rhoW1[ip]*U[ip];
+    
+
+    FOR_Z{
+	FOR_Y{
+	   double *dataIn, *dataOutd1, *dataOutd2;
+	   dataIn    =       &temp[k*Nx*Ny + j*Nx];
+	   dataOutd1 = &momZEulerX[k*Nx*Ny + j*Nx];
+	   derivX->calc1stDeriv(dataIn, dataOutd1);
+	}
+    }
+
+
+    FOR_XYZ temp[ip] = rhoE1[ip]*U[ip] + U[ip]*p[ip];
+    
+
+    FOR_Z{
+	FOR_Y{
+	   double *dataIn, *dataOutd1, *dataOutd2;
+	   dataIn    =       &temp[k*Nx*Ny + j*Nx];
+	   dataOutd1 = &engyEulerX[k*Nx*Ny + j*Nx];
+	   derivX->calc1stDeriv(dataIn, dataOutd1);
+	}
+    }
+
+
+    double *transRho = new double[Nx*Ny*Nz];
+    double *transRhoU = new double[Nx*Ny*Nz];
+    double *transRhoV = new double[Nx*Ny*Nz];
+    double *transRhoW = new double[Nx*Ny*Nz];
+    double *transRhoE = new double[Nx*Ny*Nz];
+    double *transUx   = new double[Nx*Ny*Nz];
+    double *transVx   = new double[Nx*Ny*Nz];
+    double *transWx   = new double[Nx*Ny*Nz];
+   
+
+    transposeXYZtoYZX(rho1,  Nx, Ny, Nz, transRho);
+    transposeXYZtoYZX(rhoU1, Nx, Ny, Nz, transRhoU);
+    transposeXYZtoYZX(rhoV1, Nx, Ny, Nz, transRhoV);
+    transposeXYZtoYZX(rhoW1, Nx, Ny, Nz, transRhoW);
+    transposeXYZtoYZX(rhoE1, Nx, Ny, Nz, transRhoE);
+    transposeXYZtoYZX(Ux,    Nx, Ny, Nz, transUx);
+    transposeXYZtoYZX(Vx,    Nx, Ny, Nz, transVx);
+    transposeXYZtoYZX(Wx,    Nx, Ny, Nz, transWx);
+
+
+    ///////////////////
+    // Y-DERIVATIVES //
+    ///////////////////
+
+    //Now recalculate properties in the new space
+    FOR_XYZ{
+	U[ip] = transRhoU[ip]/transRho[ip];
+	V[ip] = transRhoV[ip]/transRho[ip];
+	W[ip] = transRhoW[ip]/transRho[ip];
+    }
+    ig->solvep(transRho, transRhoE, U, V, W, p);
+    ig->solveT(transRho, p, T);
+
+    FOR_X{
+	FOR_Z{
+	   double *dataIn, *dataOutd1, *dataOutd2;
+	   dataIn     =   &U[i*Nz*Ny + k*Ny];
+	   dataOutd1  =  &Uy[i*Nz*Ny + k*Ny];
+	   dataOutd2  = &Uyy[i*Nz*Ny + k*Ny];
+	   derivY->calc1stDeriv(dataIn, dataOutd1);
+	   derivY->calc2ndDeriv(dataIn, dataOutd2);
+	}
+    }
+ 
+    FOR_X{
+	FOR_Z{
+	   double *dataIn, *dataOutd1, *dataOutd2;
+	   dataIn     =   &V[i*Nz*Ny + k*Ny];
+	   dataOutd1  =  &Vy[i*Nz*Ny + k*Ny];
+	   dataOutd2  = &Vyy[i*Nz*Ny + k*Ny];
+	   derivY->calc1stDeriv(dataIn, dataOutd1);
+	   derivY->calc2ndDeriv(dataIn, dataOutd2);
+	}
+    }
+ 
+    FOR_X{
+	FOR_Z{
+	   double *dataIn, *dataOutd1, *dataOutd2;
+	   dataIn     =   &W[i*Nz*Ny + k*Ny];
+	   dataOutd1  =  &Wy[i*Nz*Ny + k*Ny];
+	   dataOutd2  = &Wyy[i*Nz*Ny + k*Ny];
+	   derivY->calc1stDeriv(dataIn, dataOutd1);
+	   derivY->calc2ndDeriv(dataIn, dataOutd2);
+	}
+    }
+ 
+    FOR_X{
+	FOR_Z{
+	   double *dataIn, *dataOutd1, *dataOutd2;
+	   dataIn     =   &T[i*Nz*Ny + k*Ny];
+	   dataOutd1  =  &Ty[i*Nz*Ny + k*Ny];
+	   dataOutd2  = &Tyy[i*Nz*Ny + k*Ny];
+	   derivY->calc1stDeriv(dataIn, dataOutd1);
+	   derivY->calc2ndDeriv(dataIn, dataOutd2);
+	}
+    }
+
+  
+    FOR_X{
+	FOR_Z{
+	   double *dataIn, *dataOutd1;
+	   dataIn     =  &transUx[i*Nz*Ny + k*Ny];
+	   dataOutd1  =      &Uxy[i*Nz*Ny + k*Ny];
+	   derivY->calc1stDeriv(dataIn, dataOutd1);
+	}
+    }  
+
+
+    FOR_X{
+	FOR_Z{
+	   double *dataIn, *dataOutd1;
+	   dataIn     =  &transVx[i*Nz*Ny + k*Ny];
+	   dataOutd1  =      &Vxy[i*Nz*Ny + k*Ny];
+	   derivY->calc1stDeriv(dataIn, dataOutd1);
+	}
+    }  
+
+    FOR_X{
+	FOR_Z{
+	   double *dataIn, *dataOutd1;
+	   dataIn     =  &transWx[i*Nz*Ny + k*Ny];
+	   dataOutd1  =      &Wxy[i*Nz*Ny + k*Ny];
+	   derivY->calc1stDeriv(dataIn, dataOutd1);
+	}
+    } 
+
+
+    FOR_X{
+	FOR_Z{
+	   double *dataIn, *dataOutd1;
+	   dataIn     =  &transRhoV[i*Nz*Ny + k*Ny];
+	   dataOutd1  = &contEulerY[i*Nz*Ny + k*Ny];
+	   derivY->calc1stDeriv(dataIn, dataOutd1);
+	}
+    } 
+ 
+    
+    FOR_XYZ temp[ip] = transRhoU[ip]*V[ip];
+    
+
+    FOR_X{
+        FOR_Z{
+           double *dataIn, *dataOutd1;
+           dataIn     =       &temp[i*Nz*Ny + k*Ny];
+           dataOutd1  = &momXEulerY[i*Nz*Ny + k*Ny];
+           derivY->calc1stDeriv(dataIn, dataOutd1);
+        }
+    }
+
+    FOR_XYZ temp[ip] = transRhoV[ip]*V[ip] + p[ip];
+    
+
+    FOR_X{
+        FOR_Z{
+           double *dataIn, *dataOutd1;
+           dataIn     =       &temp[i*Nz*Ny + k*Ny];
+           dataOutd1  = &momYEulerY[i*Nz*Ny + k*Ny];
+           derivY->calc1stDeriv(dataIn, dataOutd1);
+        }
+    }
+
+
+    FOR_XYZ temp[ip] = transRhoW[ip]*V[ip];
+    
+
+    FOR_X{
+        FOR_Z{
+           double *dataIn, *dataOutd1;
+           dataIn     =       &temp[i*Nz*Ny + k*Ny];
+           dataOutd1  = &momZEulerY[i*Nz*Ny + k*Ny];
+           derivY->calc1stDeriv(dataIn, dataOutd1);
+        }
+    }
+
+    FOR_XYZ temp[ip] = transRhoV[ip]*V[ip] + V[ip]*p[ip];
+    
+
+    FOR_X{
+        FOR_Z{
+           double *dataIn, *dataOutd1;
+           dataIn     =       &temp[i*Nz*Ny + k*Ny];
+           dataOutd1  = &engyEulerY[i*Nz*Ny + k*Ny];
+           derivY->calc1stDeriv(dataIn, dataOutd1);
+        }
+    }
+    
+//!!!!!!
+    //NEED TO TRANSPOSE "INPLACE" THESE EULER DERIVATIVES!!!!
+    //AND THE CROSS DERIVATIVES!!!! 
+//!!!!!!   
+
+    double *transUy = new double[Nx*Ny*Nz];
+    double *transVy = new double[Nx*Ny*Nz];
+    double *transWy = new double[Nx*Ny*Nz];
+
+    //Moving data to ZXY
+
+    //Get the original conserved data from XYZ to ZXY
+    transposeXYZtoZXY(rho1,  Nx, Ny, Nz, transRho);
+    transposeXYZtoZXY(rhoU1, Nx, Ny, Nz, transRhoU);
+    transposeXYZtoZXY(rhoV1, Nx, Ny, Nz, transRhoV);
+    transposeXYZtoZXY(rhoW1, Nx, Ny, Nz, transRhoW);
+    transposeXYZtoZXY(rhoE1, Nx, Ny, Nz, transRhoE);
+
+    //Move the Y Derivative data from YZX to ZXY
+    transposeYZXtoZXY(Uy, Nx, Ny, Nz, transUy);
+    transposeYZXtoZXY(Vy, Nx, Ny, Nz, transVy);
+    transposeYZXtoZXY(Wy, Nx, Ny, Nz, transWy);
+
+    //Move the X Derivative data from XYZ to ZXY
+    transposeXYZtoZXY(Ux, Nx, Ny, Nz, transUx);
+    transposeXYZtoZXY(Vx, Nx, Ny, Nz, transVx);
+    transposeXYZtoZXY(Wx, Nx, Ny, Nz, transWx);
+
+
+
+    //Moving Data from YZX to XYZ
+
+    memcpy(temp, Uy, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Uy);
+    memcpy(temp, Uyy, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Uyy);
+
+    memcpy(temp, Vy, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Vy);
+    memcpy(temp, Vyy, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Vyy);
+
+    memcpy(temp, Wy, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Wy);
+    memcpy(temp, Wyy, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Wyy);
+
+    memcpy(temp, Ty, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Ty);
+    memcpy(temp, Tyy, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Tyy);
+
+    memcpy(temp, Uxy, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Uxy);
+    memcpy(temp, Vxy, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Vxy);
+    memcpy(temp, Wxy, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Wxy);
+
+    memcpy(temp, contEulerY, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, contEulerY);
+
+    memcpy(temp, momXEulerY, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, momXEulerY);
+
+    memcpy(temp, momYEulerY, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, momYEulerY);
+
+    memcpy(temp, momZEulerY, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, momZEulerY);
+
+    memcpy(temp, engyEulerY, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, engyEulerY);
+
+
+    ///////////////////
+    // Z-DERIVATIVES //
+    ///////////////////
+
+    //Now recalculate properties in the new space
+    FOR_XYZ{
+	U[ip] = transRhoU[ip]/transRho[ip];
+	V[ip] = transRhoV[ip]/transRho[ip];
+	W[ip] = transRhoW[ip]/transRho[ip];
+    }
+    ig->solvep(transRho, transRhoE, U, V, W, p);
+    ig->solveT(transRho, p, T);
+
+    
+    FOR_Y{
+	FOR_X{
+	   double *dataIn, *dataOutd1, *dataOutd2;
+	   dataIn     =   &U[j*Nz*Nx + i*Nz];
+	   dataOutd1  =  &Uz[j*Nz*Nx + i*Nz];
+	   dataOutd2  = &Uzz[j*Nz*Nx + i*Nz];
+	   derivZ->calc1stDeriv(dataIn, dataOutd1);
+	   derivZ->calc2ndDeriv(dataIn, dataOutd2);
+	}
+    }
+
+    FOR_Y{
+	FOR_X{
+	   double *dataIn, *dataOutd1, *dataOutd2;
+	   dataIn     =   &V[j*Nz*Nx + i*Nz];
+	   dataOutd1  =  &Vz[j*Nz*Nx + i*Nz];
+	   dataOutd2  = &Vzz[j*Nz*Nx + i*Nz];
+	   derivZ->calc1stDeriv(dataIn, dataOutd1);
+	   derivZ->calc2ndDeriv(dataIn, dataOutd2);
+	}
+    }
+
+    FOR_Y{
+	FOR_X{
+	   double *dataIn, *dataOutd1, *dataOutd2;
+	   dataIn     =   &W[j*Nz*Nx + i*Nz];
+	   dataOutd1  =  &Wz[j*Nz*Nx + i*Nz];
+	   dataOutd2  = &Wzz[j*Nz*Nx + i*Nz];
+	   derivZ->calc1stDeriv(dataIn, dataOutd1);
+	   derivZ->calc2ndDeriv(dataIn, dataOutd2);
+	}
+    }
+
+    FOR_Y{
+	FOR_X{
+	   double *dataIn, *dataOutd1, *dataOutd2;
+	   dataIn     =   &T[j*Nz*Nx + i*Nz];
+	   dataOutd1  =  &Tz[j*Nz*Nx + i*Nz];
+	   dataOutd2  = &Tzz[j*Nz*Nx + i*Nz];
+	   derivZ->calc1stDeriv(dataIn, dataOutd1);
+	   derivZ->calc2ndDeriv(dataIn, dataOutd2);
+	}
+    }
+
+    FOR_Y{
+	FOR_X{
+	   double *dataIn, *dataOutd1;
+	   dataIn     =  &transUx[j*Nz*Nx + i*Nz];
+	   dataOutd1  =      &Uxz[j*Nz*Nx + i*Nz];
+	   derivZ->calc1stDeriv(dataIn, dataOutd1);
+	}
+    }
+
+    FOR_Y{
+	FOR_X{
+	   double *dataIn, *dataOutd1;
+	   dataIn     =  &transVx[j*Nz*Nx + i*Nz];
+	   dataOutd1  =      &Vxz[j*Nz*Nx + i*Nz];
+	   derivZ->calc1stDeriv(dataIn, dataOutd1);
+	}
+    }
+
+    FOR_Y{
+	FOR_X{
+	   double *dataIn, *dataOutd1;
+	   dataIn     =  &transWx[j*Nz*Nx + i*Nz];
+	   dataOutd1  =      &Wxz[j*Nz*Nx + i*Nz];
+	   derivZ->calc1stDeriv(dataIn, dataOutd1);
+	}
+    }
+
+
+    FOR_Y{
+	FOR_X{
+	   double *dataIn, *dataOutd1;
+	   dataIn     =  &transUy[j*Nz*Nx + i*Nz];
+	   dataOutd1  =      &Uyz[j*Nz*Nx + i*Nz];
+	   derivZ->calc1stDeriv(dataIn, dataOutd1);
+	}
+    }
+
+
+    FOR_Y{
+	FOR_X{
+	   double *dataIn, *dataOutd1;
+	   dataIn     =  &transVy[j*Nz*Nx + i*Nz];
+	   dataOutd1  =      &Vyz[j*Nz*Nx + i*Nz];
+	   derivZ->calc1stDeriv(dataIn, dataOutd1);
+	}
+    }
+
+
+    FOR_Y{
+	FOR_X{
+	   double *dataIn, *dataOutd1;
+	   dataIn     =  &transWy[j*Nz*Nx + i*Nz];
+	   dataOutd1  =      &Wyz[j*Nz*Nx + i*Nz];
+	   derivZ->calc1stDeriv(dataIn, dataOutd1);
+	}
+    }
+
+
+    FOR_Y{
+	FOR_X{
+	   double *dataIn, *dataOutd1;
+	   dataIn     =  &transRhoW[j*Nz*Nx + i*Nz];
+	   dataOutd1  = &contEulerZ[j*Nz*Nx + i*Nz];
+	   derivZ->calc1stDeriv(dataIn, dataOutd1);
+	}
+    }
+
+    
+    FOR_XYZ temp[ip] = transRhoU[ip]*W[ip];
+
+    FOR_Y{
+	FOR_X{
+	   double *dataIn, *dataOutd1;
+	   dataIn     =        &temp[j*Nz*Nx + i*Nz];
+	   dataOutd1  =  &momXEulerZ[j*Nz*Nx + i*Nz];
+	   derivZ->calc1stDeriv(dataIn, dataOutd1);
+	}
+    }
+
+
+    FOR_XYZ temp[ip] = transRhoV[ip]*W[ip];
+
+    FOR_Y{
+	FOR_X{
+	   double *dataIn, *dataOutd1;
+	   dataIn     =        &temp[j*Nz*Nx + i*Nz];
+	   dataOutd1  =  &momYEulerZ[j*Nz*Nx + i*Nz];
+	   derivZ->calc1stDeriv(dataIn, dataOutd1);
+	}
+    }
+
+
+    FOR_XYZ temp[ip] = transRhoW[ip]*W[ip] + p[ip];
+
+    FOR_Y{
+	FOR_X{
+	   double *dataIn, *dataOutd1;
+	   dataIn     =        &temp[j*Nz*Nx + i*Nz];
+	   dataOutd1  =  &momZEulerZ[j*Nz*Nx + i*Nz];
+	   derivZ->calc1stDeriv(dataIn, dataOutd1);
+	}
+    }
+
+
+
+    FOR_XYZ temp[ip] = transRhoW[ip]*W[ip] + W[ip]*p[ip];
+
+    FOR_Y{
+	FOR_X{
+	   double *dataIn, *dataOutd1;
+	   dataIn     =        &temp[j*Nz*Nx + i*Nz];
+	   dataOutd1  =  &engyEulerZ[j*Nz*Nx + i*Nz];
+	   derivZ->calc1stDeriv(dataIn, dataOutd1);
+	}
+    }
+
+
+
+    //Moving all the data back to XYZ
+    memcpy(temp, Uz, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Uz);
+    memcpy(temp, Uzz, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Uzz);
+
+    memcpy(temp, Vz, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Vz);
+    memcpy(temp, Vzz, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Vzz);
+
+    memcpy(temp, Wz, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Wz);
+    memcpy(temp, Wzz, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Wzz);
+
+    memcpy(temp, Tz, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Tz);
+    memcpy(temp, Tzz, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Tzz);
+
+    memcpy(temp, Uxz, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Uxz);
+    memcpy(temp, Vxz, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Vxz);
+    memcpy(temp, Wxz, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Wxz);
+
+    memcpy(temp, Uyz, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Uyz);
+    memcpy(temp, Vyz, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Vyz);
+    memcpy(temp, Wyz, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Wyz);
+
+    memcpy(temp, contEulerZ, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, contEulerZ);
+    memcpy(temp, momXEulerZ, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, momXEulerZ);
+    memcpy(temp, momYEulerZ, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, momYEulerZ);
+    memcpy(temp, momZEulerZ, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, momZEulerZ);
+    memcpy(temp, engyEulerZ, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, engyEulerZ);
+
+
+
+    delete[] temp;
+    delete[] transRhoU;
+    delete[] transRhoV;
+    delete[] transRhoW;
+    delete[] transRhoE;
+    delete[] transUx; 
+    delete[] transUy; 
+    delete[] transVx;
+    delete[] transVy;
+    delete[] transWx;
+    delete[] transWy;
+   
+
+}
+
+
+
+
+
+
 
