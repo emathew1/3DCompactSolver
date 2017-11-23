@@ -80,6 +80,11 @@ class CSolver{
 	double *rhoW1, *rhoWk, *rhoWk2, *rhoW2; 
 	double *rhoE1, *rhoEk, *rhoEk2, *rhoE2;
 
+	double *temp, *temp2, *temp3, *temp4;
+	double *transRho, *transRhoU, *transRhoV, *transRhoW, *transRhoE;
+	double *transUx, *transVx, *transWx;
+	double *transUy, *transVy, *transWy;
+
 	bool spongeFlag;
 	SpongeBC *spg; 
 	enum Eqn {CONT, XMOM, YMOM, ZMOM, ENGY};
@@ -145,6 +150,7 @@ class CSolver{
 	void preStepBCHandling(double *rho, double *rhoU, double *rhoV, double *rhoW, double *rhoE);
 
 	void preStepDerivatives(int rkStep);
+	void preStepDerivatives2(int rkStep);
 
 	void solveContinuity();
 

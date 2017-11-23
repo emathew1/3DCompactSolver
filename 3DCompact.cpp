@@ -36,9 +36,9 @@ int main(int argc, char *argv[]){
     /////////////////////////
     //Initialize the Domain//
     /////////////////////////
-    int    Nx = 128, 
-	   Ny = 128, 
-	   Nz = 128;
+    int    Nx = 64, 
+	   Ny = 64, 
+	   Nz = 64;
     double Lx = 2.0*M_PI*((double)Nx - 1.0)/(double(Nx)), 
 	   Ly = 2.0*M_PI*((double)Ny - 1.0)/(double(Ny)), 
 	   Lz = 2.0*M_PI*((double)Nz - 1.0)/(double(Nz));
@@ -62,13 +62,13 @@ int main(int argc, char *argv[]){
     //Boundary Condition Info//
     ///////////////////////////
     BC::BCType bcXType = BC::PERIODIC_SOLVE; 
-    BC::BCType bcYType = BC::DIRICHLET_SOLVE; 
+    BC::BCType bcYType = BC::PERIODIC_SOLVE; 
     BC::BCType bcZType = BC::PERIODIC_SOLVE; 
 
     BC::BCKind bcX0 = BC::PERIODIC;
     BC::BCKind bcX1 = BC::PERIODIC;
-    BC::BCKind bcY0 = BC::SPONGE;
-    BC::BCKind bcY1 = BC::SPONGE;
+    BC::BCKind bcY0 = BC::PERIODIC;
+    BC::BCKind bcY1 = BC::PERIODIC;
     BC::BCKind bcZ0 = BC::PERIODIC;
     BC::BCKind bcZ1 = BC::PERIODIC;
 
@@ -146,6 +146,12 @@ int main(int argc, char *argv[]){
     cs->preStepDerivatives(0);
     t2 = std::chrono::system_clock::now();
     cout << "preStepDerivatives: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+
+    t1 = std::chrono::system_clock::now();
+    cs->preStepDerivatives2(0);
+    t2 = std::chrono::system_clock::now();
+    cout << "preStepDerivatives2: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+
 
 
 

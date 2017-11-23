@@ -134,7 +134,27 @@ void CSolver::initializeSolverData(){
     mu  = new double[N];
     Amu = new double[N];
     sos = new double[N];
-    
+   
+    temp  = new double[Nx*Ny*Nz];
+    temp2 = new double[Nx*Ny*Nz]; 
+    temp3 = new double[Nx*Ny*Nz]; 
+    temp4 = new double[Nx*Ny*Nz]; 
+
+    transRho = new double[Nx*Ny*Nz];
+    transRhoU = new double[Nx*Ny*Nz];
+    transRhoV = new double[Nx*Ny*Nz];
+    transRhoW = new double[Nx*Ny*Nz];
+    transRhoE = new double[Nx*Ny*Nz];
+    transUx   = new double[Nx*Ny*Nz];
+    transVx   = new double[Nx*Ny*Nz];
+    transWx   = new double[Nx*Ny*Nz];
+    transUy = new double[Nx*Ny*Nz];
+    transVy = new double[Nx*Ny*Nz];
+    transWy = new double[Nx*Ny*Nz];
+
+
+
+ 
 }
 
 
@@ -349,8 +369,6 @@ void CSolver::preStepDerivatives(int rkStep){
 	}
     }
 
-    double *temp = new double[Nx*Ny*Nz];
-
     //Calculate the Euler component...
 
 //!!!!! 
@@ -415,16 +433,6 @@ void CSolver::preStepDerivatives(int rkStep){
 	}
     }
 
-
-    double *transRho = new double[Nx*Ny*Nz];
-    double *transRhoU = new double[Nx*Ny*Nz];
-    double *transRhoV = new double[Nx*Ny*Nz];
-    double *transRhoW = new double[Nx*Ny*Nz];
-    double *transRhoE = new double[Nx*Ny*Nz];
-    double *transUx   = new double[Nx*Ny*Nz];
-    double *transVx   = new double[Nx*Ny*Nz];
-    double *transWx   = new double[Nx*Ny*Nz];
-   
 
     transposeXYZtoYZX(rho1,  Nx, Ny, Nz, transRho);
     transposeXYZtoYZX(rhoU1, Nx, Ny, Nz, transRhoU);
@@ -570,7 +578,7 @@ void CSolver::preStepDerivatives(int rkStep){
         }
     }
 
-    FOR_XYZ temp[ip] = transRhoV[ip]*V[ip] + V[ip]*p[ip];
+    FOR_XYZ temp[ip] = transRhoE[ip]*V[ip] + V[ip]*p[ip];
     
 
     FOR_X{
@@ -586,10 +594,6 @@ void CSolver::preStepDerivatives(int rkStep){
     //NEED TO TRANSPOSE "INPLACE" THESE EULER DERIVATIVES!!!!
     //AND THE CROSS DERIVATIVES!!!! 
 //!!!!!!   
-
-    double *transUy = new double[Nx*Ny*Nz];
-    double *transVy = new double[Nx*Ny*Nz];
-    double *transWy = new double[Nx*Ny*Nz];
 
     //Moving data to ZXY
 
@@ -820,7 +824,7 @@ void CSolver::preStepDerivatives(int rkStep){
 
 
 
-    FOR_XYZ temp[ip] = transRhoW[ip]*W[ip] + W[ip]*p[ip];
+    FOR_XYZ temp[ip] = transRhoE[ip]*W[ip] + W[ip]*p[ip];
 
     FOR_Y{
 	FOR_X{
@@ -881,23 +885,257 @@ void CSolver::preStepDerivatives(int rkStep){
 
 
 
-    delete[] temp;
-    delete[] transRhoU;
-    delete[] transRhoV;
-    delete[] transRhoW;
-    delete[] transRhoE;
-    delete[] transUx; 
-    delete[] transUy; 
-    delete[] transVx;
-    delete[] transVy;
-    delete[] transWx;
-    delete[] transWy;
-   
-
 }
 
 
+void CSolver::preStepDerivatives2(int rkStep){
 
+    //TODO
+    //WHICH RHOU! etc. NEEDS TO CHANGE WITH THE RKSTEP!!!!
+
+ 
+    ///////////////////
+    // X-DERIVATIVES //
+    ///////////////////
+
+    //First we'll do all of the X-Direction derivatives since we're in XYZ order
+
+    //Calculate the Euler Components of the equations... 
+    FOR_XYZ temp[ip]  = rhoU1[ip]*U[ip] + p[ip];
+    FOR_XYZ temp2[ip] = rhoV1[ip]*U[ip];
+    FOR_XYZ temp3[ip] = rhoW1[ip]*U[ip];
+    FOR_XYZ temp4[ip] = rhoE1[ip]*U[ip] + U[ip]*p[ip];
+
+    //Calculate the stuff needed for viscous derivatives
+    derivX->calc1stDerivField(U, Ux);
+    derivX->calc2ndDerivField(U, Uxx);
+    derivX->calc1stDerivField(V, Vx);
+    derivX->calc2ndDerivField(V, Vxx);
+    derivX->calc1stDerivField(W, Wx);
+    derivX->calc2ndDerivField(W, Wxx);
+    derivX->calc1stDerivField(T, Tx);
+    derivX->calc2ndDerivField(T, Txx);
+
+    //Compute the Euler Derivatives
+    derivX->calc1stDerivField(rhoU1, contEulerX);
+    derivX->calc1stDerivField(temp,  momXEulerX);
+    derivX->calc1stDerivField(temp2, momYEulerX);
+    derivX->calc1stDerivField(temp3, momZEulerX);
+    derivX->calc1stDerivField(temp4, engyEulerX);
+
+    //Do the transposes
+    transposeXYZtoYZX(rho1,  Nx, Ny, Nz, transRho);
+    transposeXYZtoYZX(rhoU1, Nx, Ny, Nz, transRhoU);
+    transposeXYZtoYZX(rhoV1, Nx, Ny, Nz, transRhoV);
+    transposeXYZtoYZX(rhoW1, Nx, Ny, Nz, transRhoW);
+    transposeXYZtoYZX(rhoE1, Nx, Ny, Nz, transRhoE);
+    transposeXYZtoYZX(Ux,    Nx, Ny, Nz, transUx);
+    transposeXYZtoYZX(Vx,    Nx, Ny, Nz, transVx);
+    transposeXYZtoYZX(Wx,    Nx, Ny, Nz, transWx);
+
+    ///////////////////
+    // Y-DERIVATIVES //
+    ///////////////////
+
+    //Now recalculate properties in the new space
+    FOR_XYZ U[ip] = transRhoU[ip]/transRho[ip];
+    FOR_XYZ V[ip] = transRhoV[ip]/transRho[ip];
+    FOR_XYZ W[ip] = transRhoW[ip]/transRho[ip];
+
+    ig->solvep(transRho, transRhoE, U, V, W, p);
+    ig->solveT(transRho, p, T);
+
+    //Calculate the stuff for Euler derivatives in new space
+    FOR_XYZ temp[ip]  = transRhoU[ip]*V[ip];
+    FOR_XYZ temp2[ip] = transRhoV[ip]*V[ip] + p[ip];
+    FOR_XYZ temp3[ip] = transRhoW[ip]*V[ip];
+    FOR_XYZ temp4[ip] = transRhoE[ip]*V[ip] + V[ip]*p[ip];
+
+    //Calculate Viscous Derivatives
+    derivY->calc1stDerivField(U, Uy);
+    derivY->calc2ndDerivField(U, Uyy);
+    derivY->calc1stDerivField(V, Vy);
+    derivY->calc2ndDerivField(V, Vyy);
+    derivY->calc1stDerivField(W, Wy);
+    derivY->calc2ndDerivField(W, Wyy);
+    derivY->calc1stDerivField(T, Ty);
+    derivY->calc2ndDerivField(T, Tyy);
+    derivY->calc1stDerivField(transUx, Uxy);
+    derivY->calc1stDerivField(transVx, Vxy);
+    derivY->calc1stDerivField(transWx, Wxy);
+
+    //Calculate the Euler Derivatives
+    derivY->calc1stDerivField(transRhoV, contEulerY);
+    derivY->calc1stDerivField(temp, 	 momXEulerY);
+    derivY->calc1stDerivField(temp2,	 momYEulerY);
+    derivY->calc1stDerivField(temp3,	 momZEulerY);
+    derivY->calc1stDerivField(temp4,	 engyEulerY);
+
+    
+    //Moving data to ZXY
+
+    //Get the original conserved data from XYZ to ZXY
+    transposeXYZtoZXY(rho1,  Nx, Ny, Nz, transRho);
+    transposeXYZtoZXY(rhoU1, Nx, Ny, Nz, transRhoU);
+    transposeXYZtoZXY(rhoV1, Nx, Ny, Nz, transRhoV);
+    transposeXYZtoZXY(rhoW1, Nx, Ny, Nz, transRhoW);
+    transposeXYZtoZXY(rhoE1, Nx, Ny, Nz, transRhoE);
+
+    //Move the Y Derivative data from YZX to ZXY
+    transposeYZXtoZXY(Uy, Nx, Ny, Nz, transUy);
+    transposeYZXtoZXY(Vy, Nx, Ny, Nz, transVy);
+    transposeYZXtoZXY(Wy, Nx, Ny, Nz, transWy);
+
+    //Move the X Derivative data from XYZ to ZXY
+    transposeXYZtoZXY(Ux, Nx, Ny, Nz, transUx);
+    transposeXYZtoZXY(Vx, Nx, Ny, Nz, transVx);
+    transposeXYZtoZXY(Wx, Nx, Ny, Nz, transWx);
+
+
+    //Moving Data from YZX to XYZ
+
+    memcpy(temp, Uy, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Uy);
+    memcpy(temp, Uyy, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Uyy);
+
+    memcpy(temp, Vy, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Vy);
+    memcpy(temp, Vyy, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Vyy);
+
+    memcpy(temp, Wy, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Wy);
+    memcpy(temp, Wyy, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Wyy);
+
+    memcpy(temp, Ty, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Ty);
+    memcpy(temp, Tyy, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Tyy);
+
+    memcpy(temp, Uxy, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Uxy);
+    memcpy(temp, Vxy, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Vxy);
+    memcpy(temp, Wxy, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Wxy);
+
+    memcpy(temp, contEulerY, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, contEulerY);
+
+    memcpy(temp, momXEulerY, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, momXEulerY);
+
+    memcpy(temp, momYEulerY, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, momYEulerY);
+
+    memcpy(temp, momZEulerY, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, momZEulerY);
+
+    memcpy(temp, engyEulerY, sizeof(double)*Nx*Ny*Nz);
+    transposeYZXtoXYZ(temp, Nx, Ny, Nz, engyEulerY);
+
+    ///////////////////
+    // Z-DERIVATIVES //
+    ///////////////////
+
+    //Now recalculate properties in the new space
+    FOR_XYZ U[ip] = transRhoU[ip]/transRho[ip];
+    FOR_XYZ V[ip] = transRhoV[ip]/transRho[ip];
+    FOR_XYZ W[ip] = transRhoW[ip]/transRho[ip];
+
+    ig->solvep(transRho, transRhoE, U, V, W, p);
+    ig->solveT(transRho, p, T);
+
+    //Calculate the stuff for the Euler Derivatives
+    FOR_XYZ temp[ip]  = transRhoU[ip]*W[ip];
+    FOR_XYZ temp2[ip] = transRhoV[ip]*W[ip] + p[ip];
+    FOR_XYZ temp3[ip] = transRhoW[ip]*W[ip] + p[ip];
+    FOR_XYZ temp4[ip] = transRhoE[ip]*W[ip] + W[ip]*p[ip];
+
+    //Calculate the viscous derivatives
+    derivZ->calc1stDerivField(U, Uz);
+    derivZ->calc2ndDerivField(U, Uzz);
+
+    derivZ->calc1stDerivField(V, Vz);
+    derivZ->calc2ndDerivField(V, Vzz);
+
+    derivZ->calc1stDerivField(W, Wz);
+    derivZ->calc2ndDerivField(W, Wzz);
+
+    derivZ->calc1stDerivField(T, Tz);
+    derivZ->calc2ndDerivField(T, Tzz);
+
+    derivZ->calc1stDerivField(transUx, Uxz);
+    derivZ->calc1stDerivField(transVx, Vxz);
+    derivZ->calc1stDerivField(transWx, Wxz);
+
+    derivZ->calc1stDerivField(transUy, Uyz);
+    derivZ->calc1stDerivField(transVy, Vyz);
+    derivZ->calc1stDerivField(transWy, Wyz);
+
+    //Calculate the Euler Derivatives
+    derivZ->calc1stDerivField(transRhoW, contEulerZ);
+    derivZ->calc1stDerivField(temp,	 contEulerZ);
+    derivZ->calc1stDerivField(temp2,	 contEulerZ);
+    derivZ->calc1stDerivField(temp3, 	 contEulerZ);
+    derivZ->calc1stDerivField(temp4,	 contEulerZ);
+
+    //Moving all the data back to XYZ
+    memcpy(temp, Uz, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Uz);
+    memcpy(temp, Uzz, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Uzz);
+
+    memcpy(temp, Vz, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Vz);
+    memcpy(temp, Vzz, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Vzz);
+
+    memcpy(temp, Wz, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Wz);
+    memcpy(temp, Wzz, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Wzz);
+
+    memcpy(temp, Tz, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Tz);
+    memcpy(temp, Tzz, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Tzz);
+
+    memcpy(temp, Uxz, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Uxz);
+    memcpy(temp, Vxz, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Vxz);
+    memcpy(temp, Wxz, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Wxz);
+
+    memcpy(temp, Uyz, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Uyz);
+    memcpy(temp, Vyz, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Vyz);
+    memcpy(temp, Wyz, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Wyz);
+
+    memcpy(temp, contEulerZ, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, contEulerZ);
+    memcpy(temp, momXEulerZ, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, momXEulerZ);
+    memcpy(temp, momYEulerZ, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, momYEulerZ);
+    memcpy(temp, momZEulerZ, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, momZEulerZ);
+    memcpy(temp, engyEulerZ, sizeof(double)*Nx*Ny*Nz);
+    transposeZXYtoXYZ(temp, Nx, Ny, Nz, engyEulerZ);
+
+    //Going back to original...
+    FOR_XYZ U[ip] = rhoU1[ip]/rho1[ip];
+    FOR_XYZ V[ip] = rhoV1[ip]/rho1[ip];
+    FOR_XYZ W[ip] = rhoW1[ip]/rho1[ip];
+    ig->solvep(rho1, rhoE1, U, V, W, p);
+    ig->solveT(rho1, p, T);
+
+}
 
 
 

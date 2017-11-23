@@ -1,5 +1,89 @@
 #include "Derivatives.hpp"
 
+void Derivatives::calc1stDerivField(double *dataIn, double *dataOut){
+
+    if(currentDir == DIRX){
+
+	FOR_Z{
+	    FOR_Y{
+		double *dataInLocal, *dataOutLocal;
+	        int ii = k*Nx*Ny + j*Nx;
+		dataInLocal  = &dataIn[ii];
+		dataOutLocal = &dataOut[ii];
+		calc1stDeriv(dataInLocal, dataOutLocal);
+	    }
+	}
+
+    }else if(currentDir == DIRY){
+
+	FOR_X{
+	    FOR_Z{
+		double *dataInLocal, *dataOutLocal;
+	        int ii = i*Nz*Ny + k*Ny;
+		dataInLocal  = &dataIn[ii];
+		dataOutLocal = &dataOut[ii];
+		calc1stDeriv(dataInLocal, dataOutLocal);
+	    }
+	}
+
+    }else if(currentDir == DIRZ){
+
+	FOR_Y{
+	    FOR_X{
+		double *dataInLocal, *dataOutLocal;
+	        int ii = j*Nz*Nx + i*Nz;
+		dataInLocal  = &dataIn[ii];
+		dataOutLocal = &dataOut[ii];
+		calc1stDeriv(dataInLocal, dataOutLocal);
+	    }
+	}
+
+    }
+
+}
+
+void Derivatives::calc2ndDerivField(double *dataIn, double *dataOut){
+
+    if(currentDir == DIRX){
+
+	FOR_Z{
+	    FOR_Y{
+		double *dataInLocal, *dataOutLocal;
+	        int ii = k*Nx*Ny + j*Nx;
+		dataInLocal  = &dataIn[ii];
+		dataOutLocal = &dataOut[ii];
+		calc2ndDeriv(dataInLocal, dataOutLocal);
+	    }
+	}
+
+    }else if(currentDir == DIRY){
+
+	FOR_X{
+	    FOR_Z{
+		double *dataInLocal, *dataOutLocal;
+	        int ii = i*Nz*Ny + k*Ny;
+		dataInLocal  = &dataIn[ii];
+		dataOutLocal = &dataOut[ii];
+		calc2ndDeriv(dataInLocal, dataOutLocal);
+	    }
+	}
+
+    }else if(currentDir == DIRZ){
+
+	FOR_Y{
+	    FOR_X{
+		double *dataInLocal, *dataOutLocal;
+	        int ii = j*Nz*Nx + i*Nz;
+		dataInLocal  = &dataIn[ii];
+		dataOutLocal = &dataOut[ii];
+		calc2ndDeriv(dataInLocal, dataOutLocal);
+	    }
+	}
+
+    }
+
+}
+
 void Derivatives::calc1stDeriv(double *phi, double *dphi){
 
     if(bcType == BC::PERIODIC_SOLVE){

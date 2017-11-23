@@ -24,7 +24,7 @@ CSolver.o: CSolver.cpp CSolver.hpp Macros.hpp Utils.hpp BC.hpp TimeStepping.hpp 
 IdealGas.o: IdealGas.cpp IdealGas.hpp
 	$(CC) $(CFLAGS) -c $<
 
-Derivatives.o: Derivatives.cpp Derivatives.hpp Utils.hpp Domain.hpp BC.hpp
+Derivatives.o: Derivatives.cpp Derivatives.hpp Macros.hpp Utils.hpp Domain.hpp BC.hpp
 	$(CC) $(CFLAGS) -c $<
 
 Filter.o: Filter.cpp Filter.hpp Derivatives.hpp BC.hpp Utils.hpp

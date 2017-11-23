@@ -4,6 +4,7 @@
 #include <math.h>
 #include <cstring>
 #include <iostream>
+#include "Macros.hpp"
 #include "Domain.hpp"
 #include "BC.hpp"
 #include "Utils.hpp"
@@ -14,6 +15,7 @@ class Derivatives{
     public:
 
 	int Nx, Ny, Nz, N;
+	int i, j, k;
 	double dx, dy, dz, dd;
 
         //First Derivative
@@ -161,6 +163,9 @@ class Derivatives{
     }
 
     //Function's to call...
+    void calc1stDerivField(double *dataIn, double *dataOut);
+    void calc2ndDerivField(double *dataIn, double *dataOut);
+
     void calc1stDeriv(double *phi, double *dphi);
     void calc2ndDeriv(double *phi, double *dphi);
 
