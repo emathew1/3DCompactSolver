@@ -39,9 +39,9 @@ int main(int argc, char *argv[]){
     int    Nx = 64, 
 	   Ny = 64, 
 	   Nz = 64;
-    double Lx = 2.0*M_PI*((double)Nx - 1.0)/(double(Nx)), 
-	   Ly = 2.0*M_PI*((double)Ny - 1.0)/(double(Ny)), 
-	   Lz = 2.0*M_PI*((double)Nz - 1.0)/(double(Nz));
+    double Lx = 9,//2.0*M_PI*((double)Nx - 1.0)/(double(Nx)), 
+	   Ly = 9,//2.0*M_PI*((double)Ny - 1.0)/(double(Ny)), 
+	   Lz = 9;//2.0*M_PI*((double)Nz - 1.0)/(double(Nz));
     Domain *dom = new Domain(Nx, Ny, Nz, Lx, Ly, Lz);
 
 
@@ -61,16 +61,16 @@ int main(int argc, char *argv[]){
     ///////////////////////////
     //Boundary Condition Info//
     ///////////////////////////
-    BC::BCType bcXType = BC::PERIODIC_SOLVE; 
-    BC::BCType bcYType = BC::PERIODIC_SOLVE; 
-    BC::BCType bcZType = BC::PERIODIC_SOLVE; 
+    BC::BCType bcXType = BC::DIRICHLET_SOLVE; 
+    BC::BCType bcYType = BC::DIRICHLET_SOLVE; 
+    BC::BCType bcZType = BC::DIRICHLET_SOLVE; 
 
-    BC::BCKind bcX0 = BC::PERIODIC;
-    BC::BCKind bcX1 = BC::PERIODIC;
-    BC::BCKind bcY0 = BC::PERIODIC;
-    BC::BCKind bcY1 = BC::PERIODIC;
-    BC::BCKind bcZ0 = BC::PERIODIC;
-    BC::BCKind bcZ1 = BC::PERIODIC;
+    BC::BCKind bcX0 = BC::SPONGE;
+    BC::BCKind bcX1 = BC::SPONGE;
+    BC::BCKind bcY0 = BC::SPONGE;
+    BC::BCKind bcY1 = BC::SPONGE;
+    BC::BCKind bcZ0 = BC::SPONGE;
+    BC::BCKind bcZ1 = BC::SPONGE;
 
     BC *bc = new BC(bcXType, bcX0, bcX1,
 		    bcYType, bcY0, bcY1,
@@ -90,12 +90,17 @@ int main(int argc, char *argv[]){
     ///////////////////////////////
     //Set flow initial conditions//
     ///////////////////////////////
-    FOR_XYZ{
-	cs->rho0[ip] = 1.0;
-	cs->U0[ip]   = 0.1;
-	cs->V0[ip]   = 0.1;
-	cs->W0[ip]   = 0.1;
-	cs->p0[ip]   = 1.0/cs->ig->gamma;
+    FOR_Z{
+	FOR_Y{
+	    FOR_X{
+		int ii = GET3DINDEX_XYZ;
+		cs->rho0[ii] = 1.0;
+		cs->U0[ii]   = (double)j*j;
+		cs->V0[ii]   = (double)k*k;
+		cs->W0[ii]   = (double)i*i;
+		cs->p0[ii]   = 1.0/cs->ig->gamma;
+	    }
+	}
     }
 
     cs->setInitialConditions();
@@ -103,54 +108,46 @@ int main(int argc, char *argv[]){
     cs->calcDtFromCFL();
 
 
-    double *Test1 = new double[Nx*Ny*Nz];
-    double *Test2 = new double[Nx*Ny*Nz];
-    double *Test3 = new double[Nx*Ny*Nz];
-
-    int i, j, k;
-    FOR_XYZ{
-	Test1[GET3DINDEX_XYZ] = 1.0;
-	Test2[GET3DINDEX_XYZ] = 1.0;
-	Test3[GET3DINDEX_XYZ] = 1.0;
-    }
-
 
     auto t1 = std::chrono::system_clock::now();
-    FOR_XYZ{
-	Test1[GET3DINDEX_XYZ] = Test2[GET3DINDEX_XYZ]/Test3[GET3DINDEX_XYZ];
-    }
     auto t2 = std::chrono::system_clock::now();
-    cout << "SIMPLE MATH TEST: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
 
     t1 = std::chrono::system_clock::now();
-    transposeXYZtoYZX(Test1, Nx, Ny, Nz, Test2);
-    t2 = std::chrono::system_clock::now();
-    cout << "Trans XYZ to YZX: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
-
-    t1 = std::chrono::system_clock::now();
-    transposeYZXtoZXY(Test2, Nx, Ny, Nz, Test3);
-    t2 = std::chrono::system_clock::now();
-    cout << "Trans YZX to ZXY: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
-
-    t1 = std::chrono::system_clock::now();
-    transposeZXYtoXYZ(Test3, Nx, Ny, Nz, Test1);
-    t2 = std::chrono::system_clock::now();
-    cout << "Trans ZXY to XYZ: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
-
-    t1 = std::chrono::system_clock::now();
-    transposeYZXtoXYZ(Test3, Nx, Ny, Nz, Test1);
-    t2 = std::chrono::system_clock::now();
-    cout << "Trans YZX to XYZ: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
-
-    t1 = std::chrono::system_clock::now();
-    cs->preStepDerivatives(0);
-    t2 = std::chrono::system_clock::now();
-    cout << "preStepDerivatives: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
-
-    t1 = std::chrono::system_clock::now();
-    cs->preStepDerivatives2(0);
+    cs->preStepDerivatives(1);
     t2 = std::chrono::system_clock::now();
     cout << "preStepDerivatives2: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+
+
+
+    cs->rkStep = 1;
+
+    t1 = std::chrono::system_clock::now();
+    cs->solveContinuity();  
+    t2 = std::chrono::system_clock::now();
+    cout << "Continuity:" << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+
+
+    t1 = std::chrono::system_clock::now();
+    cs->solveXMomentum();
+    t2 = std::chrono::system_clock::now();
+    cout << "XMom:" << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+
+    t1 = std::chrono::system_clock::now();
+    cs->solveYMomentum();
+    t2 = std::chrono::system_clock::now();
+    cout << "YMom:" << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+
+    t1 = std::chrono::system_clock::now();
+    cs->solveZMomentum();
+    t2 = std::chrono::system_clock::now();
+    cout << "ZMom:" << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+
+    t1 = std::chrono::system_clock::now();
+    cs->solveEnergy();
+    t2 = std::chrono::system_clock::now();
+    cout << "Energy:" << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+
+
 
 
 

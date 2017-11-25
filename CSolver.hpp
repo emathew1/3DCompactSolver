@@ -145,29 +145,16 @@ class CSolver{
 
 	void calcDtFromCFL();
 
-	void calcSpongeSource(double *phi, double *phiSpongeAvg, double *spongeSource);
+	double calcSpongeSource(double phi, double phiSpongeAvg, double sigma);
 
 	void preStepBCHandling(double *rho, double *rhoU, double *rhoV, double *rhoW, double *rhoE);
 
 	void preStepDerivatives(int rkStep);
-	void preStepDerivatives2(int rkStep);
 
 	void solveContinuity();
-
-	void solveXMomentumEuler();
-	void solveXMomentumViscous();
 	void solveXMomentum();
-
-	void solveYMomentumEuler();
-	void solveYMomentumViscous();
 	void solveYMomentum();
-
-	void solveZMomentumEuler();
-	void solveZMomentumViscous();
 	void solveZMomentum();
-
-	void solveEnergyEuler();
-	void solveEnergyViscous();
 	void solveEnergy();
 
 	void postStepBCHandling(double *rho, double *rhoU, double *rhoV, double *rhoW, double *rhoE);
