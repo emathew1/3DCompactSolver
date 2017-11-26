@@ -125,3 +125,44 @@ void Filter::compactFilter(double *phi, double *phiF){
     }
 
 }
+
+void Filter::filterField(double *dataIn, double *dataOut){
+
+    if(currentDir == Derivatives::DIRX){
+	FOR_Z{
+	    FOR_Y{
+                double *dataInLocal, *dataOutLocal;
+                int ii = k*Nx*Ny + j*Nx;
+		dataInLocal  = &dataIn[ii];
+                dataOutLocal = &dataOut[ii];
+		compactFilter(dataInLocal, dataOutLocal);
+	    }
+	}
+
+    }else if(currentDir == Derivatives::DIRY){
+
+        FOR_X{
+            FOR_Z{
+                double *dataInLocal, *dataOutLocal;
+                int ii = i*Nz*Ny + k*Ny;
+                dataInLocal  = &dataIn[ii];
+                dataOutLocal = &dataOut[ii];
+                compactFilter(dataInLocal, dataOutLocal);
+            }
+        }
+
+    }else if(currentDir == Derivatives::DIRZ){
+
+        FOR_Y{
+            FOR_X{
+                double *dataInLocal, *dataOutLocal;
+                int ii = j*Nz*Nx + i*Nz;
+                dataInLocal  = &dataIn[ii];
+                dataOutLocal = &dataOut[ii];
+                compactFilter(dataInLocal, dataOutLocal);
+            }
+        }
+
+    }
+
+}

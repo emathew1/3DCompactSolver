@@ -291,7 +291,22 @@ double CSolver::calcSpongeSource(double phi, double phiSpongeAvg, double sigma){
 
 }
 
-void CSolver::preStepBCHandling(double *rho, double *rhoU, double *rhoV, double *rhoW, double *rhoE){
+void CSolver::preStepBCHandling(){
+
+    double *rhoP, *rhoUP, *rhoVP, *rhoWP, *rhoEP;
+    if(rkStep == 1){
+	rhoP  = rho1;
+	rhoUP = rhoU1;
+	rhoVP = rhoV1;
+	rhoWP = rhoW1;
+	rhoEP = rhoE1;
+    }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
+	rhoP  = rhok;
+	rhoUP = rhoUk; 
+	rhoVP = rhoVk;
+	rhoWP = rhoWk;
+	rhoEP = rhoEk;
+    }
 
     if(bc->bcX0 == BC::ADIABATIC_WALL){
 
@@ -320,7 +335,7 @@ void CSolver::preStepBCHandling(double *rho, double *rhoU, double *rhoV, double 
 }
 
 
-void CSolver::preStepDerivatives(int rkStep){
+void CSolver::preStepDerivatives(){
 
     //TODO
     //WHICH RHOU! etc. NEEDS TO CHANGE WITH THE RKSTEP!!!!
@@ -878,3 +893,143 @@ void CSolver::solveEnergy(){
     delete[] engyEuler;
 
 }
+
+void CSolver::postStepBCHandling(){
+
+    double *rhoP, *rhoUP, *rhoVP, *rhoWP, *rhoEP;
+    if(rkStep == 1){
+	rhoP  = rho1;
+	rhoUP = rhoU1;
+	rhoVP = rhoV1;
+	rhoWP = rhoW1;
+	rhoEP = rhoE1;
+    }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
+	rhoP  = rhok;
+	rhoUP = rhoUk; 
+	rhoVP = rhoVk;
+	rhoWP = rhoWk;
+	rhoEP = rhoEk;
+    }
+
+    if(bc->bcX0 == BC::ADIABATIC_WALL){
+
+    }
+
+    if(bc->bcX1 == BC::ADIABATIC_WALL){
+
+    }   
+
+    if(bc->bcY0 == BC::ADIABATIC_WALL){
+
+    }
+
+    if(bc->bcY1 == BC::ADIABATIC_WALL){
+
+    }
+
+    if(bc->bcZ0 == BC::ADIABATIC_WALL){
+
+    }
+
+    if(bc->bcZ1 == BC::ADIABATIC_WALL){
+
+    }
+
+}
+
+void CSolver::updateConservedData(){
+
+    if(rkStep == 1){
+
+	//Add to final solution
+	FOR_XYZ rho2[ip]  = rho1[ip]  + rhok2[ip]/6.0;
+	FOR_XYZ rhoU2[ip] = rhoU1[ip] + rhoUk2[ip]/6.0;
+	FOR_XYZ rhoV2[ip] = rhoV1[ip] + rhoVk2[ip]/6.0;
+	FOR_XYZ rhoW2[ip] = rhoW1[ip] + rhoWk2[ip]/6.0;
+	FOR_XYZ rhoE2[ip] = rhoE1[ip] + rhoEk2[ip]/6.0;
+
+	//Calculate intermediate solution
+	FOR_XYZ rhok[ip]  = rho1[ip]  + rhok2[ip]/2.0; 
+	FOR_XYZ rhoUk[ip] = rhoU1[ip] + rhoUk2[ip]/2.0; 
+	FOR_XYZ rhoVk[ip] = rhoV1[ip] + rhoVk2[ip]/2.0; 
+	FOR_XYZ rhoWk[ip] = rhoW1[ip] + rhoWk2[ip]/2.0; 
+	FOR_XYZ rhoEk[ip] = rhoE1[ip] + rhoEk2[ip]/2.0; 
+
+    }else if(rkStep == 2){
+
+	//Add to final solution
+	FOR_XYZ rho2[ip]  += rhok2[ip]/3.0;
+	FOR_XYZ rhoU2[ip] += rhoUk2[ip]/3.0;
+	FOR_XYZ rhoV2[ip] += rhoVk2[ip]/3.0;
+	FOR_XYZ rhoW2[ip] += rhoWk2[ip]/3.0;
+	FOR_XYZ rhoE2[ip] += rhoEk2[ip]/3.0;
+
+	//Calculate intermediate solution
+	FOR_XYZ rhok[ip]  = rho1[ip]  + rhok2[ip]/2.0; 
+	FOR_XYZ rhoUk[ip] = rhoU1[ip] + rhoUk2[ip]/2.0; 
+	FOR_XYZ rhoVk[ip] = rhoV1[ip] + rhoVk2[ip]/2.0; 
+	FOR_XYZ rhoWk[ip] = rhoW1[ip] + rhoWk2[ip]/2.0; 
+	FOR_XYZ rhoEk[ip] = rhoE1[ip] + rhoEk2[ip]/2.0; 
+
+    }else if(rkStep == 3){
+
+	//Add to final solution
+	FOR_XYZ rho2[ip]  += rhok2[ip]/3.0;
+	FOR_XYZ rhoU2[ip] += rhoUk2[ip]/3.0;
+	FOR_XYZ rhoV2[ip] += rhoVk2[ip]/3.0;
+	FOR_XYZ rhoW2[ip] += rhoWk2[ip]/3.0;
+	FOR_XYZ rhoE2[ip] += rhoEk2[ip]/3.0;
+
+	//Calculate intermediate solution
+	FOR_XYZ rhok[ip]  = rho1[ip]  + rhok2[ip]; 
+	FOR_XYZ rhoUk[ip] = rhoU1[ip] + rhoUk2[ip]; 
+	FOR_XYZ rhoVk[ip] = rhoV1[ip] + rhoVk2[ip]; 
+	FOR_XYZ rhoWk[ip] = rhoW1[ip] + rhoWk2[ip]; 
+	FOR_XYZ rhoEk[ip] = rhoE1[ip] + rhoEk2[ip]; 
+
+    }else if(rkStep == 4){
+
+	//Add to final solution
+	FOR_XYZ rho2[ip]  += rhok2[ip]/6.0;
+	FOR_XYZ rhoU2[ip] += rhoUk2[ip]/6.0;
+	FOR_XYZ rhoV2[ip] += rhoVk2[ip]/6.0;
+	FOR_XYZ rhoW2[ip] += rhoWk2[ip]/6.0;
+	FOR_XYZ rhoE2[ip] += rhoEk2[ip]/6.0;
+
+    }
+
+}
+
+void CSolver::filterConservedData(){
+
+    //Need to do round robin of filtering directions...
+
+};
+
+void CSolver::updateNonConservedData(){
+    if(rkStep == 1 || rkStep == 2 || rkStep == 3){
+
+	ig->solveU(rhok, rhoUk, U);
+	ig->solveU(rhok, rhoVk, V);
+	ig->solveU(rhok, rhoWk, W);
+	ig->solvep(rhok, rhoEk, U, V, W, p);
+	ig->solveT(rhok, p, T);
+	ig->solveMu(T, mu);
+	ig->solveAmu(T, Amu);
+	ig->solveSOS(rhok, p, sos);
+
+    }else if(rkStep == 4){
+
+	ig->solveU(rho1, rhoU1, U);
+	ig->solveU(rho1, rhoV1, V);
+	ig->solveU(rho1, rhoW1, W);
+	ig->solvep(rho1, rhoE1, U, V, W, p);
+	ig->solveT(rho1, p, T);
+	ig->solveMu(T, mu);
+	ig->solveAmu(T, Amu);
+	ig->solveSOS(rho1, p, sos);
+
+    }
+}
+
+

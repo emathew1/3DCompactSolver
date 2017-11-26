@@ -109,17 +109,15 @@ int main(int argc, char *argv[]){
 
 
 
+    cs->rkStep = 1;
+
     auto t1 = std::chrono::system_clock::now();
     auto t2 = std::chrono::system_clock::now();
 
     t1 = std::chrono::system_clock::now();
-    cs->preStepDerivatives(1);
+    cs->preStepDerivatives();
     t2 = std::chrono::system_clock::now();
     cout << "preStepDerivatives2: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
-
-
-
-    cs->rkStep = 1;
 
     t1 = std::chrono::system_clock::now();
     cs->solveContinuity();  
@@ -146,6 +144,18 @@ int main(int argc, char *argv[]){
     cs->solveEnergy();
     t2 = std::chrono::system_clock::now();
     cout << "Energy:" << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+
+    t1 = std::chrono::system_clock::now();
+    cs->updateConservedData();
+    t2 = std::chrono::system_clock::now();
+    cout << "updateConserved:" << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+
+    t1 = std::chrono::system_clock::now();
+    cs->updateNonConservedData();
+    t2 = std::chrono::system_clock::now();
+    cout << "updateNonConserved:" << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+
+
 
 
 

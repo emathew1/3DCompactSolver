@@ -112,6 +112,7 @@ class Filter{
     void FilterDirichlet(double *phi, double *phiF);
 
     void compactFilter(double *phi, double *phiF);
+    void filterField(double *dataIn, double *dataOut);
 
 };
 

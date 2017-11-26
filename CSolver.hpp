@@ -147,9 +147,9 @@ class CSolver{
 
 	double calcSpongeSource(double phi, double phiSpongeAvg, double sigma);
 
-	void preStepBCHandling(double *rho, double *rhoU, double *rhoV, double *rhoW, double *rhoE);
+	void preStepBCHandling();
 
-	void preStepDerivatives(int rkStep);
+	void preStepDerivatives();
 
 	void solveContinuity();
 	void solveXMomentum();
@@ -157,12 +157,13 @@ class CSolver{
 	void solveZMomentum();
 	void solveEnergy();
 
-	void postStepBCHandling(double *rho, double *rhoU, double *rhoV, double *rhoW, double *rhoE);
+	void postStepBCHandling();
 
-	void updateConservedData(int rkStep);
-	void updateNonConservedData(int rkStep);
+	void updateConservedData();
 	
 	void filterConservedData();
+
+	void updateNonConservedData();
 
 	void updateSponge();
 
