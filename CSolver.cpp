@@ -1158,6 +1158,15 @@ void CSolver::filterConservedData(){
             transposeYZXtoXYZ(rhoE2,  Nx, Ny, Nz, rhoE1);
 
         }
+ 
+    //If not filtering, need to copy the solution over to the *1 variables
+    }else{
+
+	memcpy(rho2,  rho1,  sizeof(double)*N);
+	memcpy(rhoU2, rhoU1, sizeof(double)*N);
+	memcpy(rhoV2, rhoV1, sizeof(double)*N);
+	memcpy(rhoW2, rhoW1, sizeof(double)*N);
+	memcpy(rhoE2, rhoE1, sizeof(double)*N);
 
     }
 };
