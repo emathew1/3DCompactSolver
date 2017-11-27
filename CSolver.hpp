@@ -30,6 +30,7 @@ class CSolver{
 	//Track the current time and timestep
         int timeStep;
         double time;
+	int filterTimeStep;
 
 	//Kill solver condition
         bool done;
@@ -114,6 +115,7 @@ class CSolver{
 	    //initialize time and timestep
    	    time = 0.0;
 	    timeStep = 0;
+	    filterTimeStep = 0;
 
 	    done = false;
 

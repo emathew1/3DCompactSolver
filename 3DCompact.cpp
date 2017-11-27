@@ -107,8 +107,6 @@ int main(int argc, char *argv[]){
  
     cs->calcDtFromCFL();
 
-
-
     cs->rkStep = 1;
 
     auto t1 = std::chrono::system_clock::now();
@@ -154,6 +152,11 @@ int main(int argc, char *argv[]){
     cs->updateNonConservedData();
     t2 = std::chrono::system_clock::now();
     cout << "updateNonConserved:" << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+
+    t1 = std::chrono::system_clock::now();
+    cs->filterConservedData();
+    t2 = std::chrono::system_clock::now();
+    cout << "filterConserved:" << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
 
 
 

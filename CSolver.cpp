@@ -1003,7 +1003,163 @@ void CSolver::updateConservedData(){
 void CSolver::filterConservedData(){
 
     //Need to do round robin of filtering directions...
+    if(ts->filterStep%timeStep == 0){
 
+        //Advance the filtering time step       
+        filterTimeStep++;
+
+        //Going to try and be cute to minimize dmemory allocation
+        if(filterTimeStep%3 == 1){
+
+            //Here we'll do X->Y->Z     
+            filtX->filterField(rho2,  rho1);
+            filtX->filterField(rhoU2, temp);
+            filtX->filterField(rhoV2, temp2);
+            filtX->filterField(rhoW2, temp3);
+            filtX->filterField(rhoE2, temp4);
+
+            //Do the transpose to YZX space
+            transposeXYZtoYZX(rho1,   Nx, Ny, Nz, rho2);
+            transposeXYZtoYZX(temp,   Nx, Ny, Nz, rhoU2);
+            transposeXYZtoYZX(temp2,  Nx, Ny, Nz, rhoV2);
+            transposeXYZtoYZX(temp3,  Nx, Ny, Nz, rhoW2);
+            transposeXYZtoYZX(temp4,  Nx, Ny, Nz, rhoE2);
+
+            //filter in the Y direction
+            filtY->filterField(rho2,  rho1);
+            filtY->filterField(rhoU2, temp);
+            filtY->filterField(rhoV2, temp2);
+            filtY->filterField(rhoW2, temp3);
+            filtY->filterField(rhoE2, temp4);
+
+            //tranpose from YZX to ZXY
+            transposeYZXtoZXY(rho1,   Nx, Ny, Nz, rho2);
+            transposeYZXtoZXY(temp,   Nx, Ny, Nz, rhoU2);
+            transposeYZXtoZXY(temp2,  Nx, Ny, Nz, rhoV2);
+            transposeYZXtoZXY(temp3,  Nx, Ny, Nz, rhoW2);
+            transposeYZXtoZXY(temp4,  Nx, Ny, Nz, rhoE2);
+
+            //filter in the Y direction
+            filtZ->filterField(rho2,  rho1);
+            filtZ->filterField(rhoU2, temp);
+            filtZ->filterField(rhoV2, temp2);
+            filtZ->filterField(rhoW2, temp3);
+            filtZ->filterField(rhoE2, temp4);
+
+            //get us back to XYZ from ZXY
+            transposeZXYtoXYZ(rho1,   Nx, Ny, Nz, rho2);
+            transposeZXYtoXYZ(temp,   Nx, Ny, Nz, rhoU1);
+            transposeZXYtoXYZ(temp2,  Nx, Ny, Nz, rhoV1);
+            transposeZXYtoXYZ(temp3,  Nx, Ny, Nz, rhoW1);
+            transposeZXYtoXYZ(temp4,  Nx, Ny, Nz, rhoE1);
+
+            //from being cute with memory allocation need to copy rho2 to rho1
+            memcpy(rho2, rho1, sizeof(double)*Nx*Ny*Nz);
+
+        }else if(filterTimeStep%3 == 2){
+
+            //Here we'll do Y->Z->X     
+
+            //Do the transpose to YZX space first
+            transposeXYZtoYZX(rho2,   Nx, Ny, Nz, rho1);
+            transposeXYZtoYZX(rhoU2,  Nx, Ny, Nz, temp);
+            transposeXYZtoYZX(rhoV2,  Nx, Ny, Nz, temp2);
+            transposeXYZtoYZX(rhoW2,  Nx, Ny, Nz, temp3);
+            transposeXYZtoYZX(rhoE2,  Nx, Ny, Nz, temp4);
+
+            //filter in the Y direction
+            filtY->filterField(rho1,  rho2);
+            filtY->filterField(temp,  rhoU2);
+            filtY->filterField(temp2, rhoV2);
+            filtY->filterField(temp3, rhoW2);
+            filtY->filterField(temp4, rhoE2);
+
+            //Move to ZXY space next
+            transposeYZXtoZXY(rho2,   Nx, Ny, Nz, rho1);
+            transposeYZXtoZXY(rhoU2,  Nx, Ny, Nz, temp);
+            transposeYZXtoZXY(rhoV2,  Nx, Ny, Nz, temp2);
+            transposeYZXtoZXY(rhoW2,  Nx, Ny, Nz, temp3);
+            transposeYZXtoZXY(rhoE2,  Nx, Ny, Nz, temp4);
+
+            //filter in the Z direction
+            filtZ->filterField(rho1,  rho2);
+            filtZ->filterField(temp,  rhoU2);
+            filtZ->filterField(temp2, rhoV2);
+            filtZ->filterField(temp3, rhoW2);
+            filtZ->filterField(temp4, rhoE2);
+
+            //transpose from ZXY to XYZ
+            transposeZXYtoXYZ(rho2,   Nx, Ny, Nz, rho1);
+            transposeZXYtoXYZ(rhoU2,  Nx, Ny, Nz, temp);
+            transposeZXYtoXYZ(rhoV2,  Nx, Ny, Nz, temp2);
+            transposeZXYtoXYZ(rhoW2,  Nx, Ny, Nz, temp3);
+            transposeZXYtoXYZ(rhoE2,  Nx, Ny, Nz, temp4);
+
+            //filter in the X direction
+            filtX->filterField(rho1,  rho2);
+            filtX->filterField(temp,  rhoU1);
+            filtX->filterField(temp2, rhoV1);
+            filtX->filterField(temp3, rhoW1);
+            filtX->filterField(temp4, rhoE1);
+
+            //from being cute with memory allocation need to copy rho2 to rho1
+            memcpy(rho2, rho1, sizeof(double)*Nx*Ny*Nz);
+
+
+        }else{
+            //Here we'll do Z->X->Y     
+            //Do the transpose to ZXY space first
+            transposeXYZtoZXY(rho2,   Nx, Ny, Nz, rho1);
+            transposeXYZtoZXY(rhoU2,  Nx, Ny, Nz, temp);
+            transposeXYZtoZXY(rhoV2,  Nx, Ny, Nz, temp2);
+            transposeXYZtoZXY(rhoW2,  Nx, Ny, Nz, temp3);
+            transposeXYZtoZXY(rhoE2,  Nx, Ny, Nz, temp4);
+
+            //filter in the Z direction
+            filtZ->filterField(rho1,  rho2);
+            filtZ->filterField(temp,  rhoU2);
+            filtZ->filterField(temp2, rhoV2);
+            filtZ->filterField(temp3, rhoW2);
+            filtZ->filterField(temp4, rhoE2);
+
+            //Move to XYZ space next
+            transposeZXYtoXYZ(rho2,   Nx, Ny, Nz, rho1);
+            transposeZXYtoXYZ(rhoU2,  Nx, Ny, Nz, temp);
+            transposeZXYtoXYZ(rhoV2,  Nx, Ny, Nz, temp2);
+            transposeZXYtoXYZ(rhoW2,  Nx, Ny, Nz, temp3);
+            transposeZXYtoXYZ(rhoE2,  Nx, Ny, Nz, temp4);
+
+            //filter in the X direction
+            filtX->filterField(rho1,  rho2);
+            filtX->filterField(temp,  rhoU2);
+            filtX->filterField(temp2, rhoV2);
+            filtX->filterField(temp3, rhoW2);
+            filtX->filterField(temp4, rhoE2);
+
+            //transpose from XYZ to YZX
+            transposeXYZtoYZX(rho2,   Nx, Ny, Nz, rho1);
+            transposeXYZtoYZX(rhoU2,  Nx, Ny, Nz, temp);
+            transposeXYZtoYZX(rhoV2,  Nx, Ny, Nz, temp2);
+            transposeXYZtoYZX(rhoW2,  Nx, Ny, Nz, temp3);
+            transposeXYZtoYZX(rhoE2,  Nx, Ny, Nz, temp4);
+
+            //filter in the Y direction
+            filtY->filterField(rho1,  rho2);
+            filtY->filterField(temp,  rhoU2);
+            filtY->filterField(temp2, rhoV2);
+            filtY->filterField(temp3, rhoW2);
+            filtY->filterField(temp4, rhoE2);
+
+            //have an extra step here to go from YZX to XYZ
+            transposeYZXtoXYZ(rho2,   Nx, Ny, Nz, rho1);
+            transposeYZXtoXYZ(rhoU2,  Nx, Ny, Nz, rhoU1);
+            transposeYZXtoXYZ(rhoV2,  Nx, Ny, Nz, rhoV1);
+            transposeYZXtoXYZ(rhoW2,  Nx, Ny, Nz, rhoW1);
+            transposeYZXtoXYZ(rhoE2,  Nx, Ny, Nz, rhoE1);
+
+        }
+
+    }
 };
 
 void CSolver::updateNonConservedData(){
@@ -1032,4 +1188,45 @@ void CSolver::updateNonConservedData(){
     }
 }
 
+
+void CSolver::updateSponge(){
+    if(spongeFlag){
+	double eps = 1.0/(spg->avgT/ts->dt + 1.0);
+	FOR_XYZ spg->spongeRhoAvg[ip]  += eps*(rho1[ip]  - spg->spongeRhoAvg[ip]);	
+	FOR_XYZ spg->spongeRhoUAvg[ip] += eps*(rhoU1[ip] - spg->spongeRhoUAvg[ip]);	
+	FOR_XYZ spg->spongeRhoVAvg[ip] += eps*(rhoV1[ip] - spg->spongeRhoVAvg[ip]);	
+	FOR_XYZ spg->spongeRhoWAvg[ip] += eps*(rhoW1[ip] - spg->spongeRhoWAvg[ip]);	
+	FOR_XYZ spg->spongeRhoEAvg[ip] += eps*(rhoE1[ip] - spg->spongeRhoEAvg[ip]);	
+	
+	FOR_XYZ spg->spongeRhoEAvg[ip] = spg->epsP*spg->spongeRhoEAvg[ip] + (1.0 -  spg->epsP)*(spg->spongeP/(ig->gamma-1.0) \
+					 + 0.5*(spg->spongeRhoUAvg[ip]*spg->spongeRhoUAvg[ip] + spg->spongeRhoVAvg[ip]*spg->spongeRhoVAvg[ip] \
+					 + spg->spongeRhoWAvg[ip]*spg->spongeRhoWAvg[ip])/spg->spongeRhoAvg[ip]);
+
+	
+        if(bc->bcX0 == BC::SPONGE){
+
+        }
+
+        if(bc->bcX1 == BC::SPONGE){
+
+        }   
+
+        if(bc->bcY0 == BC::SPONGE){
+
+        }
+
+        if(bc->bcY1 == BC::SPONGE){
+
+        }
+
+        if(bc->bcZ0 == BC::SPONGE){
+
+        }
+
+        if(bc->bcZ1 == BC::SPONGE){
+
+        }
+
+    }
+};
 
