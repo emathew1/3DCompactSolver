@@ -80,6 +80,7 @@ void transposeMatrix_Fast2(const double *in, int n, int p, double *out, int bloc
 
 void transposeXYZtoYZX(const double *in, int Nx, int Ny, int Nz, double *out){
 
+    #pragma omp parallel for collapse(3) num_threads(2) 
     for(int ip = 0; ip < Nx; ip++){
 	for(int kp = 0; kp < Nz; kp++){
 	    for(int jp = 0; jp < Ny; jp++){
@@ -92,6 +93,7 @@ void transposeXYZtoYZX(const double *in, int Nx, int Ny, int Nz, double *out){
 
 void transposeYZXtoZXY(const double *in, int Nx, int Ny, int Nz, double *out){
 
+    #pragma omp parallel for collapse(3) num_threads(2)
     for(int jp = 0; jp < Ny; jp++){
     	for(int ip = 0; ip < Nx; ip++){
 	    for(int kp = 0; kp < Nz; kp++){
@@ -104,6 +106,7 @@ void transposeYZXtoZXY(const double *in, int Nx, int Ny, int Nz, double *out){
 
 void transposeXYZtoZXY(const double *in, int Nx, int Ny, int Nz, double *out){
 
+    #pragma omp parallel for collapse(3) num_threads(2)
     for(int jp = 0; jp < Ny; jp++){
     	for(int ip = 0; ip < Nx; ip++){
 	    for(int kp = 0; kp < Nz; kp++){
@@ -117,6 +120,7 @@ void transposeXYZtoZXY(const double *in, int Nx, int Ny, int Nz, double *out){
 
 void transposeZXYtoXYZ(const double *in, int Nx, int Ny, int Nz, double *out){
 
+    #pragma omp parallel for collapse(3) num_threads(2) 
     for(int kp = 0; kp < Nz; kp++){
         for(int jp = 0; jp < Ny; jp++){
     	    for(int ip = 0; ip < Nx; ip++){
@@ -129,6 +133,7 @@ void transposeZXYtoXYZ(const double *in, int Nx, int Ny, int Nz, double *out){
 
 void transposeYZXtoXYZ(const double *in, int Nx, int Ny, int Nz, double *out){
 
+    #pragma omp parallel for collapse(3) num_threads(2)
     for(int kp = 0; kp < Nz; kp++){
     	for(int jp = 0; jp < Ny; jp++){
 	    for(int ip = 0; ip < Nx; ip++){

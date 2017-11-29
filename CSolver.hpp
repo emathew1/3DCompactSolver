@@ -1,6 +1,8 @@
 #ifndef _CSOLVERH_
 #define _CSOLVERH_
 
+#include <omp.h>
+#include <chrono>
 #include "Macros.hpp"
 #include "Utils.hpp"
 #include "BC.hpp"
@@ -9,6 +11,8 @@
 #include "SpongeBC.hpp"
 #include "Derivatives.hpp"
 #include "Filter.hpp"
+
+using namespace std::chrono;
 
 class CSolver{
 
@@ -152,6 +156,7 @@ class CSolver{
 	void preStepBCHandling();
 
 	void preStepDerivatives();
+	void preStepDerivatives2Test();
 
 	void solveContinuity();
 	void solveXMomentum();
@@ -170,6 +175,8 @@ class CSolver{
 	void updateSponge();
 
 	void checkSolution();
+
+	void test();
 
 };
 

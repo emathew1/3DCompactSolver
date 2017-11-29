@@ -1,6 +1,7 @@
 #ifndef _DERIVATIVESH_
 #define _DERIVATIVESH_
 
+#include <omp.h>
 #include <math.h>
 #include <cstring>
 #include <iostream>

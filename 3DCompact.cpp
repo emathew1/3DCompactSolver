@@ -1,4 +1,4 @@
-//#include <omp.h>
+#include <omp.h>
 #include <cmath>
 #include <cstring>
 #include <iostream>
@@ -22,7 +22,7 @@ int main(int argc, char *argv[]){
     cout << " 3D 6th-Order Compressible Solver " << endl;
     cout << "----------------------------------" << endl;
     cout << endl;
-/*
+
     #pragma omp parallel
     {
       int threadCount = omp_get_num_threads();
@@ -31,14 +31,14 @@ int main(int argc, char *argv[]){
           cout << "Running with OpenMP using " << threadCount << " threads" << endl;
       }
     }
-*/
+
 
     /////////////////////////
     //Initialize the Domain//
     /////////////////////////
-    int    Nx = 64, 
-	   Ny = 64, 
-	   Nz = 64;
+    int    Nx = 128, 
+	   Ny = 128, 
+	   Nz = 128;
     double Lx = 9,//2.0*M_PI*((double)Nx - 1.0)/(double(Nx)), 
 	   Ly = 9,//2.0*M_PI*((double)Ny - 1.0)/(double(Ny)), 
 	   Lz = 9;//2.0*M_PI*((double)Nz - 1.0)/(double(Nz));
@@ -112,10 +112,13 @@ int main(int argc, char *argv[]){
     auto t1 = std::chrono::system_clock::now();
     auto t2 = std::chrono::system_clock::now();
 
+
     t1 = std::chrono::system_clock::now();
     cs->preStepDerivatives();
     t2 = std::chrono::system_clock::now();
-    cout << "preStepDerivatives2: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+    cout << "preStepDerivatives: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+
+
 
     t1 = std::chrono::system_clock::now();
     cs->solveContinuity();  
@@ -157,12 +160,6 @@ int main(int argc, char *argv[]){
     cs->filterConservedData();
     t2 = std::chrono::system_clock::now();
     cout << "filterConserved:" << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
-
-
-
-
-
-
 
 
     return 0;

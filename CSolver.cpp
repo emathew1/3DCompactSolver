@@ -367,244 +367,527 @@ void CSolver::preStepDerivatives(){
     //First we'll do all of the X-Direction derivatives since we're in XYZ order
 
     //Calculate the Euler Components of the equations... 
+    #pragma omp parallel for
     FOR_XYZ temp[ip]  = rhoUP[ip]*U[ip] + p[ip];
+
+    #pragma omp parallel for
     FOR_XYZ temp2[ip] = rhoVP[ip]*U[ip];
+
+    #pragma omp parallel for
     FOR_XYZ temp3[ip] = rhoWP[ip]*U[ip];
+
+    #pragma omp parallel for
     FOR_XYZ temp4[ip] = rhoEP[ip]*U[ip] + U[ip]*p[ip];
+    
+    auto t1 = std::chrono::system_clock::now();
+    omp_set_nested(1);
+    #pragma omp parallel sections num_threads(8) 
+    {
+        //Calculate the stuff needed for viscous derivatives
+		#pragma omp section
+        derivX->calc1stDerivField(U, Ux);
+		#pragma omp section
+        derivX->calc2ndDerivField(U, Uxx);
+		#pragma omp section
+        derivX->calc1stDerivField(V, Vx);
+		#pragma omp section
+        derivX->calc2ndDerivField(V, Vxx);
+		#pragma omp section
+        derivX->calc1stDerivField(W, Wx);
+		#pragma omp section
+        derivX->calc2ndDerivField(W, Wxx);
+		#pragma omp section
+        derivX->calc1stDerivField(T, Tx);
+		#pragma omp section
+        derivX->calc2ndDerivField(T, Txx);
 
-    //Calculate the stuff needed for viscous derivatives
-    derivX->calc1stDerivField(U, Ux);
-    derivX->calc2ndDerivField(U, Uxx);
-    derivX->calc1stDerivField(V, Vx);
-    derivX->calc2ndDerivField(V, Vxx);
-    derivX->calc1stDerivField(W, Wx);
-    derivX->calc2ndDerivField(W, Wxx);
-    derivX->calc1stDerivField(T, Tx);
-    derivX->calc2ndDerivField(T, Txx);
+        //Compute the Euler Derivatives
+		#pragma omp section
+        derivX->calc1stDerivField(rhoUP, contEulerX);
+		#pragma omp section
+        derivX->calc1stDerivField(temp,  momXEulerX);
+		#pragma omp section
+        derivX->calc1stDerivField(temp2, momYEulerX);
+		#pragma omp section
+        derivX->calc1stDerivField(temp3, momZEulerX);
+		#pragma omp section
+        derivX->calc1stDerivField(temp4, engyEulerX);
 
-    //Compute the Euler Derivatives
-    derivX->calc1stDerivField(rhoUP, contEulerX);
-    derivX->calc1stDerivField(temp,  momXEulerX);
-    derivX->calc1stDerivField(temp2, momYEulerX);
-    derivX->calc1stDerivField(temp3, momZEulerX);
-    derivX->calc1stDerivField(temp4, engyEulerX);
+    }
+    auto t2 = std::chrono::system_clock::now();
+    cout << "part 1 deriv test, sectioned: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;    
 
-    //Do the transposes
-    transposeXYZtoYZX(rhoP,  Nx, Ny, Nz, transRho);
-    transposeXYZtoYZX(rhoUP, Nx, Ny, Nz, transRhoU);
-    transposeXYZtoYZX(rhoVP, Nx, Ny, Nz, transRhoV);
-    transposeXYZtoYZX(rhoWP, Nx, Ny, Nz, transRhoW);
-    transposeXYZtoYZX(rhoEP, Nx, Ny, Nz, transRhoE);
-    transposeXYZtoYZX(Ux,    Nx, Ny, Nz, transUx);
-    transposeXYZtoYZX(Vx,    Nx, Ny, Nz, transVx);
-    transposeXYZtoYZX(Wx,    Nx, Ny, Nz, transWx);
+
+
+    omp_set_nested(1);
+    #pragma omp parallel sections num_threads(4) 
+    {
+        //Do the transposes
+		#pragma omp section
+        transposeXYZtoYZX(rhoP,  Nx, Ny, Nz, transRho);
+
+		#pragma omp section
+        transposeXYZtoYZX(rhoUP, Nx, Ny, Nz, transRhoU);
+
+		#pragma omp section
+        transposeXYZtoYZX(rhoVP, Nx, Ny, Nz, transRhoV);
+
+		#pragma omp section
+        transposeXYZtoYZX(rhoWP, Nx, Ny, Nz, transRhoW);
+
+		#pragma omp section
+        transposeXYZtoYZX(rhoEP, Nx, Ny, Nz, transRhoE);
+
+		#pragma omp section
+        transposeXYZtoYZX(Ux,    Nx, Ny, Nz, transUx);
+
+		#pragma omp section
+        transposeXYZtoYZX(Vx,    Nx, Ny, Nz, transVx);
+
+		#pragma omp section
+        transposeXYZtoYZX(Wx,    Nx, Ny, Nz, transWx);
+    }
 
     ///////////////////
     // Y-DERIVATIVES //
     ///////////////////
 
     //Now recalculate properties in the new space
+    #pragma omp parallel for
     FOR_XYZ U[ip] = transRhoU[ip]/transRho[ip];
+    #pragma omp parallel for
     FOR_XYZ V[ip] = transRhoV[ip]/transRho[ip];
+    #pragma omp parallel for
     FOR_XYZ W[ip] = transRhoW[ip]/transRho[ip];
 
     ig->solvep(transRho, transRhoE, U, V, W, p);
     ig->solveT(transRho, p, T);
 
     //Calculate the stuff for Euler derivatives in new space
+    #pragma omp parallel for
     FOR_XYZ temp[ip]  = transRhoU[ip]*V[ip];
+    #pragma omp parallel for
     FOR_XYZ temp2[ip] = transRhoV[ip]*V[ip] + p[ip];
+    #pragma omp parallel for
     FOR_XYZ temp3[ip] = transRhoW[ip]*V[ip];
+    #pragma omp parallel for
     FOR_XYZ temp4[ip] = transRhoE[ip]*V[ip] + V[ip]*p[ip];
 
-    //Calculate Viscous Derivatives
-    derivY->calc1stDerivField(U, Uy);
-    derivY->calc2ndDerivField(U, Uyy);
-    derivY->calc1stDerivField(V, Vy);
-    derivY->calc2ndDerivField(V, Vyy);
-    derivY->calc1stDerivField(W, Wy);
-    derivY->calc2ndDerivField(W, Wyy);
-    derivY->calc1stDerivField(T, Ty);
-    derivY->calc2ndDerivField(T, Tyy);
-    derivY->calc1stDerivField(transUx, Uxy);
-    derivY->calc1stDerivField(transVx, Vxy);
-    derivY->calc1stDerivField(transWx, Wxy);
+    omp_set_nested(1);
+    #pragma omp parallel sections num_threads(8)
+    {
 
-    //Calculate the Euler Derivatives
-    derivY->calc1stDerivField(transRhoV, contEulerY);
-    derivY->calc1stDerivField(temp, 	 momXEulerY);
-    derivY->calc1stDerivField(temp2,	 momYEulerY);
-    derivY->calc1stDerivField(temp3,	 momZEulerY);
-    derivY->calc1stDerivField(temp4,	 engyEulerY);
+        //Calculate Viscous Derivatives
+		#pragma omp section
+        derivY->calc1stDerivField(U, Uy);
 
-    
+		#pragma omp section
+        derivY->calc2ndDerivField(U, Uyy);
+
+		#pragma omp section
+        derivY->calc1stDerivField(V, Vy);
+
+		#pragma omp section
+        derivY->calc2ndDerivField(V, Vyy);
+
+		#pragma omp section
+        derivY->calc1stDerivField(W, Wy);
+
+		#pragma omp section
+        derivY->calc2ndDerivField(W, Wyy);
+
+		#pragma omp section
+        derivY->calc1stDerivField(T, Ty);
+
+		#pragma omp section
+        derivY->calc2ndDerivField(T, Tyy);
+
+		#pragma omp section
+        derivY->calc1stDerivField(transUx, Uxy);
+
+		#pragma omp section
+        derivY->calc1stDerivField(transVx, Vxy);
+
+		#pragma omp section
+        derivY->calc1stDerivField(transWx, Wxy);
+
+        //Calculate the Euler Derivatives
+
+		#pragma omp section
+        derivY->calc1stDerivField(transRhoV, contEulerY);
+
+		#pragma omp section
+        derivY->calc1stDerivField(temp, 	 momXEulerY);
+
+		#pragma omp section
+        derivY->calc1stDerivField(temp2,	 momYEulerY);
+
+		#pragma omp section
+        derivY->calc1stDerivField(temp3,	 momZEulerY);
+
+		#pragma omp section
+        derivY->calc1stDerivField(temp4,	 engyEulerY);
+    }
+
     //Moving data to ZXY
 
-    //Get the original conserved data from XYZ to ZXY
-    transposeXYZtoZXY(rhoP,  Nx, Ny, Nz, transRho);
-    transposeXYZtoZXY(rhoUP, Nx, Ny, Nz, transRhoU);
-    transposeXYZtoZXY(rhoVP, Nx, Ny, Nz, transRhoV);
-    transposeXYZtoZXY(rhoWP, Nx, Ny, Nz, transRhoW);
-    transposeXYZtoZXY(rhoEP, Nx, Ny, Nz, transRhoE);
+    omp_set_nested(1);
+    #pragma omp parallel sections num_threads(4)
+    {
+        //Get the original conserved data from XYZ to ZXY
+		#pragma omp section
+        transposeXYZtoZXY(rhoP,  Nx, Ny, Nz, transRho);
+		#pragma omp section
+        transposeXYZtoZXY(rhoUP, Nx, Ny, Nz, transRhoU);
+		#pragma omp section
+        transposeXYZtoZXY(rhoVP, Nx, Ny, Nz, transRhoV);
+		#pragma omp section
+        transposeXYZtoZXY(rhoWP, Nx, Ny, Nz, transRhoW);
+		#pragma omp section
+        transposeXYZtoZXY(rhoEP, Nx, Ny, Nz, transRhoE);
 
-    //Move the Y Derivative data from YZX to ZXY
-    transposeYZXtoZXY(Uy, Nx, Ny, Nz, transUy);
-    transposeYZXtoZXY(Vy, Nx, Ny, Nz, transVy);
-    transposeYZXtoZXY(Wy, Nx, Ny, Nz, transWy);
+        //Move the Y Derivative data from YZX to ZXY
+		#pragma omp section
+        transposeYZXtoZXY(Uy, Nx, Ny, Nz, transUy);
+		#pragma omp section
+        transposeYZXtoZXY(Vy, Nx, Ny, Nz, transVy);
+		#pragma omp section
+        transposeYZXtoZXY(Wy, Nx, Ny, Nz, transWy);
 
-    //Move the X Derivative data from XYZ to ZXY
-    transposeXYZtoZXY(Ux, Nx, Ny, Nz, transUx);
-    transposeXYZtoZXY(Vx, Nx, Ny, Nz, transVx);
-    transposeXYZtoZXY(Wx, Nx, Ny, Nz, transWx);
-
+        //Move the X Derivative data from XYZ to ZXY
+		#pragma omp section
+        transposeXYZtoZXY(Ux, Nx, Ny, Nz, transUx);
+		#pragma omp section
+        transposeXYZtoZXY(Vx, Nx, Ny, Nz, transVx);
+		#pragma omp section
+        transposeXYZtoZXY(Wx, Nx, Ny, Nz, transWx);
+    }
 
     //Moving Data from YZX to XYZ
 
-    memcpy(temp, Uy, sizeof(double)*Nx*Ny*Nz);
-    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Uy);
-    memcpy(temp, Uyy, sizeof(double)*Nx*Ny*Nz);
-    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Uyy);
+    #pragma omp parallel sections num_threads(4)
+    {
 
-    memcpy(temp, Vy, sizeof(double)*Nx*Ny*Nz);
-    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Vy);
-    memcpy(temp, Vyy, sizeof(double)*Nx*Ny*Nz);
-    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Vyy);
+		#pragma omp section
+		{
+            memcpy(temp, Uy, sizeof(double)*Nx*Ny*Nz);
+            transposeYZXtoXYZ(temp, Nx, Ny, Nz, Uy);
+		}
 
-    memcpy(temp, Wy, sizeof(double)*Nx*Ny*Nz);
-    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Wy);
-    memcpy(temp, Wyy, sizeof(double)*Nx*Ny*Nz);
-    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Wyy);
+		#pragma omp section
+		{
+            memcpy(temp2, Uyy, sizeof(double)*Nx*Ny*Nz);
+            transposeYZXtoXYZ(temp2, Nx, Ny, Nz, Uyy);
+		}
 
-    memcpy(temp, Ty, sizeof(double)*Nx*Ny*Nz);
-    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Ty);
-    memcpy(temp, Tyy, sizeof(double)*Nx*Ny*Nz);
-    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Tyy);
+		#pragma omp section
+		{
+            memcpy(temp3, Vy, sizeof(double)*Nx*Ny*Nz);
+            transposeYZXtoXYZ(temp3, Nx, Ny, Nz, Vy);
+		}
 
-    memcpy(temp, Uxy, sizeof(double)*Nx*Ny*Nz);
-    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Uxy);
-    memcpy(temp, Vxy, sizeof(double)*Nx*Ny*Nz);
-    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Vxy);
-    memcpy(temp, Wxy, sizeof(double)*Nx*Ny*Nz);
-    transposeYZXtoXYZ(temp, Nx, Ny, Nz, Wxy);
+		#pragma omp section
+		{
+            memcpy(temp4, Vyy, sizeof(double)*Nx*Ny*Nz);
+            transposeYZXtoXYZ(temp4, Nx, Ny, Nz, Vyy);
+		}
+	
+		#pragma omp section
+		{
+            memcpy(U, Wy, sizeof(double)*Nx*Ny*Nz); //Starting here getting cute with reusing memory
+            transposeYZXtoXYZ(U, Nx, Ny, Nz, Wy);
+		}
 
-    memcpy(temp, contEulerY, sizeof(double)*Nx*Ny*Nz);
-    transposeYZXtoXYZ(temp, Nx, Ny, Nz, contEulerY);
 
-    memcpy(temp, momXEulerY, sizeof(double)*Nx*Ny*Nz);
-    transposeYZXtoXYZ(temp, Nx, Ny, Nz, momXEulerY);
+		#pragma omp section
+		{
+            memcpy(V, Wyy, sizeof(double)*Nx*Ny*Nz);
+            transposeYZXtoXYZ(V, Nx, Ny, Nz, Wyy);
+		}
 
-    memcpy(temp, momYEulerY, sizeof(double)*Nx*Ny*Nz);
-    transposeYZXtoXYZ(temp, Nx, Ny, Nz, momYEulerY);
 
-    memcpy(temp, momZEulerY, sizeof(double)*Nx*Ny*Nz);
-    transposeYZXtoXYZ(temp, Nx, Ny, Nz, momZEulerY);
+		#pragma omp section
+		{
+            memcpy(W, Ty, sizeof(double)*Nx*Ny*Nz);
+            transposeYZXtoXYZ(W, Nx, Ny, Nz, Ty);
+		}
 
-    memcpy(temp, engyEulerY, sizeof(double)*Nx*Ny*Nz);
-    transposeYZXtoXYZ(temp, Nx, Ny, Nz, engyEulerY);
+		#pragma omp section
+		{
+            memcpy(T, Tyy, sizeof(double)*Nx*Ny*Nz);
+            transposeYZXtoXYZ(T, Nx, Ny, Nz, Tyy);
+		}
+    } 
+
+    #pragma omp parallel sections num_threads(4)
+    {
+
+		#pragma omp section
+		{
+            memcpy(temp, Uxy, sizeof(double)*Nx*Ny*Nz);
+            transposeYZXtoXYZ(temp, Nx, Ny, Nz, Uxy);
+		}
+
+		#pragma omp section
+		{
+            memcpy(temp2, Vxy, sizeof(double)*Nx*Ny*Nz);
+            transposeYZXtoXYZ(temp2, Nx, Ny, Nz, Vxy);
+		}
+
+		#pragma omp section
+		{
+            memcpy(temp3, Wxy, sizeof(double)*Nx*Ny*Nz);
+            transposeYZXtoXYZ(temp3, Nx, Ny, Nz, Wxy);
+		}
+
+		#pragma omp section
+		{
+            memcpy(temp4, contEulerY, sizeof(double)*Nx*Ny*Nz);
+            transposeYZXtoXYZ(temp4, Nx, Ny, Nz, contEulerY);
+		}
+
+		#pragma omp section
+		{
+            memcpy(U, momXEulerY, sizeof(double)*Nx*Ny*Nz); //Getting cute with memory here again
+            transposeYZXtoXYZ(U, Nx, Ny, Nz, momXEulerY);
+		}
+
+		#pragma omp section
+		{
+            memcpy(V, momYEulerY, sizeof(double)*Nx*Ny*Nz);
+            transposeYZXtoXYZ(V, Nx, Ny, Nz, momYEulerY);
+		}
+
+		#pragma omp section
+		{
+            memcpy(W, momZEulerY, sizeof(double)*Nx*Ny*Nz);
+            transposeYZXtoXYZ(W, Nx, Ny, Nz, momZEulerY);
+		}
+
+		#pragma omp section
+		{
+            memcpy(T, engyEulerY, sizeof(double)*Nx*Ny*Nz);
+            transposeYZXtoXYZ(T, Nx, Ny, Nz, engyEulerY);
+		}
+    }
 
     ///////////////////
     // Z-DERIVATIVES //
     ///////////////////
 
     //Now recalculate properties in the new space
+    #pragma omp parallel for
     FOR_XYZ U[ip] = transRhoU[ip]/transRho[ip];
+    #pragma omp parallel for
     FOR_XYZ V[ip] = transRhoV[ip]/transRho[ip];
+    #pragma omp parallel for
     FOR_XYZ W[ip] = transRhoW[ip]/transRho[ip];
 
     ig->solvep(transRho, transRhoE, U, V, W, p);
     ig->solveT(transRho, p, T);
 
     //Calculate the stuff for the Euler Derivatives
+    #pragma omp parallel for
     FOR_XYZ temp[ip]  = transRhoU[ip]*W[ip];
+    #pragma omp parallel for
     FOR_XYZ temp2[ip] = transRhoV[ip]*W[ip] + p[ip];
+    #pragma omp parallel for
     FOR_XYZ temp3[ip] = transRhoW[ip]*W[ip] + p[ip];
+    #pragma omp parallel for
     FOR_XYZ temp4[ip] = transRhoE[ip]*W[ip] + W[ip]*p[ip];
 
-    //Calculate the viscous derivatives
-    derivZ->calc1stDerivField(U, Uz);
-    derivZ->calc2ndDerivField(U, Uzz);
+    omp_set_nested(1);
+    #pragma omp parallel sections num_threads(8)
+    {
+        //Calculate the viscous derivatives
+		#pragma omp section
+        derivZ->calc1stDerivField(U, Uz);
+		#pragma omp section
+        derivZ->calc2ndDerivField(U, Uzz);
 
-    derivZ->calc1stDerivField(V, Vz);
-    derivZ->calc2ndDerivField(V, Vzz);
+		#pragma omp section
+        derivZ->calc1stDerivField(V, Vz);
+		#pragma omp section
+        derivZ->calc2ndDerivField(V, Vzz);
 
-    derivZ->calc1stDerivField(W, Wz);
-    derivZ->calc2ndDerivField(W, Wzz);
+		#pragma omp section
+        derivZ->calc1stDerivField(W, Wz);
+		#pragma omp section
+        derivZ->calc2ndDerivField(W, Wzz);
 
-    derivZ->calc1stDerivField(T, Tz);
-    derivZ->calc2ndDerivField(T, Tzz);
+		#pragma omp section
+        derivZ->calc1stDerivField(T, Tz);
+		#pragma omp section
+        derivZ->calc2ndDerivField(T, Tzz);
 
-    derivZ->calc1stDerivField(transUx, Uxz);
-    derivZ->calc1stDerivField(transVx, Vxz);
-    derivZ->calc1stDerivField(transWx, Wxz);
+		#pragma omp section
+        derivZ->calc1stDerivField(transUx, Uxz);
+		#pragma omp section
+        derivZ->calc1stDerivField(transVx, Vxz);
+		#pragma omp section
+        derivZ->calc1stDerivField(transWx, Wxz);
 
-    derivZ->calc1stDerivField(transUy, Uyz);
-    derivZ->calc1stDerivField(transVy, Vyz);
-    derivZ->calc1stDerivField(transWy, Wyz);
+		#pragma omp section
+        derivZ->calc1stDerivField(transUy, Uyz);
+		#pragma omp section
+        derivZ->calc1stDerivField(transVy, Vyz);
+		#pragma omp section
+        derivZ->calc1stDerivField(transWy, Wyz);
 
-    //Calculate the Euler Derivatives
-    derivZ->calc1stDerivField(transRhoW, contEulerZ);
-    derivZ->calc1stDerivField(temp,	 contEulerZ);
-    derivZ->calc1stDerivField(temp2,	 contEulerZ);
-    derivZ->calc1stDerivField(temp3, 	 contEulerZ);
-    derivZ->calc1stDerivField(temp4,	 contEulerZ);
+        //Calculate the Euler Derivatives
+		#pragma omp section
+        derivZ->calc1stDerivField(transRhoW, contEulerZ);
+		#pragma omp section
+        derivZ->calc1stDerivField(temp,	     momXEulerZ);
+		#pragma omp section
+        derivZ->calc1stDerivField(temp2,     momYEulerZ);
+		#pragma omp section
+        derivZ->calc1stDerivField(temp3,     momZEulerZ);
+		#pragma omp section
+        derivZ->calc1stDerivField(temp4,     engyEulerZ);
+    }
 
-    //Moving all the data back to XYZ
-    memcpy(temp, Uz, sizeof(double)*Nx*Ny*Nz);
-    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Uz);
-    memcpy(temp, Uzz, sizeof(double)*Nx*Ny*Nz);
-    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Uzz);
 
-    memcpy(temp, Vz, sizeof(double)*Nx*Ny*Nz);
-    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Vz);
-    memcpy(temp, Vzz, sizeof(double)*Nx*Ny*Nz);
-    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Vzz);
+    omp_set_nested(1);
+    #pragma omp parallel sections num_threads(4)
+    {
 
-    memcpy(temp, Wz, sizeof(double)*Nx*Ny*Nz);
-    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Wz);
-    memcpy(temp, Wzz, sizeof(double)*Nx*Ny*Nz);
-    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Wzz);
+		//Moving all the data back to XYZ
+		#pragma omp section
+		{
+			memcpy(temp, Uz, sizeof(double)*Nx*Ny*Nz);
+			transposeZXYtoXYZ(temp, Nx, Ny, Nz, Uz);
+		}
 
-    memcpy(temp, Tz, sizeof(double)*Nx*Ny*Nz);
-    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Tz);
-    memcpy(temp, Tzz, sizeof(double)*Nx*Ny*Nz);
-    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Tzz);
+		#pragma omp section
+		{
+			memcpy(temp2, Uzz, sizeof(double)*Nx*Ny*Nz);
+			transposeZXYtoXYZ(temp2, Nx, Ny, Nz, Uzz);
+		}
 
-    memcpy(temp, Uxz, sizeof(double)*Nx*Ny*Nz);
-    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Uxz);
-    memcpy(temp, Vxz, sizeof(double)*Nx*Ny*Nz);
-    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Vxz);
-    memcpy(temp, Wxz, sizeof(double)*Nx*Ny*Nz);
-    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Wxz);
+		#pragma omp section
+		{
+			memcpy(temp3, Vz, sizeof(double)*Nx*Ny*Nz);
+			transposeZXYtoXYZ(temp3, Nx, Ny, Nz, Vz);
+		}
 
-    memcpy(temp, Uyz, sizeof(double)*Nx*Ny*Nz);
-    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Uyz);
-    memcpy(temp, Vyz, sizeof(double)*Nx*Ny*Nz);
-    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Vyz);
-    memcpy(temp, Wyz, sizeof(double)*Nx*Ny*Nz);
-    transposeZXYtoXYZ(temp, Nx, Ny, Nz, Wyz);
+		#pragma omp section
+		{
+			memcpy(temp4, Vzz, sizeof(double)*Nx*Ny*Nz);
+			transposeZXYtoXYZ(temp4, Nx, Ny, Nz, Vzz);
+		}
 
-    memcpy(temp, contEulerZ, sizeof(double)*Nx*Ny*Nz);
-    transposeZXYtoXYZ(temp, Nx, Ny, Nz, contEulerZ);
-    memcpy(temp, momXEulerZ, sizeof(double)*Nx*Ny*Nz);
-    transposeZXYtoXYZ(temp, Nx, Ny, Nz, momXEulerZ);
-    memcpy(temp, momYEulerZ, sizeof(double)*Nx*Ny*Nz);
-    transposeZXYtoXYZ(temp, Nx, Ny, Nz, momYEulerZ);
-    memcpy(temp, momZEulerZ, sizeof(double)*Nx*Ny*Nz);
-    transposeZXYtoXYZ(temp, Nx, Ny, Nz, momZEulerZ);
-    memcpy(temp, engyEulerZ, sizeof(double)*Nx*Ny*Nz);
-    transposeZXYtoXYZ(temp, Nx, Ny, Nz, engyEulerZ);
+		#pragma omp section
+		{
+			memcpy(transUx, Wz, sizeof(double)*Nx*Ny*Nz); //Once again getting cute with memory starting here
+			transposeZXYtoXYZ(transUx, Nx, Ny, Nz, Wz);
+		}
+
+		#pragma omp section
+		{
+			memcpy(transVx, Wzz, sizeof(double)*Nx*Ny*Nz);
+			transposeZXYtoXYZ(transVx, Nx, Ny, Nz, Wzz);
+		}
+
+		#pragma omp section
+		{
+			memcpy(transWx, Tz, sizeof(double)*Nx*Ny*Nz);
+			transposeZXYtoXYZ(transWx, Nx, Ny, Nz, Tz);
+		}
+
+		#pragma omp section
+		{
+			memcpy(transUy, Tzz, sizeof(double)*Nx*Ny*Nz);
+			transposeZXYtoXYZ(transWy, Nx, Ny, Nz, Tzz);
+		}
+
+		#pragma omp section
+		{
+			memcpy(transVy, Uxz, sizeof(double)*Nx*Ny*Nz);
+			transposeZXYtoXYZ(transVy, Nx, Ny, Nz, Uxz);
+		}
+
+		#pragma omp section
+		{
+			memcpy(transWy, Vxz, sizeof(double)*Nx*Ny*Nz);
+			transposeZXYtoXYZ(transWy, Nx, Ny, Nz, Vxz);
+		}
+
+		#pragma omp section
+		{
+			memcpy(transRhoU, Wxz, sizeof(double)*Nx*Ny*Nz);
+			transposeZXYtoXYZ(transRhoU, Nx, Ny, Nz, Wxz);
+		}
+
+		#pragma omp section
+		{
+			memcpy(transRhoV, Uyz, sizeof(double)*Nx*Ny*Nz);
+			transposeZXYtoXYZ(transRhoV, Nx, Ny, Nz, Uyz);
+		}
+
+		#pragma omp section
+		{
+			memcpy(transRhoW, Vyz, sizeof(double)*Nx*Ny*Nz);
+			transposeZXYtoXYZ(transRhoW, Nx, Ny, Nz, Vyz);
+		}
+
+		#pragma omp section
+		{
+			memcpy(transRhoE, Wyz, sizeof(double)*Nx*Ny*Nz);
+			transposeZXYtoXYZ(transRhoE, Nx, Ny, Nz, Wyz);
+		}
+
+		#pragma omp section
+		{
+			memcpy(U, contEulerZ, sizeof(double)*Nx*Ny*Nz);
+			transposeZXYtoXYZ(U, Nx, Ny, Nz, contEulerZ);
+		}
+
+		#pragma omp section
+		{
+			memcpy(V, momXEulerZ, sizeof(double)*Nx*Ny*Nz);
+			transposeZXYtoXYZ(V, Nx, Ny, Nz, momXEulerZ);
+		}
+
+		#pragma omp section
+		{
+			memcpy(W, momYEulerZ, sizeof(double)*Nx*Ny*Nz);
+			transposeZXYtoXYZ(W, Nx, Ny, Nz, momYEulerZ);
+		}
+
+		#pragma omp section
+		{
+			memcpy(T, momZEulerZ, sizeof(double)*Nx*Ny*Nz);
+			transposeZXYtoXYZ(T, Nx, Ny, Nz, momZEulerZ);
+		}
+	
+		#pragma omp section
+		{
+			memcpy(p, engyEulerZ, sizeof(double)*Nx*Ny*Nz);
+			transposeZXYtoXYZ(p, Nx, Ny, Nz, engyEulerZ);
+		}
+    }
 
     //Going back to original...
+    #pragma omp parallel for
     FOR_XYZ U[ip] = rhoUP[ip]/rhoP[ip];
+    #pragma omp parallel for
     FOR_XYZ V[ip] = rhoVP[ip]/rhoP[ip];
+    #pragma omp parallel for
     FOR_XYZ W[ip] = rhoWP[ip]/rhoP[ip];
+
     ig->solvep(rhoP, rhoEP, U, V, W, p);
     ig->solveT(rhoP, p, T);
 
 }
 
-void CSolver::solveContinuity(){
 
+void CSolver::solveContinuity(){
+    
+	#pragma omp parallel
+	{
+
+	#pragma omp for
     FOR_XYZ rhok2[ip]  = - contEulerX[ip] - contEulerY[ip] - contEulerZ[ip];
 
     if(spongeFlag){
@@ -615,59 +898,73 @@ void CSolver::solveContinuity(){
 	    rhoP = rhok;
         }
 
-	FOR_XYZ{
-	    rhok2[ip]  += calcSpongeSource(rhoP[ip], spg->spongeRhoAvg[ip], spg->sigma[ip]);	
-	}
+	    #pragma omp for
+	    FOR_XYZ{
+	        rhok2[ip]  += calcSpongeSource(rhoP[ip], spg->spongeRhoAvg[ip], spg->sigma[ip]);	
+	    }
     }
 
+	#pragma omp for
     FOR_XYZ rhok2[ip] *= ts->dt;
 
+	}
 }
 
 void CSolver::solveXMomentum(){
 
-    double MuX, MuY, MuZ;
+    #pragma omp parallel
+    {
 
-    FOR_XYZ{
-	//Viscous Terms
-        rhoUk2[ip]  = mu[ip]*((4.0/3.0)*Uxx[ip] + Uyy[ip] + Uzz[ip] + (1.0/3.0)*Vxy[ip] + (1.0/3.0)*Wxz[ip]);
-    }
+    	double MuX, MuY, MuZ;
 
-    FOR_XYZ{
-	MuX = Amu[ip]*Tx[ip];
-	rhoUk2[ip] += (4.0/3.0)*MuX*(Ux[ip] - 0.5*Vy[ip] - 0.5*Wz[ip]);
-    }
+		#pragma omp for
+    	FOR_XYZ{
+			//Viscous Terms
+        	rhoUk2[ip]  = mu[ip]*((4.0/3.0)*Uxx[ip] + Uyy[ip] + Uzz[ip] + (1.0/3.0)*Vxy[ip] + (1.0/3.0)*Wxz[ip]);
+    	}
 
-    FOR_XYZ{
-	MuY = Amu[ip]*Ty[ip];
-	rhoUk2[ip] += MuY*(Uy[ip] + Vx[ip]); 
-    }
+		#pragma omp for
+    	FOR_XYZ{
+			MuX = Amu[ip]*Tx[ip];
+			rhoUk2[ip] += (4.0/3.0)*MuX*(Ux[ip] - 0.5*Vy[ip] - 0.5*Wz[ip]);
+    	}
+
+		#pragma omp for
+    	FOR_XYZ{
+			MuY = Amu[ip]*Ty[ip];
+			rhoUk2[ip] += MuY*(Uy[ip] + Vx[ip]); 
+    	}
   
-    FOR_XYZ{
-	MuZ = Amu[ip]*Tz[ip];
-	rhoUk2[ip] += MuZ*(Wx[ip] + Uz[ip]); 
+		#pragma omp for
+    	FOR_XYZ{
+			MuZ = Amu[ip]*Tz[ip];
+			rhoUk2[ip] += MuZ*(Wx[ip] + Uz[ip]); 
+    	}
+
+		#pragma omp for
+    	FOR_XYZ{
+			//Euler Terms
+			rhoUk2[ip] += -momXEulerX[ip] -momXEulerY[ip] -momXEulerZ[ip];
+    	}
+
+    	if(spongeFlag){
+        	double *rhoUP;
+        	if(rkStep == 1){
+            	rhoUP = rhoU1;
+        	}else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
+            	rhoUP = rhoUk;
+        	}
+
+			#pragma omp for
+        	FOR_XYZ{
+            	rhoUk2[ip]  += calcSpongeSource(rhoUP[ip], spg->spongeRhoUAvg[ip], spg->sigma[ip]);
+        	}
+   		}
+
+		#pragma omp for
+	    FOR_XYZ rhoUk2[ip] *= ts->dt;
+
     }
-
-    FOR_XYZ{
-	//Euler Terms
-	rhoUk2[ip] += -momXEulerX[ip] -momXEulerY[ip] -momXEulerZ[ip];
-    }
-
-    if(spongeFlag){
-        double *rhoUP;
-        if(rkStep == 1){
-            rhoUP = rhoU1;
-        }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
-            rhoUP = rhoUk;
-        }
-
-        FOR_XYZ{
-            rhoUk2[ip]  += calcSpongeSource(rhoUP[ip], spg->spongeRhoUAvg[ip], spg->sigma[ip]);
-        }
-    }
-
-    FOR_XYZ rhoUk2[ip] *= ts->dt;
-
 }
 
 void CSolver::solveYMomentum(){
@@ -1238,4 +1535,15 @@ void CSolver::updateSponge(){
 
     }
 };
+
+
+void CSolver::test(){
+
+    derivX->calc1stDerivField(U, Ux);
+}
+
+
+
+
+
 
