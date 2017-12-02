@@ -240,18 +240,16 @@ void transposeYZXtoXYZ_Fast(const double *in, int Nx, int Ny, int Nz, double *ou
 
 
 
-void getRange(double *phi, std::string dataName, int Nx, int Ny){
-    double dataMin = 1000000;
-    double dataMax = -1000000;
-    for(int ip = 0; ip < Nx*Ny; ip++){
-        if(phi[ip] > dataMax){
-            dataMax = phi[ip];
-        }
+void getRange(double *phi, std::string dataName, int Nx, int Ny, int Nz){
 
-        if(phi[ip] < dataMin){
-            dataMin = phi[ip];
-        }
-    }
+    double dataMin = 1000000;
+    for(int ip = 0; ip < Nx*Ny*Nz; ip++)
+        dataMin = min(dataMin, phi[ip]);
+
+    double dataMax = -1000000;
+    for(int ip = 0; ip < Nx*Ny*Nz; ip++) 
+        dataMax = max(dataMax, phi[ip]);
+    
 
     cout << "  Range of " << dataName << ": " << dataMin << ":" << dataMax << endl;
 

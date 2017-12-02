@@ -36,6 +36,9 @@ class CSolver{
         double time;
 	int filterTimeStep;
 
+        std::chrono::system_clock::time_point t1Save, t2Save;
+
+
 	//Kill solver condition
         bool done;
 
@@ -120,6 +123,8 @@ class CSolver{
    	    time = 0.0;
 	    timeStep = 0;
 	    filterTimeStep = 0;
+            t1Save = std::chrono::system_clock::now();
+            t2Save = std::chrono::system_clock::now();
 
 	    done = false;
 
@@ -175,8 +180,6 @@ class CSolver{
 	void updateSponge();
 
 	void checkSolution();
-
-	void test();
 
 };
 

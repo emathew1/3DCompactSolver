@@ -14,14 +14,18 @@ class TimeStepping{
 	int maxTimeStep;
 	double maxTime;
 	int filterStep;  
+	int checkStep;
+	int dumpStep;
 
 	TimeStepping(TimeSteppingType timeSteppingType, 
-		     double CFL, int maxTimeStep, double maxTime, int filterStep){
+		     double CFL, int maxTimeStep, double maxTime, int filterStep, int checkStep, int dumpStep){
 	    this->timeSteppingType = timeSteppingType;
 	    this->CFL = CFL;
 	    this->maxTimeStep = maxTimeStep;
 	    this->maxTime = maxTime;
 	    this->filterStep = filterStep;
+	    this->checkStep  = checkStep;
+	    this->dumpStep   = dumpStep;
 
 	    std::cout << std::endl;
 	    std::cout << " > Initializing time dependent options..." << std::endl;

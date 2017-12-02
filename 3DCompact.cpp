@@ -54,23 +54,25 @@ int main(int argc, char *argv[]){
     int maxTimeStep  = 10;
     double maxTime   = 10.0;
     int filterStep   = 5;
-    TimeStepping *ts = new TimeStepping(timeSteppingType, CFL, maxTimeStep, maxTime, filterStep);
+    int checkStep    = 1;
+    int dumpStep     = 100;
+    TimeStepping *ts = new TimeStepping(timeSteppingType, CFL, maxTimeStep, maxTime, filterStep, checkStep, dumpStep);
 
 
 
     ///////////////////////////
     //Boundary Condition Info//
     ///////////////////////////
-    BC::BCType bcXType = BC::DIRICHLET_SOLVE; 
-    BC::BCType bcYType = BC::DIRICHLET_SOLVE; 
-    BC::BCType bcZType = BC::DIRICHLET_SOLVE; 
+    BC::BCType bcXType = BC::PERIODIC_SOLVE; 
+    BC::BCType bcYType = BC::PERIODIC_SOLVE; 
+    BC::BCType bcZType = BC::PERIODIC_SOLVE; 
 
-    BC::BCKind bcX0 = BC::SPONGE;
-    BC::BCKind bcX1 = BC::SPONGE;
-    BC::BCKind bcY0 = BC::SPONGE;
-    BC::BCKind bcY1 = BC::SPONGE;
-    BC::BCKind bcZ0 = BC::SPONGE;
-    BC::BCKind bcZ1 = BC::SPONGE;
+    BC::BCKind bcX0 = BC::PERIODIC;
+    BC::BCKind bcX1 = BC::PERIODIC;
+    BC::BCKind bcY0 = BC::PERIODIC;
+    BC::BCKind bcY1 = BC::PERIODIC;
+    BC::BCKind bcZ0 = BC::PERIODIC;
+    BC::BCKind bcZ1 = BC::PERIODIC;
 
     BC *bc = new BC(bcXType, bcX0, bcX1,
 		    bcYType, bcY0, bcY1,
@@ -223,6 +225,18 @@ int main(int argc, char *argv[]){
     cs->filterConservedData();
     t2 = std::chrono::system_clock::now();
     cout << "filterConserved:" << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+
+    t1 = std::chrono::system_clock::now();
+    cs->updateSponge();
+    t2 = std::chrono::system_clock::now();
+    cout << "updateSponge:" << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+
+    t1 = std::chrono::system_clock::now();
+    cs->checkSolution();
+    t2 = std::chrono::system_clock::now();
+    cout << "checkSolution:" << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+
+
 
 
     return 0;

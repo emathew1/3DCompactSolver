@@ -1098,7 +1098,7 @@ void CSolver::solveEnergy(){
 	qtemp[ip]  = MuX*Tx[ip];
     }
 
-    #pragma omp parallel for
+    #pragma omp parallel for 
     FOR_XYZ{
 	double MuY = Amu[ip]*Ty[ip];
 	qtemp[ip] += MuY*Ty[ip];
@@ -1749,12 +1749,18 @@ void CSolver::updateNonConservedData(){
 void CSolver::updateSponge(){
     if(spongeFlag){
 	double eps = 1.0/(spg->avgT/ts->dt + 1.0);
+	#pragma omp parallel for
 	FOR_XYZ spg->spongeRhoAvg[ip]  += eps*(rho1[ip]  - spg->spongeRhoAvg[ip]);	
+	#pragma omp parallel for
 	FOR_XYZ spg->spongeRhoUAvg[ip] += eps*(rhoU1[ip] - spg->spongeRhoUAvg[ip]);	
+	#pragma omp parallel for
 	FOR_XYZ spg->spongeRhoVAvg[ip] += eps*(rhoV1[ip] - spg->spongeRhoVAvg[ip]);	
+	#pragma omp parallel for
 	FOR_XYZ spg->spongeRhoWAvg[ip] += eps*(rhoW1[ip] - spg->spongeRhoWAvg[ip]);	
+	#pragma omp parallel for
 	FOR_XYZ spg->spongeRhoEAvg[ip] += eps*(rhoE1[ip] - spg->spongeRhoEAvg[ip]);	
 	
+	#pragma omp parallel for
 	FOR_XYZ spg->spongeRhoEAvg[ip] = spg->epsP*spg->spongeRhoEAvg[ip] + (1.0 -  spg->epsP)*(spg->spongeP/(ig->gamma-1.0) \
 					 + 0.5*(spg->spongeRhoUAvg[ip]*spg->spongeRhoUAvg[ip] + spg->spongeRhoVAvg[ip]*spg->spongeRhoVAvg[ip] \
 					 + spg->spongeRhoWAvg[ip]*spg->spongeRhoWAvg[ip])/spg->spongeRhoAvg[ip]);
@@ -1787,14 +1793,24 @@ void CSolver::updateSponge(){
     }
 };
 
+void CSolver::checkSolution(){
+    if(timeStep%ts->checkStep == 0){
+        t2Save = std::chrono::system_clock::now();
+        cout << "-------------------------------------------------" << endl;
+        cout << " Step = "<< timeStep << ", time = " << time << ", dt = " << ts->dt << endl;
+        cout << "-------------------------------------------------" << endl;
+        cout << "  Time since last timestep = " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2Save-t1Save).count()/(double)1000000000 << endl;
+        getRange(rho1, "RHO", Nx, Ny, Nz);
+        getRange(U, "U", Nx, Ny, Nz);
+        getRange(V, "V", Nx, Ny, Nz);
+        getRange(W, "W", Nx, Ny, Nz);
+        getRange(p, "P", Nx, Ny, Nz);
+        getRange(T, "T", Nx, Ny, Nz);
+        getRange(mu, "mu", Nx, Ny, Nz);
+        getRange(rhoE1, "RHOE", Nx, Ny, Nz);
+        getRange(sos, "SOS", Nx, Ny, Nz);
+        cout << endl;
 
-void CSolver::test(){
-
-    derivX->calc1stDerivField(U, Ux);
+        t1Save = std::chrono::system_clock::now();
+    }
 }
-
-
-
-
-
-

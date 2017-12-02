@@ -26,7 +26,7 @@ void transposeYZXtoXYZ(const double *in, int Nx, int Ny, int Nz, double *out);
 void transposeYZXtoXYZ_Fast(const double *in, int Nx, int Ny, int Nz, double *out, int blocksize);
 
 
-void getRange(double *phi, std::string dataName, int Nx, int Ny);
+void getRange(double *phi, std::string dataName, int Nx, int Ny, int Nz);
 double fRand(double fMin, double fMax);
 
 #endif
