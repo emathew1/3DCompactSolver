@@ -80,7 +80,7 @@ void transposeMatrix_Fast2(const double *in, int n, int p, double *out, int bloc
 
 void transposeXYZtoYZX(const double *in, int Nx, int Ny, int Nz, double *out){
 
-    #pragma omp parallel for collapse(3) num_threads(2) 
+    #pragma omp parallel for schedule(static) collapse(3) num_threads(2) 
     for(int ip = 0; ip < Nx; ip++){
 	for(int kp = 0; kp < Nz; kp++){
 	    for(int jp = 0; jp < Ny; jp++){
@@ -91,9 +91,29 @@ void transposeXYZtoYZX(const double *in, int Nx, int Ny, int Nz, double *out){
 
 } 
 
+void transposeXYZtoYZX_Fast(const double *in, int Nx, int Ny, int Nz, double *out, int blocksize){
+    int i, j, k, row, col, sli;
+    #pragma omp parallel for private(i, j, k, row, col, sli) collapse(3) schedule(static) num_threads(2)
+    for ( i = 0; i < Nx; i += blocksize) {
+	for( k = 0; k < Nz; k += blocksize){
+            for ( j = 0; j < Ny; j += blocksize){
+                for (row = i; row < i + blocksize && row < Nx; row++) {
+		    for(sli = k; sli < k + blocksize && sli < Nz; sli++){
+                    	for (col = j; col < j + blocksize && col < Ny; col++) {
+                            out[row*Ny*Nz + sli*Ny + col] = in[sli*Ny*Nx + col*Nx + row];
+			}
+                    }
+	        }
+            }
+        }
+    }
+}
+
+
+
 void transposeYZXtoZXY(const double *in, int Nx, int Ny, int Nz, double *out){
 
-    #pragma omp parallel for collapse(3) num_threads(2)
+    #pragma omp parallel for schedule(static) collapse(3) num_threads(2)
     for(int jp = 0; jp < Ny; jp++){
     	for(int ip = 0; ip < Nx; ip++){
 	    for(int kp = 0; kp < Nz; kp++){
@@ -104,9 +124,29 @@ void transposeYZXtoZXY(const double *in, int Nx, int Ny, int Nz, double *out){
 
 }
 
+void transposeYZXtoZXY_Fast(const double *in, int Nx, int Ny, int Nz, double *out, int blocksize){
+    int i, j, k, row, col, sli;
+    #pragma omp parallel for private(i, j, k, row, col, sli) collapse(3) schedule(static) num_threads(2)
+    for ( j = 0; j < Ny; j += blocksize){
+        for ( i = 0; i < Nx; i += blocksize) {
+	    for( k = 0; k < Nz; k += blocksize){
+                for (col = j; col < j + blocksize && col < Ny; col++) {
+                    for (row = i; row < i + blocksize && row < Nx; row++) {
+		        for(sli = k; sli < k + blocksize && sli < Nz; sli++){
+                            out[col*Nx*Nz + row*Nz + sli] = in[row*Ny*Nz + sli*Ny + col];
+			}
+                    }
+	        }
+            }
+        }
+    }
+}
+
+
+
 void transposeXYZtoZXY(const double *in, int Nx, int Ny, int Nz, double *out){
 
-    #pragma omp parallel for collapse(3) num_threads(2)
+    #pragma omp parallel for schedule(static) collapse(3) num_threads(2)
     for(int jp = 0; jp < Ny; jp++){
     	for(int ip = 0; ip < Nx; ip++){
 	    for(int kp = 0; kp < Nz; kp++){
@@ -118,9 +158,28 @@ void transposeXYZtoZXY(const double *in, int Nx, int Ny, int Nz, double *out){
 }
 
 
+void transposeXYZtoZXY_Fast(const double *in, int Nx, int Ny, int Nz, double *out, int blocksize){
+    int i, j, k, row, col, sli;
+    #pragma omp parallel for private(i, j, k, row, col, sli) collapse(3) schedule(static) num_threads(2)
+    for ( j = 0; j < Ny; j += blocksize){
+        for ( i = 0; i < Nx; i += blocksize) {
+	    for( k = 0; k < Nz; k += blocksize){
+                for (col = j; col < j + blocksize && col < Ny; col++) {
+                    for (row = i; row < i + blocksize && row < Nx; row++) {
+		        for(sli = k; sli < k + blocksize && sli < Nz; sli++){
+                            out[col*Nx*Nz + row*Nz + sli] = in[sli*Ny*Nx + col*Nx + row];
+			}
+                    }
+	        }
+            }
+        }
+    }
+}
+
+
 void transposeZXYtoXYZ(const double *in, int Nx, int Ny, int Nz, double *out){
 
-    #pragma omp parallel for collapse(3) num_threads(2) 
+    #pragma omp parallel for schedule(static) collapse(3) num_threads(2) 
     for(int kp = 0; kp < Nz; kp++){
         for(int jp = 0; jp < Ny; jp++){
     	    for(int ip = 0; ip < Nx; ip++){
@@ -131,9 +190,27 @@ void transposeZXYtoXYZ(const double *in, int Nx, int Ny, int Nz, double *out){
 
 }
 
+void transposeZXYtoXYZ_Fast(const double *in, int Nx, int Ny, int Nz, double *out, int blocksize){
+    int i, j, k, row, col, sli;
+    #pragma omp parallel for private(i, j, k, row, col, sli) collapse(3) schedule(static) num_threads(2)
+    for( k = 0; k < Nz; k += blocksize){
+        for ( j = 0; j < Ny; j += blocksize){
+            for ( i = 0; i < Nx; i += blocksize) {
+		for(sli = k; sli < k + blocksize && sli < Nz; sli++){
+                    for (col = j; col < j + blocksize && col < Ny; col++) {
+                        for (row = i; row < i + blocksize && row < Nx; row++) {
+                            out[sli*Nx*Ny + col*Nx + row] = in[col*Nz*Nx + row*Nz + sli];
+			}
+                    }
+	        }
+            }
+        }
+    }
+}
+
 void transposeYZXtoXYZ(const double *in, int Nx, int Ny, int Nz, double *out){
 
-    #pragma omp parallel for collapse(3) num_threads(2)
+    #pragma omp parallel for schedule(static) collapse(3) num_threads(2)
     for(int kp = 0; kp < Nz; kp++){
     	for(int jp = 0; jp < Ny; jp++){
 	    for(int ip = 0; ip < Nx; ip++){
@@ -142,6 +219,25 @@ void transposeYZXtoXYZ(const double *in, int Nx, int Ny, int Nz, double *out){
 	}
     }
 }
+
+void transposeYZXtoXYZ_Fast(const double *in, int Nx, int Ny, int Nz, double *out, int blocksize){
+    int i, j, k, row, col, sli;
+    #pragma omp parallel for private(i, j, k, row, col, sli) collapse(3) schedule(static) num_threads(2)
+    for( k = 0; k < Nz; k += blocksize){
+        for ( j = 0; j < Ny; j += blocksize){
+            for ( i = 0; i < Nx; i += blocksize) {
+		for(sli = k; sli < k + blocksize && sli < Nz; sli++){
+                    for (col = j; col < j + blocksize && col < Ny; col++) {
+                        for (row = i; row < i + blocksize && row < Nx; row++) {
+                            out[sli*Nx*Ny + col*Nx + row] = in[row*Nz*Ny + sli*Ny + col];
+			}
+                    }
+	        }
+            }
+        }
+    }
+}
+
 
 
 void getRange(double *phi, std::string dataName, int Nx, int Ny){

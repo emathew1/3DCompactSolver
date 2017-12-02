@@ -111,13 +111,76 @@ int main(int argc, char *argv[]){
 
     auto t1 = std::chrono::system_clock::now();
     auto t2 = std::chrono::system_clock::now();
+ 
+    double *test = new double[Nx*Ny*Nz];
+    double *testTrans = new double[Nx*Ny*Nz];
+
+    FOR_Z{
+	FOR_Y{
+	    FOR_X{
+		int ii = GET3DINDEX_XYZ;
+		test[ii] = (double)ii;
+		testTrans[ii] = 0.0;
+	    }
+	}
+    }
+/*
+    FOR_Z{
+	FOR_Y{
+	    FOR_X{
+		int ii = GET3DINDEX_XYZ;
+		cout << test[ii] << " ";
+	    }
+	    cout << endl;
+	}
+	cout << endl;
+    }
+*/
+ 
+    t1 = std::chrono::system_clock::now();
+    transposeXYZtoYZX(test, Nx, Ny, Nz, testTrans);
+    t2 = std::chrono::system_clock::now();
+    cout << "transposeXYZtoYXZ: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+
+    t1 = std::chrono::system_clock::now();
+    transposeXYZtoYZX_Fast(test, Nx, Ny, Nz, testTrans, 1);
+    t2 = std::chrono::system_clock::now();
+    cout << "transposeXYZtoYXZ_Fast Block 1: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+
+    t1 = std::chrono::system_clock::now();
+    transposeXYZtoYZX_Fast(test, Nx, Ny, Nz, testTrans, 2);
+    t2 = std::chrono::system_clock::now();
+    cout << "transposeXYZtoYXZ_Fast Block 2: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+
+    t1 = std::chrono::system_clock::now();
+    transposeXYZtoYZX_Fast(test, Nx, Ny, Nz, testTrans, 4);
+    t2 = std::chrono::system_clock::now();
+    cout << "transposeXYZtoYXZ_Fast Block 4: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+
+    t1 = std::chrono::system_clock::now();
+    transposeXYZtoYZX_Fast(test, Nx, Ny, Nz, testTrans, 8);
+    t2 = std::chrono::system_clock::now();
+    cout << "transposeXYZtoYXZ_Fast Block 8: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+    t1 = std::chrono::system_clock::now();
+    transposeXYZtoYZX_Fast(test, Nx, Ny, Nz, testTrans, 16);
+    t2 = std::chrono::system_clock::now();
+    cout << "transposeXYZtoYXZ_Fast Block 16: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+
+    t1 = std::chrono::system_clock::now();
+    transposeXYZtoYZX_Fast(test, Nx, Ny, Nz, testTrans, 24);
+    t2 = std::chrono::system_clock::now();
+    cout << "transposeXYZtoYXZ_Fast Block 24: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
+
+    t1 = std::chrono::system_clock::now();
+    transposeXYZtoYZX_Fast(test, Nx, Ny, Nz, testTrans, 32);
+    t2 = std::chrono::system_clock::now();
+    cout << "transposeXYZtoYXZ_Fast Block 32: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
 
 
     t1 = std::chrono::system_clock::now();
     cs->preStepDerivatives();
     t2 = std::chrono::system_clock::now();
     cout << "preStepDerivatives: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;
-
 
 
     t1 = std::chrono::system_clock::now();
