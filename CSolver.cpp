@@ -368,7 +368,7 @@ void CSolver::preStepDerivatives(){
     //First we'll do all of the X-Direction derivatives since we're in XYZ order
 
     //Calculate the Euler Components of the equations... 
-    #pragma omp parallel for
+    #pragma omp parallel for 
     FOR_XYZ temp[ip]  = rhoUP[ip]*U[ip] + p[ip];
 
     #pragma omp parallel for
@@ -379,8 +379,7 @@ void CSolver::preStepDerivatives(){
 
     #pragma omp parallel for
     FOR_XYZ temp4[ip] = rhoEP[ip]*U[ip] + U[ip]*p[ip];
-    
-    auto t1 = std::chrono::system_clock::now();
+
     omp_set_nested(1);
 
     const int halfThreadCount = omp_get_num_threads()/2;
@@ -418,8 +417,12 @@ void CSolver::preStepDerivatives(){
         derivX->calc1stDerivField(temp4, engyEulerX);
 
     }
-    auto t2 = std::chrono::system_clock::now();
-    cout << "part 1 deriv test, sectioned: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;    
+
+
+    //auto t1 = std::chrono::system_clock::now();
+   //derivX->calc1stDerivField(temp4, engyEulerX);
+    //auto t2 = std::chrono::system_clock::now();
+    //cout << "part 1 deriv test, sectioned: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;    
 
 
 
@@ -923,25 +926,28 @@ void CSolver::solveXMomentum(){
             rhoUk2[ip]  = mu[ip]*((4.0/3.0)*Uxx[ip] + Uyy[ip] + Uzz[ip] + (1.0/3.0)*Vxy[ip] + (1.0/3.0)*Wxz[ip]);
 	}
 
-	#pragma omp parallel for
+	#pragma omp parallel
+	{
+
+	#pragma omp for nowait
 	FOR_XYZ{
 	    double MuX = Amu[ip]*Tx[ip];
 	    rhoUk2[ip] += (4.0/3.0)*MuX*(Ux[ip] - 0.5*Vy[ip] - 0.5*Wz[ip]);
 	}
 
-	#pragma omp parallel for
+	#pragma omp for nowait
 	FOR_XYZ{
 	    double MuY = Amu[ip]*Ty[ip];
  	    rhoUk2[ip] += MuY*(Uy[ip] + Vx[ip]); 
 	}
 
-	#pragma omp parallel for
+	#pragma omp for nowait
 	FOR_XYZ{
 	    double MuZ = Amu[ip]*Tz[ip];
 	    rhoUk2[ip] += MuZ*(Wx[ip] + Uz[ip]); 
 	}
 
-	#pragma omp parallel for
+	#pragma omp for nowait
 	FOR_XYZ{
  	    //Euler Terms
 	    rhoUk2[ip] += -momXEulerX[ip] -momXEulerY[ip] -momXEulerZ[ip];
@@ -955,11 +961,13 @@ void CSolver::solveXMomentum(){
             	rhoUP = rhoUk;
             }
 
-	    #pragma omp parallel for
+	    #pragma omp for nowait
             FOR_XYZ{
             	rhoUk2[ip]  += calcSpongeSource(rhoUP[ip], spg->spongeRhoUAvg[ip], spg->sigma[ip]);
             }
    	}
+
+	}
 
 	#pragma omp parallel for
 	FOR_XYZ rhoUk2[ip] *= ts->dt;
@@ -975,26 +983,28 @@ void CSolver::solveYMomentum(){
         rhoVk2[ip]  = mu[ip]*((4.0/3.0)*Vyy[ip] + Vxx[ip] + Vzz[ip] + (1.0/3.0)*Uxy[ip] + (1.0/3.0)*Wyz[ip]);
     }
 
-    #pragma omp parallel for
+    #pragma omp parallel
+    {
+    #pragma omp for nowait
     FOR_XYZ{ 
 	double MuY = Amu[ip]*Tx[ip];
 	rhoVk2[ip] += (4.0/3.0)*MuY*(Vy[ip] - 0.5*Ux[ip] - 0.5*Wz[ip]);
     }
 
-    #pragma omp parallel for
+    #pragma omp for nowait
     FOR_XYZ{
 	double MuX = Amu[ip]*Ty[ip];
 	rhoVk2[ip] += MuX*(Uy[ip] + Vx[ip]); 
     }
 
-    #pragma omp parallel for
+    #pragma omp for nowait
     FOR_XYZ{
   	double MuZ = Amu[ip]*Tz[ip];
 	rhoVk2[ip] += MuZ*(Wy[ip] + Vz[ip]); 
     }
 
     //Euler Terms
-    #pragma omp parallel for
+    #pragma omp for nowait
     FOR_XYZ{
 	rhoVk2[ip] += -momYEulerX[ip] -momYEulerY[ip] -momYEulerZ[ip];
 	
@@ -1008,10 +1018,12 @@ void CSolver::solveYMomentum(){
             rhoVP = rhoVk;
         }
 
-	#pragma omp parallel for
+        #pragma omp for nowait
         FOR_XYZ{
             rhoVk2[ip]  += calcSpongeSource(rhoVP[ip], spg->spongeRhoVAvg[ip], spg->sigma[ip]);
         }
+    }
+
     }
 
     #pragma omp parallel for
@@ -1374,6 +1386,10 @@ void CSolver::updateConservedData(){
 
 void CSolver::filterConservedData(){
 
+    const int blocksize = 16;
+    const int halfThreadCount = omp_get_num_threads()/2;
+    omp_set_nested(1);
+
     //Need to do round robin of filtering directions...
     if(ts->filterStep%timeStep == 0){
 
@@ -1384,47 +1400,95 @@ void CSolver::filterConservedData(){
         if(filterTimeStep%3 == 1){
 
             //Here we'll do X->Y->Z     
-            filtX->filterField(rho2,  rho1);
-            filtX->filterField(rhoU2, temp);
-            filtX->filterField(rhoV2, temp2);
-            filtX->filterField(rhoW2, temp3);
-            filtX->filterField(rhoE2, temp4);
+
+    	    #pragma omp parallel sections num_threads(halfThreadCount) 
+ 	    {
+		#pragma omp section
+                filtX->filterField(rho2,  rho1);
+		#pragma omp section
+                filtX->filterField(rhoU2, temp);
+		#pragma omp section
+                filtX->filterField(rhoV2, temp2);
+		#pragma omp section
+                filtX->filterField(rhoW2, temp3);
+		#pragma omp section
+                filtX->filterField(rhoE2, temp4);
+	    }
 
             //Do the transpose to YZX space
-            transposeXYZtoYZX(rho1,   Nx, Ny, Nz, rho2);
-            transposeXYZtoYZX(temp,   Nx, Ny, Nz, rhoU2);
-            transposeXYZtoYZX(temp2,  Nx, Ny, Nz, rhoV2);
-            transposeXYZtoYZX(temp3,  Nx, Ny, Nz, rhoW2);
-            transposeXYZtoYZX(temp4,  Nx, Ny, Nz, rhoE2);
+    	    #pragma omp parallel sections num_threads(halfThreadCount) 
+ 	    {
+		#pragma omp section
+                transposeXYZtoYZX_Fast(rho1,   Nx, Ny, Nz, rho2, blocksize);
+		#pragma omp section
+                transposeXYZtoYZX_Fast(temp,   Nx, Ny, Nz, rhoU2, blocksize);
+		#pragma omp section
+                transposeXYZtoYZX_Fast(temp2,  Nx, Ny, Nz, rhoV2, blocksize);
+		#pragma omp section
+                transposeXYZtoYZX_Fast(temp3,  Nx, Ny, Nz, rhoW2, blocksize);
+		#pragma omp section
+                transposeXYZtoYZX_Fast(temp4,  Nx, Ny, Nz, rhoE2, blocksize);
+	    }
 
             //filter in the Y direction
-            filtY->filterField(rho2,  rho1);
-            filtY->filterField(rhoU2, temp);
-            filtY->filterField(rhoV2, temp2);
-            filtY->filterField(rhoW2, temp3);
-            filtY->filterField(rhoE2, temp4);
+     	    #pragma omp parallel sections num_threads(halfThreadCount) 
+ 	    {
+		#pragma omp section
+  	        filtY->filterField(rho2,  rho1);
+		#pragma omp section
+                filtY->filterField(rhoU2, temp);
+		#pragma omp section
+                filtY->filterField(rhoV2, temp2);
+		#pragma omp section
+                filtY->filterField(rhoW2, temp3);
+		#pragma omp section
+                filtY->filterField(rhoE2, temp4);
+	    }
 
             //tranpose from YZX to ZXY
-            transposeYZXtoZXY(rho1,   Nx, Ny, Nz, rho2);
-            transposeYZXtoZXY(temp,   Nx, Ny, Nz, rhoU2);
-            transposeYZXtoZXY(temp2,  Nx, Ny, Nz, rhoV2);
-            transposeYZXtoZXY(temp3,  Nx, Ny, Nz, rhoW2);
-            transposeYZXtoZXY(temp4,  Nx, Ny, Nz, rhoE2);
+     	    #pragma omp parallel sections num_threads(halfThreadCount) 
+ 	    {
+		#pragma omp section
+                transposeYZXtoZXY_Fast(rho1,   Nx, Ny, Nz, rho2, blocksize);
+		#pragma omp section
+                transposeYZXtoZXY_Fast(temp,   Nx, Ny, Nz, rhoU2, blocksize);
+		#pragma omp section
+                transposeYZXtoZXY_Fast(temp2,  Nx, Ny, Nz, rhoV2, blocksize);
+		#pragma omp section
+                transposeYZXtoZXY_Fast(temp3,  Nx, Ny, Nz, rhoW2, blocksize);
+		#pragma omp section
+                transposeYZXtoZXY_Fast(temp4,  Nx, Ny, Nz, rhoE2, blocksize);
+	    }
 
             //filter in the Y direction
-            filtZ->filterField(rho2,  rho1);
-            filtZ->filterField(rhoU2, temp);
-            filtZ->filterField(rhoV2, temp2);
-            filtZ->filterField(rhoW2, temp3);
-            filtZ->filterField(rhoE2, temp4);
+     	    #pragma omp parallel sections num_threads(halfThreadCount) 
+ 	    {
+		#pragma omp section
+                filtZ->filterField(rho2,  rho1);
+		#pragma omp section
+                filtZ->filterField(rhoU2, temp);
+		#pragma omp section
+                filtZ->filterField(rhoV2, temp2);
+		#pragma omp section
+                filtZ->filterField(rhoW2, temp3);
+		#pragma omp section
+                filtZ->filterField(rhoE2, temp4);
+	    }
 
             //get us back to XYZ from ZXY
-            transposeZXYtoXYZ(rho1,   Nx, Ny, Nz, rho2);
-            transposeZXYtoXYZ(temp,   Nx, Ny, Nz, rhoU1);
-            transposeZXYtoXYZ(temp2,  Nx, Ny, Nz, rhoV1);
-            transposeZXYtoXYZ(temp3,  Nx, Ny, Nz, rhoW1);
-            transposeZXYtoXYZ(temp4,  Nx, Ny, Nz, rhoE1);
-
+     	    #pragma omp parallel sections num_threads(halfThreadCount) 
+ 	    {
+		#pragma omp section
+                transposeZXYtoXYZ_Fast(rho1,   Nx, Ny, Nz, rho2, blocksize);
+		#pragma omp section
+                transposeZXYtoXYZ_Fast(temp,   Nx, Ny, Nz, rhoU1, blocksize);
+		#pragma omp section
+                transposeZXYtoXYZ_Fast(temp2,  Nx, Ny, Nz, rhoV1, blocksize);
+		#pragma omp section
+                transposeZXYtoXYZ_Fast(temp3,  Nx, Ny, Nz, rhoW1, blocksize);
+		#pragma omp section
+                transposeZXYtoXYZ_Fast(temp4,  Nx, Ny, Nz, rhoE1, blocksize);
+	    }
             //from being cute with memory allocation need to copy rho2 to rho1
             memcpy(rho2, rho1, sizeof(double)*Nx*Ny*Nz);
 
@@ -1433,112 +1497,224 @@ void CSolver::filterConservedData(){
             //Here we'll do Y->Z->X     
 
             //Do the transpose to YZX space first
-            transposeXYZtoYZX(rho2,   Nx, Ny, Nz, rho1);
-            transposeXYZtoYZX(rhoU2,  Nx, Ny, Nz, temp);
-            transposeXYZtoYZX(rhoV2,  Nx, Ny, Nz, temp2);
-            transposeXYZtoYZX(rhoW2,  Nx, Ny, Nz, temp3);
-            transposeXYZtoYZX(rhoE2,  Nx, Ny, Nz, temp4);
+      	    #pragma omp parallel sections num_threads(halfThreadCount) 
+ 	    { 
+		#pragma omp section
+                transposeXYZtoYZX_Fast(rho2,   Nx, Ny, Nz, rho1, blocksize);
+		#pragma omp section
+                transposeXYZtoYZX_Fast(rhoU2,  Nx, Ny, Nz, temp, blocksize);
+		#pragma omp section
+                transposeXYZtoYZX_Fast(rhoV2,  Nx, Ny, Nz, temp2, blocksize);
+		#pragma omp section
+                transposeXYZtoYZX_Fast(rhoW2,  Nx, Ny, Nz, temp3, blocksize);
+		#pragma omp section
+                transposeXYZtoYZX_Fast(rhoE2,  Nx, Ny, Nz, temp4, blocksize);
+	    }	
 
             //filter in the Y direction
-            filtY->filterField(rho1,  rho2);
-            filtY->filterField(temp,  rhoU2);
-            filtY->filterField(temp2, rhoV2);
-            filtY->filterField(temp3, rhoW2);
-            filtY->filterField(temp4, rhoE2);
+       	    #pragma omp parallel sections num_threads(halfThreadCount) 
+ 	    { 
+		#pragma omp section
+                filtY->filterField(rho1,  rho2);
+		#pragma omp section
+                filtY->filterField(temp,  rhoU2);
+		#pragma omp section
+                filtY->filterField(temp2, rhoV2);
+		#pragma omp section
+                filtY->filterField(temp3, rhoW2);
+		#pragma omp section
+                filtY->filterField(temp4, rhoE2);
+	    }
 
             //Move to ZXY space next
-            transposeYZXtoZXY(rho2,   Nx, Ny, Nz, rho1);
-            transposeYZXtoZXY(rhoU2,  Nx, Ny, Nz, temp);
-            transposeYZXtoZXY(rhoV2,  Nx, Ny, Nz, temp2);
-            transposeYZXtoZXY(rhoW2,  Nx, Ny, Nz, temp3);
-            transposeYZXtoZXY(rhoE2,  Nx, Ny, Nz, temp4);
+       	    #pragma omp parallel sections num_threads(halfThreadCount) 
+ 	    { 
+		#pragma omp section
+                transposeYZXtoZXY_Fast(rho2,   Nx, Ny, Nz, rho1, blocksize);
+		#pragma omp section
+                transposeYZXtoZXY_Fast(rhoU2,  Nx, Ny, Nz, temp, blocksize);
+		#pragma omp section
+                transposeYZXtoZXY_Fast(rhoV2,  Nx, Ny, Nz, temp2, blocksize);
+		#pragma omp section
+                transposeYZXtoZXY_Fast(rhoW2,  Nx, Ny, Nz, temp3, blocksize);
+		#pragma omp section
+                transposeYZXtoZXY_Fast(rhoE2,  Nx, Ny, Nz, temp4, blocksize);
+	    }
 
             //filter in the Z direction
-            filtZ->filterField(rho1,  rho2);
-            filtZ->filterField(temp,  rhoU2);
-            filtZ->filterField(temp2, rhoV2);
-            filtZ->filterField(temp3, rhoW2);
-            filtZ->filterField(temp4, rhoE2);
+       	    #pragma omp parallel sections num_threads(halfThreadCount) 
+ 	    { 
+		#pragma omp section
+                filtZ->filterField(rho1,  rho2);
+		#pragma omp section
+                filtZ->filterField(temp,  rhoU2);
+		#pragma omp section
+                filtZ->filterField(temp2, rhoV2);
+		#pragma omp section
+                filtZ->filterField(temp3, rhoW2);
+		#pragma omp section
+                filtZ->filterField(temp4, rhoE2);
+	    }
 
             //transpose from ZXY to XYZ
-            transposeZXYtoXYZ(rho2,   Nx, Ny, Nz, rho1);
-            transposeZXYtoXYZ(rhoU2,  Nx, Ny, Nz, temp);
-            transposeZXYtoXYZ(rhoV2,  Nx, Ny, Nz, temp2);
-            transposeZXYtoXYZ(rhoW2,  Nx, Ny, Nz, temp3);
-            transposeZXYtoXYZ(rhoE2,  Nx, Ny, Nz, temp4);
+       	    #pragma omp parallel sections num_threads(halfThreadCount) 
+ 	    { 
+		#pragma omp section
+                transposeZXYtoXYZ_Fast(rho2,   Nx, Ny, Nz, rho1, blocksize);
+		#pragma omp section
+                transposeZXYtoXYZ_Fast(rhoU2,  Nx, Ny, Nz, temp, blocksize);
+		#pragma omp section
+                transposeZXYtoXYZ_Fast(rhoV2,  Nx, Ny, Nz, temp2, blocksize);
+		#pragma omp section
+                transposeZXYtoXYZ_Fast(rhoW2,  Nx, Ny, Nz, temp3, blocksize);
+		#pragma omp section
+                transposeZXYtoXYZ_Fast(rhoE2,  Nx, Ny, Nz, temp4, blocksize);
+	    }
 
             //filter in the X direction
-            filtX->filterField(rho1,  rho2);
-            filtX->filterField(temp,  rhoU1);
-            filtX->filterField(temp2, rhoV1);
-            filtX->filterField(temp3, rhoW1);
-            filtX->filterField(temp4, rhoE1);
+       	    #pragma omp parallel sections num_threads(halfThreadCount) 
+  	    { 
+		#pragma omp section
+                filtX->filterField(rho1,  rho2);
+		#pragma omp section
+                filtX->filterField(temp,  rhoU1);
+		#pragma omp section
+                filtX->filterField(temp2, rhoV1);
+		#pragma omp section
+                filtX->filterField(temp3, rhoW1);
+		#pragma omp section
+                filtX->filterField(temp4, rhoE1);
+	    }
 
             //from being cute with memory allocation need to copy rho2 to rho1
             memcpy(rho2, rho1, sizeof(double)*Nx*Ny*Nz);
 
 
         }else{
+
             //Here we'll do Z->X->Y     
             //Do the transpose to ZXY space first
-            transposeXYZtoZXY(rho2,   Nx, Ny, Nz, rho1);
-            transposeXYZtoZXY(rhoU2,  Nx, Ny, Nz, temp);
-            transposeXYZtoZXY(rhoV2,  Nx, Ny, Nz, temp2);
-            transposeXYZtoZXY(rhoW2,  Nx, Ny, Nz, temp3);
-            transposeXYZtoZXY(rhoE2,  Nx, Ny, Nz, temp4);
+       	    #pragma omp parallel sections num_threads(halfThreadCount) 
+  	    { 
+		#pragma omp section
+                transposeXYZtoZXY_Fast(rho2,   Nx, Ny, Nz, rho1, blocksize);
+		#pragma omp section
+                transposeXYZtoZXY_Fast(rhoU2,  Nx, Ny, Nz, temp, blocksize);
+		#pragma omp section
+                transposeXYZtoZXY_Fast(rhoV2,  Nx, Ny, Nz, temp2, blocksize);
+		#pragma omp section
+                transposeXYZtoZXY_Fast(rhoW2,  Nx, Ny, Nz, temp3, blocksize);
+		#pragma omp section
+                transposeXYZtoZXY_Fast(rhoE2,  Nx, Ny, Nz, temp4, blocksize);
+	    }
 
             //filter in the Z direction
-            filtZ->filterField(rho1,  rho2);
-            filtZ->filterField(temp,  rhoU2);
-            filtZ->filterField(temp2, rhoV2);
-            filtZ->filterField(temp3, rhoW2);
-            filtZ->filterField(temp4, rhoE2);
+            #pragma omp parallel sections num_threads(halfThreadCount) 
+  	    {
+		#pragma omp section
+                filtZ->filterField(rho1,  rho2);
+		#pragma omp section
+                filtZ->filterField(temp,  rhoU2);
+		#pragma omp section
+                filtZ->filterField(temp2, rhoV2);
+		#pragma omp section
+                filtZ->filterField(temp3, rhoW2);
+		#pragma omp section
+                filtZ->filterField(temp4, rhoE2);
+	    }
 
             //Move to XYZ space next
-            transposeZXYtoXYZ(rho2,   Nx, Ny, Nz, rho1);
-            transposeZXYtoXYZ(rhoU2,  Nx, Ny, Nz, temp);
-            transposeZXYtoXYZ(rhoV2,  Nx, Ny, Nz, temp2);
-            transposeZXYtoXYZ(rhoW2,  Nx, Ny, Nz, temp3);
-            transposeZXYtoXYZ(rhoE2,  Nx, Ny, Nz, temp4);
+            #pragma omp parallel sections num_threads(halfThreadCount) 
+  	    {
+		#pragma omp section
+                transposeZXYtoXYZ_Fast(rho2,   Nx, Ny, Nz, rho1, blocksize);
+		#pragma omp section
+                transposeZXYtoXYZ_Fast(rhoU2,  Nx, Ny, Nz, temp, blocksize);
+		#pragma omp section
+                transposeZXYtoXYZ_Fast(rhoV2,  Nx, Ny, Nz, temp2, blocksize);
+		#pragma omp section
+                transposeZXYtoXYZ_Fast(rhoW2,  Nx, Ny, Nz, temp3, blocksize);
+		#pragma omp section
+                transposeZXYtoXYZ_Fast(rhoE2,  Nx, Ny, Nz, temp4, blocksize);
+	    }
 
             //filter in the X direction
-            filtX->filterField(rho1,  rho2);
-            filtX->filterField(temp,  rhoU2);
-            filtX->filterField(temp2, rhoV2);
-            filtX->filterField(temp3, rhoW2);
-            filtX->filterField(temp4, rhoE2);
+            #pragma omp parallel sections num_threads(halfThreadCount) 
+  	    {
+		#pragma omp section
+                filtX->filterField(rho1,  rho2);
+		#pragma omp section
+                filtX->filterField(temp,  rhoU2);
+		#pragma omp section
+                filtX->filterField(temp2, rhoV2);
+		#pragma omp section
+                filtX->filterField(temp3, rhoW2);
+		#pragma omp section
+                filtX->filterField(temp4, rhoE2);
+	    }
 
             //transpose from XYZ to YZX
-            transposeXYZtoYZX(rho2,   Nx, Ny, Nz, rho1);
-            transposeXYZtoYZX(rhoU2,  Nx, Ny, Nz, temp);
-            transposeXYZtoYZX(rhoV2,  Nx, Ny, Nz, temp2);
-            transposeXYZtoYZX(rhoW2,  Nx, Ny, Nz, temp3);
-            transposeXYZtoYZX(rhoE2,  Nx, Ny, Nz, temp4);
+            #pragma omp parallel sections num_threads(halfThreadCount) 
+  	    { 
+		#pragma omp section
+                transposeXYZtoYZX_Fast(rho2,   Nx, Ny, Nz, rho1, blocksize);
+		#pragma omp section
+                transposeXYZtoYZX_Fast(rhoU2,  Nx, Ny, Nz, temp, blocksize);
+		#pragma omp section
+                transposeXYZtoYZX_Fast(rhoV2,  Nx, Ny, Nz, temp2, blocksize);
+		#pragma omp section
+                transposeXYZtoYZX_Fast(rhoW2,  Nx, Ny, Nz, temp3, blocksize);
+		#pragma omp section
+                transposeXYZtoYZX_Fast(rhoE2,  Nx, Ny, Nz, temp4, blocksize);
+	    }
 
             //filter in the Y direction
-            filtY->filterField(rho1,  rho2);
-            filtY->filterField(temp,  rhoU2);
-            filtY->filterField(temp2, rhoV2);
-            filtY->filterField(temp3, rhoW2);
-            filtY->filterField(temp4, rhoE2);
+            #pragma omp parallel sections num_threads(halfThreadCount) 
+  	    { 
+		#pragma omp section
+	        filtY->filterField(rho1,  rho2);
+		#pragma omp section
+                filtY->filterField(temp,  rhoU2);
+		#pragma omp section
+                filtY->filterField(temp2, rhoV2);
+		#pragma omp section
+                filtY->filterField(temp3, rhoW2);
+		#pragma omp section
+                filtY->filterField(temp4, rhoE2);
+	    }
 
             //have an extra step here to go from YZX to XYZ
-            transposeYZXtoXYZ(rho2,   Nx, Ny, Nz, rho1);
-            transposeYZXtoXYZ(rhoU2,  Nx, Ny, Nz, rhoU1);
-            transposeYZXtoXYZ(rhoV2,  Nx, Ny, Nz, rhoV1);
-            transposeYZXtoXYZ(rhoW2,  Nx, Ny, Nz, rhoW1);
-            transposeYZXtoXYZ(rhoE2,  Nx, Ny, Nz, rhoE1);
+            #pragma omp parallel sections num_threads(halfThreadCount) 
+  	    { 
+		#pragma omp section
+	        transposeYZXtoXYZ_Fast(rho2,   Nx, Ny, Nz, rho1, blocksize);
+		#pragma omp section
+                transposeYZXtoXYZ_Fast(rhoU2,  Nx, Ny, Nz, rhoU1, blocksize);
+		#pragma omp section
+                transposeYZXtoXYZ_Fast(rhoV2,  Nx, Ny, Nz, rhoV1, blocksize);
+		#pragma omp section
+                transposeYZXtoXYZ_Fast(rhoW2,  Nx, Ny, Nz, rhoW1, blocksize);
+		#pragma omp section
+                transposeYZXtoXYZ_Fast(rhoE2,  Nx, Ny, Nz, rhoE1, blocksize);
+	    }
 
         }
  
     //If not filtering, need to copy the solution over to the *1 variables
     }else{
-
-	memcpy(rho2,  rho1,  sizeof(double)*N);
-	memcpy(rhoU2, rhoU1, sizeof(double)*N);
-	memcpy(rhoV2, rhoV1, sizeof(double)*N);
-	memcpy(rhoW2, rhoW1, sizeof(double)*N);
-	memcpy(rhoE2, rhoE1, sizeof(double)*N);
+        #pragma omp parallel sections  
+  	{
+	    #pragma omp section
+	    memcpy(rho2,  rho1,  sizeof(double)*N);
+	    #pragma omp section
+	    memcpy(rhoU2, rhoU1, sizeof(double)*N);
+	    #pragma omp section
+	    memcpy(rhoV2, rhoV1, sizeof(double)*N);
+	    #pragma omp section
+	    memcpy(rhoW2, rhoW1, sizeof(double)*N);
+	    #pragma omp section
+	    memcpy(rhoE2, rhoE1, sizeof(double)*N);
+	}
 
     }
 };

@@ -18,7 +18,7 @@ void Derivatives::calc1stDerivField(double *dataIn, double *dataOut){
 
     }else if(currentDir == DIRY){
 
-	#pragma omp parallel for schedule(dynamic) num_threads(2)
+	#pragma omp parallel for schedule(dynamic) num_threads(2) 
 	FOR_X{
 	    FOR_Z{
 		double *dataInLocal, *dataOutLocal;
@@ -31,7 +31,7 @@ void Derivatives::calc1stDerivField(double *dataIn, double *dataOut){
 
     }else if(currentDir == DIRZ){
 
-	#pragma omp parallel for schedule(dynamic) num_threads(2)
+	#pragma omp parallel for schedule(dynamic) num_threads(2) 
 	FOR_Y{
 	    FOR_X{
 		double *dataInLocal, *dataOutLocal;
