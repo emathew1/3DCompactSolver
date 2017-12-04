@@ -282,8 +282,6 @@ void CSolver::calcDtFromCFL(){
 	time += ts->dt;
     }
 
-    cout << " > Timestep " << timeStep << ", T = " << time << ", dt = " << ts->dt << ", CFL = " << ts->CFL << endl; 
-
 }
 
 double CSolver::calcSpongeSource(double phi, double phiSpongeAvg, double sigma){
@@ -902,30 +900,30 @@ void CSolver::preStepDerivatives(){
 
 void CSolver::solveContinuity(){
     
-	#pragma omp parallel
-	{
+    #pragma omp parallel
+    {
 
 	#pragma omp for
-    FOR_XYZ rhok2[ip]  = - contEulerX[ip] - contEulerY[ip] - contEulerZ[ip];
+        FOR_XYZ rhok2[ip]  = - contEulerX[ip] - contEulerY[ip] - contEulerZ[ip];
 
-    if(spongeFlag){
-        double *rhoP;
-        if(rkStep == 1){
-	    rhoP = rho1;
-        }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
-	    rhoP = rhok;
-        }
+        if(spongeFlag){
+            double *rhoP;
+            if(rkStep == 1){
+	        rhoP = rho1;
+            }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
+	        rhoP = rhok;
+            }
 
 	    #pragma omp for
 	    FOR_XYZ{
 	        rhok2[ip]  += calcSpongeSource(rhoP[ip], spg->spongeRhoAvg[ip], spg->sigma[ip]);	
 	    }
-    }
+        }
 
 	#pragma omp for
-    FOR_XYZ rhok2[ip] *= ts->dt;
+        FOR_XYZ rhok2[ip] *= ts->dt;
 
-	}
+    }
 }
 
 void CSolver::solveXMomentum(){
@@ -940,43 +938,43 @@ void CSolver::solveXMomentum(){
 	#pragma omp parallel
 	{
 
-	#pragma omp for nowait
-	FOR_XYZ{
-	    double MuX = Amu[ip]*Tx[ip];
-	    rhoUk2[ip] += (4.0/3.0)*MuX*(Ux[ip] - 0.5*Vy[ip] - 0.5*Wz[ip]);
-	}
-
-	#pragma omp for nowait
-	FOR_XYZ{
-	    double MuY = Amu[ip]*Ty[ip];
- 	    rhoUk2[ip] += MuY*(Uy[ip] + Vx[ip]); 
-	}
-
-	#pragma omp for nowait
-	FOR_XYZ{
-	    double MuZ = Amu[ip]*Tz[ip];
-	    rhoUk2[ip] += MuZ*(Wx[ip] + Uz[ip]); 
-	}
-
-	#pragma omp for nowait
-	FOR_XYZ{
- 	    //Euler Terms
-	    rhoUk2[ip] += -momXEulerX[ip] -momXEulerY[ip] -momXEulerZ[ip];
-    	}
-
-    	if(spongeFlag){
-            double *rhoUP;
-            if(rkStep == 1){
-            	rhoUP = rhoU1;
-            }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
-            	rhoUP = rhoUk;
-            }
+	    #pragma omp for nowait
+	    FOR_XYZ{
+	        double MuX = Amu[ip]*Tx[ip];
+	        rhoUk2[ip] += (4.0/3.0)*MuX*(Ux[ip] - 0.5*Vy[ip] - 0.5*Wz[ip]);
+	    }
 
 	    #pragma omp for nowait
-            FOR_XYZ{
-            	rhoUk2[ip]  += calcSpongeSource(rhoUP[ip], spg->spongeRhoUAvg[ip], spg->sigma[ip]);
-            }
-   	}
+	    FOR_XYZ{
+	        double MuY = Amu[ip]*Ty[ip];
+ 	        rhoUk2[ip] += MuY*(Uy[ip] + Vx[ip]); 
+	    }
+
+	    #pragma omp for nowait
+	    FOR_XYZ{
+	        double MuZ = Amu[ip]*Tz[ip];
+	        rhoUk2[ip] += MuZ*(Wx[ip] + Uz[ip]); 
+	    }
+
+	    #pragma omp for nowait
+	    FOR_XYZ{
+ 	        //Euler Terms
+	        rhoUk2[ip] += -momXEulerX[ip] -momXEulerY[ip] -momXEulerZ[ip];
+    	    }
+
+    	    if(spongeFlag){
+                double *rhoUP;
+                if(rkStep == 1){
+            	    rhoUP = rhoU1;
+                }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
+            	    rhoUP = rhoUk;
+                }
+
+	        #pragma omp for nowait
+                FOR_XYZ{
+            	    rhoUk2[ip]  += calcSpongeSource(rhoUP[ip], spg->spongeRhoUAvg[ip], spg->sigma[ip]);
+                }
+   	     }
 
 	}
 
@@ -996,44 +994,43 @@ void CSolver::solveYMomentum(){
 
     #pragma omp parallel
     {
-    #pragma omp for nowait
-    FOR_XYZ{ 
-	double MuY = Amu[ip]*Tx[ip];
-	rhoVk2[ip] += (4.0/3.0)*MuY*(Vy[ip] - 0.5*Ux[ip] - 0.5*Wz[ip]);
-    }
-
-    #pragma omp for nowait
-    FOR_XYZ{
-	double MuX = Amu[ip]*Ty[ip];
-	rhoVk2[ip] += MuX*(Uy[ip] + Vx[ip]); 
-    }
-
-    #pragma omp for nowait
-    FOR_XYZ{
-  	double MuZ = Amu[ip]*Tz[ip];
-	rhoVk2[ip] += MuZ*(Wy[ip] + Vz[ip]); 
-    }
-
-    //Euler Terms
-    #pragma omp for nowait
-    FOR_XYZ{
-	rhoVk2[ip] += -momYEulerX[ip] -momYEulerY[ip] -momYEulerZ[ip];
-	
-    }
-
-    if(spongeFlag){
-        double *rhoVP;
-        if(rkStep == 1){
-            rhoVP = rhoV1;
-        }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
-            rhoVP = rhoVk;
+        #pragma omp for nowait
+        FOR_XYZ{ 
+	    double MuY = Amu[ip]*Tx[ip];
+	    rhoVk2[ip] += (4.0/3.0)*MuY*(Vy[ip] - 0.5*Ux[ip] - 0.5*Wz[ip]);
         }
 
         #pragma omp for nowait
         FOR_XYZ{
-            rhoVk2[ip]  += calcSpongeSource(rhoVP[ip], spg->spongeRhoVAvg[ip], spg->sigma[ip]);
+	    double MuX = Amu[ip]*Ty[ip];
+	    rhoVk2[ip] += MuX*(Uy[ip] + Vx[ip]); 
         }
-    }
+
+        #pragma omp for nowait
+        FOR_XYZ{
+  	    double MuZ = Amu[ip]*Tz[ip];
+	    rhoVk2[ip] += MuZ*(Wy[ip] + Vz[ip]); 
+        }
+
+        //Euler Terms
+        #pragma omp for nowait
+        FOR_XYZ{
+	    rhoVk2[ip] += -momYEulerX[ip] -momYEulerY[ip] -momYEulerZ[ip];
+        }
+
+        if(spongeFlag){
+            double *rhoVP;
+            if(rkStep == 1){
+                rhoVP = rhoV1;
+            }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
+                rhoVP = rhoVk;
+            }
+
+            #pragma omp for nowait
+            FOR_XYZ{
+                rhoVk2[ip]  += calcSpongeSource(rhoVP[ip], spg->spongeRhoVAvg[ip], spg->sigma[ip]);
+            }
+         }
 
     }
 
@@ -1282,30 +1279,69 @@ void CSolver::postStepBCHandling(){
 	    rhoUk2[ip] = 0.0;
 	    rhoVk2[ip] = 0.0;
 	    rhoWk2[ip] = 0.0;
-	    rhoEk2[ip] = -ts->dt*(engyEulerX[ip] - (mu[ip]/ig->Pr/(ig->gamma-1.0))*Txx[ip] + (4.0/3.0)*mu[ip]*U[ip]*Uxx[ip]);
+	    rhoEk2[ip] = -ts->dt*(engyEulerX[ip] - (mu[ip]/ig->Pr/(ig->gamma-1.0))*Txx[ip]);
 	}END_FORX0
-
     }
 
     if(bc->bcX1 == BC::ADIABATIC_WALL){
-
+	#pragma omp parallel for
+	FOR_X1{
+	    rhok2[ip]  = -ts->dt*contEulerX[ip];
+	    rhoUk2[ip] = 0.0;
+	    rhoVk2[ip] = 0.0;
+	    rhoWk2[ip] = 0.0;
+	    rhoEk2[ip] = -ts->dt*(engyEulerX[ip] - (mu[ip]/ig->Pr/(ig->gamma-1.0))*Txx[ip]);
+	}END_FORX1
     }   
 
     if(bc->bcY0 == BC::ADIABATIC_WALL){
-
+	#pragma omp parallel for
+	FOR_Y0{
+	    rhok2[ip]  = -ts->dt*contEulerY[ip];
+	    rhoUk2[ip] = 0.0;
+	    rhoVk2[ip] = 0.0;
+	    rhoWk2[ip] = 0.0;
+	    rhoEk2[ip] = -ts->dt*(engyEulerY[ip] - (mu[ip]/ig->Pr/(ig->gamma-1.0))*Tyy[ip]);
+	}END_FORY0
     }
 
     if(bc->bcY1 == BC::ADIABATIC_WALL){
-
+	#pragma omp parallel for
+	FOR_Y1{
+	    rhok2[ip]  = -ts->dt*contEulerY[ip];
+	    rhoUk2[ip] = 0.0;
+	    rhoVk2[ip] = 0.0;
+	    rhoWk2[ip] = 0.0;
+	    rhoEk2[ip] = -ts->dt*(engyEulerY[ip] - (mu[ip]/ig->Pr/(ig->gamma-1.0))*Tyy[ip]);
+	}END_FORY1
     }
 
     if(bc->bcZ0 == BC::ADIABATIC_WALL){
-
+	#pragma omp parallel for
+	FOR_Z0{
+	    rhok2[ip]  = -ts->dt*contEulerZ[ip];
+	    rhoUk2[ip] = 0.0;
+	    rhoVk2[ip] = 0.0;
+	    rhoWk2[ip] = 0.0;
+	    rhoEk2[ip] = -ts->dt*(engyEulerZ[ip] - (mu[ip]/ig->Pr/(ig->gamma-1.0))*Tzz[ip]);
+	}END_FORZ0
     }
 
     if(bc->bcZ1 == BC::ADIABATIC_WALL){
-
+	#pragma omp parallel for
+	FOR_Z1{
+	    rhok2[ip]  = -ts->dt*contEulerZ[ip];
+	    rhoUk2[ip] = 0.0;
+	    rhoVk2[ip] = 0.0;
+	    rhoWk2[ip] = 0.0;
+	    rhoEk2[ip] = -ts->dt*(engyEulerZ[ip] - (mu[ip]/ig->Pr/(ig->gamma-1.0))*Tzz[ip]);
+	}END_FORZ1
     }
+
+    //////////////////
+    //MOVING WALL BC// 
+    //////////////////
+
 
     /////////////
     //SPONGE BC//
@@ -1967,4 +2003,90 @@ void CSolver::checkSolution(){
 
         t1Save = std::chrono::system_clock::now();
     }
+};
+
+
+void CSolver::dumpSolution(){
+
+    if(timeStep%ts->dumpStep == 0){
+        cout << endl;
+        cout << "> ===============" << endl;
+        cout << ">  DUMPING FIELD " << endl;
+        cout << "> ===============" << endl;
+
+
+        ofstream outfile;
+        outfile.precision(17);
+        string outputFileName;
+        outputFileName = "rho.out.";
+        outputFileName.append(to_string(timeStep));
+        outfile.open(outputFileName);
+        outfile.precision(17);
+        FOR_XYZ{
+            outfile << rho1[ip] << " ";
+        }
+        outfile.close();
+
+        outputFileName = "rhoU.out.";
+        outputFileName.append(to_string(timeStep));
+        outfile.open(outputFileName);
+        outfile.precision(17);
+	FOR_XYZ{
+            outfile << rhoU1[ip] << " ";
+        }
+        outfile.close();
+
+        outputFileName = "rhoV.out.";
+        outputFileName.append(to_string(timeStep));
+        outfile.open(outputFileName);
+        outfile.precision(17);
+	FOR_XYZ{
+            outfile << rhoV1[ip] << " ";
+        }
+        outfile.close();
+
+        outputFileName = "rhoW.out.";
+        outputFileName.append(to_string(timeStep));
+        outfile.open(outputFileName);
+        outfile.precision(17);
+	FOR_XYZ{
+            outfile << rhoW1[ip] << " ";
+        }
+        outfile.close();
+
+        outputFileName = "rhoE.out.";
+        outputFileName.append(to_string(timeStep));
+        outfile.open(outputFileName);
+        outfile.precision(17);
+	FOR_XYZ{
+            outfile << rhoE1[ip] << " ";
+        }
+        outfile.close();
+    }
 }
+
+void CSolver::checkEnd(){
+
+    if(time >= ts->maxTime){
+	cout << "=================" << endl;
+	cout << " HIT END OF TIME " << endl;
+	cout << "=================" << endl;
+
+	endFlag = true;
+    }
+
+    if(timeStep >= ts->maxTimeStep){
+	cout << "=================" << endl;
+	cout << " HIT END OF TIME " << endl;
+	cout << "=================" << endl;
+
+	endFlag = true;
+
+    } 
+
+    if(endFlag){
+	dumpSolution();
+    }
+
+}
+

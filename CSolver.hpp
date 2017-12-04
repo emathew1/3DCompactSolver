@@ -3,6 +3,8 @@
 
 #include <omp.h>
 #include <chrono>
+#include <iostream>
+#include <fstream>
 #include "Macros.hpp"
 #include "Utils.hpp"
 #include "BC.hpp"
@@ -35,6 +37,7 @@ class CSolver{
         int timeStep;
         double time;
 	int filterTimeStep;
+	bool endFlag;
 
         std::chrono::system_clock::time_point t1Save, t2Save;
 
@@ -123,6 +126,7 @@ class CSolver{
    	    time = 0.0;
 	    timeStep = 0;
 	    filterTimeStep = 0;
+	    endFlag = false;
             t1Save = std::chrono::system_clock::now();
             t2Save = std::chrono::system_clock::now();
 
@@ -161,7 +165,6 @@ class CSolver{
 	void preStepBCHandling();
 
 	void preStepDerivatives();
-	void preStepDerivatives2Test();
 
 	void solveContinuity();
 	void solveXMomentum();
@@ -180,6 +183,10 @@ class CSolver{
 	void updateSponge();
 
 	void checkSolution();
+
+	void dumpSolution();
+	
+	void checkEnd();
 
 };
 
