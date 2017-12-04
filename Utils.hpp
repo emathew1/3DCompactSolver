@@ -28,5 +28,7 @@ void transposeYZXtoXYZ_Fast(const double *in, int Nx, int Ny, int Nz, double *ou
 
 void getRange(double *phi, std::string dataName, int Nx, int Ny, int Nz);
 double fRand(double fMin, double fMax);
+inline double calcNeumann(double f1, double f2, double f3, double f4, double f5, double f6);
+
 
 #endif

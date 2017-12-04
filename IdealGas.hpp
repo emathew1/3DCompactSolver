@@ -46,13 +46,33 @@ class IdealGas{
 	cp = R_gas*gamma/(gamma - 1.0);
     } 
 
-    void solveMu(double *T, double *mu);
-    void solveAmu(double *T, double *Amu);
-    void solveU(double *rho, double *rhoU, double *U);
-    void solvep(double *rho, double *rhoE, double *U, double *V, double *W, double *p);
-    void solveT(double *rho, double *p, double *T);
-    void solveSOS(double *rho, double *p, double *SOS); 
-    void solverhoE(double *rho, double *p, double *U, double *V, double *W, double *rhoE); 
+    inline double solveMu(double T){
+        return mu_ref*pow(T/T_ref, 0.76);
+    }
+
+    inline double solveAmu(double T){
+        return 0.76*(mu_ref/pow(T_ref, 0.76))*pow(T, 0.76-1.0);
+    } 
+
+    inline double solveU(double rho, double rhoU){
+        return rhoU/rho;
+    }
+
+    inline double solvep(double rho, double rhoE, double U, double V, double W){
+        return (gamma-1)*(rhoE - 0.5 * rho*(U*U + V*V + W*W));
+    }
+
+    inline double solveT(double rho, double p){
+        return  p/(rho*R_gas);
+    }
+
+    inline double solveSOS(double rho, double p){
+        return  sqrt(gamma*p/rho);
+    }
+
+    inline double solverhoE(double rho, double p, double U, double V, double W){
+        return p/(gamma-1.0) + 0.5*rho*(U*U + V*V + W*W);
+    }
 
 };
 

@@ -63,16 +63,16 @@ int main(int argc, char *argv[]){
     ///////////////////////////
     //Boundary Condition Info//
     ///////////////////////////
-    BC::BCType bcXType = BC::PERIODIC_SOLVE; 
-    BC::BCType bcYType = BC::PERIODIC_SOLVE; 
-    BC::BCType bcZType = BC::PERIODIC_SOLVE; 
+    BC::BCType bcXType = BC::DIRICHLET_SOLVE; 
+    BC::BCType bcYType = BC::DIRICHLET_SOLVE; 
+    BC::BCType bcZType = BC::DIRICHLET_SOLVE; 
 
-    BC::BCKind bcX0 = BC::PERIODIC;
-    BC::BCKind bcX1 = BC::PERIODIC;
-    BC::BCKind bcY0 = BC::PERIODIC;
-    BC::BCKind bcY1 = BC::PERIODIC;
-    BC::BCKind bcZ0 = BC::PERIODIC;
-    BC::BCKind bcZ1 = BC::PERIODIC;
+    BC::BCKind bcX0 = BC::SPONGE;
+    BC::BCKind bcX1 = BC::SPONGE;
+    BC::BCKind bcY0 = BC::SPONGE;
+    BC::BCKind bcY1 = BC::SPONGE;
+    BC::BCKind bcZ0 = BC::SPONGE;
+    BC::BCKind bcZ1 = BC::SPONGE;
 
     BC *bc = new BC(bcXType, bcX0, bcX1,
 		    bcYType, bcY0, bcY1,

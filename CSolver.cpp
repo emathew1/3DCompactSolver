@@ -183,11 +183,16 @@ void CSolver::setInitialConditions(){
     delete[] p0;
 
     //Call the ideal gas relations for the slightly more involved stuff..
-    ig->solverhoE(rho1, p, U, V, W, rhoE1);
-    ig->solveT(rho1, p, T);
-    ig->solveMu(T, mu);
-    ig->solveAmu(T, Amu);
-    ig->solveSOS(rho1, p, sos);
+    #pragma omp parallel for
+    FOR_XYZ rhoE1[ip] = ig->solverhoE(rho1[ip], p[ip], U[ip], V[ip], W[ip]);
+    #pragma omp parallel for
+    FOR_XYZ T[ip]     = ig->solveT(rho1[ip], p[ip]);
+    #pragma omp parallel for
+    FOR_XYZ mu[ip]    = ig->solveMu(T[ip]);
+    #pragma omp parallel for
+    FOR_XYZ Amu[ip]   = ig->solveAmu(T[ip]);
+    #pragma omp parallel for
+    FOR_XYZ sos[ip]   = ig->solveSOS(rho1[ip], p[ip]);
 
     //This is where we'll do the boundary condition specific stuff...
     bool wallBCFlag = false;
@@ -467,8 +472,10 @@ void CSolver::preStepDerivatives(){
     #pragma omp parallel for
     FOR_XYZ W[ip] = transRhoW[ip]/transRho[ip];
 
-    ig->solvep(transRho, transRhoE, U, V, W, p);
-    ig->solveT(transRho, p, T);
+    #pragma omp parallel for
+    FOR_XYZ p[ip] = ig->solvep(transRho[ip], transRhoE[ip], U[ip], V[ip], W[ip]);
+    #pragma omp parallel for
+    FOR_XYZ T[ip] = ig->solveT(transRho[ip], p[ip]);
 
     //Calculate the stuff for Euler derivatives in new space
     #pragma omp parallel for
@@ -690,8 +697,10 @@ void CSolver::preStepDerivatives(){
     #pragma omp parallel for
     FOR_XYZ W[ip] = transRhoW[ip]/transRho[ip];
 
-    ig->solvep(transRho, transRhoE, U, V, W, p);
-    ig->solveT(transRho, p, T);
+    #pragma omp parallel for
+    FOR_XYZ p[ip] = ig->solvep(transRho[ip], transRhoE[ip], U[ip], V[ip], W[ip]);
+    #pragma omp parallel for
+    FOR_XYZ T[ip] = ig->solveT(transRho[ip], p[ip]);
 
     //Calculate the stuff for the Euler Derivatives
     #pragma omp parallel for
@@ -883,8 +892,10 @@ void CSolver::preStepDerivatives(){
     #pragma omp parallel for
     FOR_XYZ W[ip] = rhoWP[ip]/rhoP[ip];
 
-    ig->solvep(rhoP, rhoEP, U, V, W, p);
-    ig->solveT(rhoP, p, T);
+    #pragma omp parallel for
+    FOR_XYZ p[ip] = ig->solvep(rhoP[ip], rhoEP[ip], U[ip], V[ip], W[ip]);
+    #pragma omp parallel for
+    FOR_XYZ T[ip] = ig->solveT(rhoP[ip], p[ip]);
 
 }
 
@@ -1260,7 +1271,19 @@ void CSolver::postStepBCHandling(){
 	rhoEP = rhoEk;
     }
 
+    /////////////////////
+    //ADIABATIC WALL BC// 
+    /////////////////////
+
     if(bc->bcX0 == BC::ADIABATIC_WALL){
+	#pragma omp parallel for
+	FOR_X0{
+	    rhok2[ip]  = -ts->dt*contEulerX[ip];
+	    rhoUk2[ip] = 0.0;
+	    rhoVk2[ip] = 0.0;
+	    rhoWk2[ip] = 0.0;
+	    rhoEk2[ip] = -ts->dt*(engyEulerX[ip] - (mu[ip]/ig->Pr/(ig->gamma-1.0))*Txx[ip] + (4.0/3.0)*mu[ip]*U[ip]*Uxx[ip]);
+	}END_FORX0
 
     }
 
@@ -1283,6 +1306,77 @@ void CSolver::postStepBCHandling(){
     if(bc->bcZ1 == BC::ADIABATIC_WALL){
 
     }
+
+    /////////////
+    //SPONGE BC//
+    /////////////
+
+    if(bc->bcX0 == BC::SPONGE){
+	#pragma omp parallel for
+	FOR_X0{
+	    rhok2[ip]  = 0.0;
+	    rhoUk2[ip] = 0.0;
+	    rhoVk2[ip] = 0.0;
+	    rhoWk2[ip] = 0.0;
+	    rhoEk2[ip] = 0.0;
+	}END_FORX0
+    }
+
+    if(bc->bcX1 == BC::SPONGE){
+	#pragma omp parallel for
+	FOR_X1{
+	    rhok2[ip]  = 0.0;
+	    rhoUk2[ip] = 0.0;
+	    rhoVk2[ip] = 0.0;
+	    rhoWk2[ip] = 0.0;
+	    rhoEk2[ip] = 0.0;
+	}END_FORX1
+    }   
+
+    if(bc->bcY0 == BC::SPONGE){
+	#pragma omp parallel for
+	FOR_Y0{
+	    rhok2[ip]  = 0.0;
+	    rhoUk2[ip] = 0.0;
+	    rhoVk2[ip] = 0.0;
+	    rhoWk2[ip] = 0.0;
+	    rhoEk2[ip] = 0.0;
+	}END_FORY0
+    }
+
+    if(bc->bcY1 == BC::SPONGE){
+	#pragma omp parallel for
+	FOR_Y1{
+	    rhok2[ip]  = 0.0;
+	    rhoUk2[ip] = 0.0;
+	    rhoVk2[ip] = 0.0;
+	    rhoWk2[ip] = 0.0;
+	    rhoEk2[ip] = 0.0;
+	}END_FORY1
+    }
+
+    if(bc->bcZ0 == BC::SPONGE){
+	#pragma omp parallel for
+	FOR_Z0{
+	    rhok2[ip]  = 0.0;
+	    rhoUk2[ip] = 0.0;
+	    rhoVk2[ip] = 0.0;
+	    rhoWk2[ip] = 0.0;
+	    rhoEk2[ip] = 0.0;
+	}END_FORZ0
+    }
+
+    if(bc->bcZ1 == BC::SPONGE){
+	#pragma omp parallel for
+	FOR_Z1{
+	    rhok2[ip]  = 0.0;
+	    rhoUk2[ip] = 0.0;
+	    rhoVk2[ip] = 0.0;
+	    rhoWk2[ip] = 0.0;
+	    rhoEk2[ip] = 0.0;
+	}END_FORZ1
+    }
+
 
 }
 
@@ -1722,25 +1816,41 @@ void CSolver::filterConservedData(){
 void CSolver::updateNonConservedData(){
     if(rkStep == 1 || rkStep == 2 || rkStep == 3){
 
-	ig->solveU(rhok, rhoUk, U);
-	ig->solveU(rhok, rhoVk, V);
-	ig->solveU(rhok, rhoWk, W);
-	ig->solvep(rhok, rhoEk, U, V, W, p);
-	ig->solveT(rhok, p, T);
-	ig->solveMu(T, mu);
-	ig->solveAmu(T, Amu);
-	ig->solveSOS(rhok, p, sos);
+        #pragma omp parallel for
+	FOR_XYZ U[ip]   = ig->solveU(rhok[ip], rhoUk[ip]);
+        #pragma omp parallel for
+	FOR_XYZ V[ip]   = ig->solveU(rhok[ip], rhoVk[ip]);
+        #pragma omp parallel for
+	FOR_XYZ W[ip]   = ig->solveU(rhok[ip], rhoWk[ip]);
+        #pragma omp parallel for
+	FOR_XYZ p[ip]   = ig->solvep(rhok[ip], rhoEk[ip], U[ip], V[ip], W[ip]);
+        #pragma omp parallel for
+	FOR_XYZ T[ip]   = ig->solveT(rhok[ip], p[ip]);
+        #pragma omp parallel for
+	FOR_XYZ mu[ip]  = ig->solveMu(T[ip]);
+        #pragma omp parallel for
+	FOR_XYZ Amu[ip] = ig->solveAmu(T[ip]);
+        #pragma omp parallel for
+	FOR_XYZ sos[ip] = ig->solveSOS(rhok[ip], p[ip]);
 
     }else if(rkStep == 4){
 
-	ig->solveU(rho1, rhoU1, U);
-	ig->solveU(rho1, rhoV1, V);
-	ig->solveU(rho1, rhoW1, W);
-	ig->solvep(rho1, rhoE1, U, V, W, p);
-	ig->solveT(rho1, p, T);
-	ig->solveMu(T, mu);
-	ig->solveAmu(T, Amu);
-	ig->solveSOS(rho1, p, sos);
+        #pragma omp parallel for
+	FOR_XYZ U[ip]   = ig->solveU(rho1[ip], rhoU1[ip]);
+        #pragma omp parallel for
+	FOR_XYZ V[ip]   = ig->solveU(rho1[ip], rhoV1[ip]);
+        #pragma omp parallel for
+	FOR_XYZ W[ip]   = ig->solveU(rho1[ip], rhoW1[ip]);
+        #pragma omp parallel for
+	FOR_XYZ p[ip]   = ig->solvep(rho1[ip], rhoE1[ip], U[ip], V[ip], W[ip]);
+        #pragma omp parallel for
+	FOR_XYZ T[ip]   = ig->solveT(rho1[ip], p[ip]);
+        #pragma omp parallel for
+	FOR_XYZ mu[ip]  = ig->solveMu(T[ip]);
+        #pragma omp parallel for
+	FOR_XYZ Amu[ip] = ig->solveAmu(T[ip]);
+        #pragma omp parallel for
+	FOR_XYZ sos[ip] = ig->solveSOS(rho1[ip], p[ip]);
 
     }
 }
@@ -1767,26 +1877,70 @@ void CSolver::updateSponge(){
 
 	
         if(bc->bcX0 == BC::SPONGE){
-
+	    #pragma omp parallel for
+	    FOR_X0{
+		rho1[ip]  = spg->spongeRhoAvg[ip];
+		rhoU1[ip] = spg->spongeRhoUAvg[ip];
+		rhoV1[ip] = spg->spongeRhoVAvg[ip];
+		rhoW1[ip] = spg->spongeRhoWAvg[ip];
+		rhoE1[ip] = spg->spongeRhoEAvg[ip];
+	    }END_FORX0
         }
 
         if(bc->bcX1 == BC::SPONGE){
-
+	    #pragma omp parallel for
+	    FOR_X1{
+		rho1[ip]  = spg->spongeRhoAvg[ip];
+		rhoU1[ip] = spg->spongeRhoUAvg[ip];
+		rhoV1[ip] = spg->spongeRhoVAvg[ip];
+		rhoW1[ip] = spg->spongeRhoWAvg[ip];
+		rhoE1[ip] = spg->spongeRhoEAvg[ip];
+	    }END_FORX1
         }   
 
         if(bc->bcY0 == BC::SPONGE){
-
+	    #pragma omp parallel for
+	    FOR_Y0{
+		rho1[ip]  = spg->spongeRhoAvg[ip];
+		rhoU1[ip] = spg->spongeRhoUAvg[ip];
+		rhoV1[ip] = spg->spongeRhoVAvg[ip];
+		rhoW1[ip] = spg->spongeRhoWAvg[ip];
+		rhoE1[ip] = spg->spongeRhoEAvg[ip];
+	    }END_FORY0
         }
 
         if(bc->bcY1 == BC::SPONGE){
-
+	    #pragma omp parallel for
+	    FOR_Y1{
+		rho1[ip]  = spg->spongeRhoAvg[ip];
+		rhoU1[ip] = spg->spongeRhoUAvg[ip];
+		rhoV1[ip] = spg->spongeRhoVAvg[ip];
+		rhoW1[ip] = spg->spongeRhoWAvg[ip];
+		rhoE1[ip] = spg->spongeRhoEAvg[ip];
+	    }END_FORY1
         }
 
         if(bc->bcZ0 == BC::SPONGE){
+	    #pragma omp parallel for
+	    FOR_Z0{
+		rho1[ip]  = spg->spongeRhoAvg[ip];
+		rhoU1[ip] = spg->spongeRhoUAvg[ip];
+		rhoV1[ip] = spg->spongeRhoVAvg[ip];
+		rhoW1[ip] = spg->spongeRhoWAvg[ip];
+		rhoE1[ip] = spg->spongeRhoEAvg[ip];
+	    }END_FORZ0
 
         }
 
         if(bc->bcZ1 == BC::SPONGE){
+	    #pragma omp parallel for
+	    FOR_Z1{
+		rho1[ip]  = spg->spongeRhoAvg[ip];
+		rhoU1[ip] = spg->spongeRhoUAvg[ip];
+		rhoV1[ip] = spg->spongeRhoVAvg[ip];
+		rhoW1[ip] = spg->spongeRhoWAvg[ip];
+		rhoE1[ip] = spg->spongeRhoEAvg[ip];
+	    }END_FORZ1
 
         }
 
