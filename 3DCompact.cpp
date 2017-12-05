@@ -36,9 +36,9 @@ int main(int argc, char *argv[]){
     /////////////////////////
     //Initialize the Domain//
     /////////////////////////
-    int    Nx = 156, 
-	   Ny = 156, 
-	   Nz = 156;
+    int    Nx = 256, 
+	   Ny = 10, 
+	   Nz = 10;
     double Lx = 2.0*M_PI*((double)Nx - 1.0)/(double(Nx)), 
 	   Ly = 2.0*M_PI*((double)Ny - 1.0)/(double(Ny)), 
 	   Lz = 2.0*M_PI*((double)Nz - 1.0)/(double(Nz));
@@ -49,9 +49,9 @@ int main(int argc, char *argv[]){
     ////////////////////////////////////
     TimeStepping::TimeSteppingType timeSteppingType = TimeStepping::CONST_CFL;
     double CFL 	     = 0.25;
-    int maxTimeStep  = 10;
+    int maxTimeStep  = 100;
     double maxTime   = 10.0;
-    int filterStep   = 1;
+    int filterStep   = 5;
     int checkStep    = 1;
     int dumpStep     = 100;
     TimeStepping *ts = new TimeStepping(timeSteppingType, CFL, maxTimeStep, maxTime, filterStep, checkStep, dumpStep);
@@ -61,16 +61,16 @@ int main(int argc, char *argv[]){
     ///////////////////////////
     //Boundary Condition Info//
     ///////////////////////////
-    BC::BCType bcXType = BC::DIRICHLET_SOLVE; 
-    BC::BCType bcYType = BC::DIRICHLET_SOLVE; 
-    BC::BCType bcZType = BC::DIRICHLET_SOLVE; 
+    BC::BCType bcXType = BC::PERIODIC_SOLVE; 
+    BC::BCType bcYType = BC::PERIODIC_SOLVE; 
+    BC::BCType bcZType = BC::PERIODIC_SOLVE; 
 
-    BC::BCKind bcX0 = BC::SPONGE;
-    BC::BCKind bcX1 = BC::SPONGE;
-    BC::BCKind bcY0 = BC::SPONGE;
-    BC::BCKind bcY1 = BC::SPONGE;
-    BC::BCKind bcZ0 = BC::SPONGE;
-    BC::BCKind bcZ1 = BC::SPONGE;
+    BC::BCKind bcX0 = BC::PERIODIC;
+    BC::BCKind bcX1 = BC::PERIODIC;
+    BC::BCKind bcY0 = BC::PERIODIC;
+    BC::BCKind bcY1 = BC::PERIODIC;
+    BC::BCKind bcZ0 = BC::PERIODIC;
+    BC::BCKind bcZ1 = BC::PERIODIC;
 
     BC *bc = new BC(bcXType, bcX0, bcX1,
 		    bcYType, bcY0, bcY1,
@@ -94,11 +94,16 @@ int main(int argc, char *argv[]){
 	FOR_Y{
 	    FOR_X{
 		int ii = GET3DINDEX_XYZ;
-		cs->rho0[ii] = 1.0;
 		cs->U0[ii]   = 0.0;
 		cs->V0[ii]   = 0.0;
 		cs->W0[ii]   = 0.0;
+		cs->rho0[ii] = 1.0;
 		cs->p0[ii]   = 1.0/cs->ig->gamma;
+		
+		if(cs->dom->x[ii] > M_PI){
+		    cs->rho0[ii] = 0.125;
+		    cs->p0[ii]   = 0.1/cs->ig->gamma;
+		}
 	    }
 	}
     }
