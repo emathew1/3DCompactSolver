@@ -36,26 +36,25 @@ int main(int argc, char *argv[]){
     /////////////////////////
     //Initialize the Domain//
     /////////////////////////
-    int    Nx = 256, 
-	   Ny = 10, 
-	   Nz = 10;
-    double Lx = 2.0*M_PI*((double)Nx - 1.0)/(double(Nx)), 
-	   Ly = 2.0*M_PI*((double)Ny - 1.0)/(double(Ny)), 
-	   Lz = 2.0*M_PI*((double)Nz - 1.0)/(double(Nz));
+    int    Nx = 32, 
+	   Ny = 32, 
+	   Nz = 32;
+    double Lx = 0.1, 
+	   Ly = 0.1, 
+	   Lz = 0.1;
     Domain *dom = new Domain(Nx, Ny, Nz, Lx, Ly, Lz);
 
     ////////////////////////////////////
     //Time Stepping info intialization//
     ////////////////////////////////////
     TimeStepping::TimeSteppingType timeSteppingType = TimeStepping::CONST_CFL;
-    double CFL 	     = 0.25;
+    double CFL 	     = 0.1;
     int maxTimeStep  = 100;
     double maxTime   = 10.0;
-    int filterStep   = 5;
+    int filterStep   = 1000;
     int checkStep    = 1;
-    int dumpStep     = 100;
+    int dumpStep     = 10;
     TimeStepping *ts = new TimeStepping(timeSteppingType, CFL, maxTimeStep, maxTime, filterStep, checkStep, dumpStep);
-
 
 
     ///////////////////////////
@@ -81,10 +80,9 @@ int main(int argc, char *argv[]){
     /////////////////////////
     //Initialize the Solver//
     /////////////////////////
-    double alphaF = 0.49;
-    double mu_ref = 0.0001;
+    double alphaF = 0.40;
+    double mu_ref = 1.0000;
     CSolver *cs   = new CSolver(dom, bc, ts, alphaF, mu_ref); 
-
 
 
     ///////////////////////////////
@@ -94,23 +92,25 @@ int main(int argc, char *argv[]){
 	FOR_Y{
 	    FOR_X{
 		int ii = GET3DINDEX_XYZ;
-		cs->U0[ii]   = 0.0;
-		cs->V0[ii]   = 0.0;
-		cs->W0[ii]   = 0.0;
-		cs->rho0[ii] = 1.0;
-		cs->p0[ii]   = 1.0/cs->ig->gamma;
-		
-		if(cs->dom->x[ii] > M_PI){
-		    cs->rho0[ii] = 0.125;
-		    cs->p0[ii]   = 0.1/cs->ig->gamma;
-		}
+		cs->U0[ii]   = 0.00;
+		cs->V0[ii]   = 0.00;
+		cs->W0[ii]   = 0.00;
+	
+//		if(cs->dom->x[i] > 0.5){
+//		    cs->rho0[ii] = 0.125;
+//		    cs->p0[ii]   = 0.1/cs->ig->gamma;
+//		}else{
+	  	    cs->rho0[ii] = 1.0;
+		    cs->p0[ii]   = 1.0/cs->ig->gamma;
+//		}
 	    }
 	}
     }
 
     cs->setInitialConditions();
- 
 
+    
+ 
     while(cs->endFlag == false){
 
 	//Get the dt for this time step
@@ -123,6 +123,14 @@ int main(int argc, char *argv[]){
 	
 	cs->preStepDerivatives();
 
+	getRange(cs->momYEulerX, "momYEulerX", Nx, Ny, Nz);
+	getRange(cs->momYEulerY, "momYEulerY", Nx, Ny, Nz);
+	getRange(cs->momYEulerZ, "momYEulerZ", Nx, Ny, Nz);
+	getRange(cs->momXEulerX, "momXEulerX", Nx, Ny, Nz);
+	getRange(cs->momXEulerY, "momXEulerY", Nx, Ny, Nz);
+	getRange(cs->momXEulerZ, "momXEulerZ", Nx, Ny, Nz);
+
+
 	cs->solveContinuity();
 	cs->solveXMomentum();
 	cs->solveYMomentum();
@@ -133,6 +141,7 @@ int main(int argc, char *argv[]){
 
 	cs->updateConservedData();
 	cs->updateNonConservedData();
+
 
 	//start rkStep 2
         cs->rkStep = 2;
@@ -152,6 +161,7 @@ int main(int argc, char *argv[]){
 	cs->updateConservedData();
 	cs->updateNonConservedData();
 
+	getRange(cs->rhoE2, "rhoE2", Nx, Ny, Nz);
 	//start rkStep 3
         cs->rkStep = 3;
 
@@ -170,6 +180,7 @@ int main(int argc, char *argv[]){
 	cs->updateConservedData();
 	cs->updateNonConservedData();
 
+	getRange(cs->rhoE2, "rhoE2", Nx, Ny, Nz);
 	//start rkStep 4
         cs->rkStep = 4;
 
@@ -187,8 +198,11 @@ int main(int argc, char *argv[]){
 
 	cs->updateConservedData();
 
+	getRange(cs->rhoE2, "rhoE2", Nx, Ny, Nz);
+	getRange(cs->rhoE1, "rhoE1", Nx, Ny, Nz);
 	//on rk step 4 we'll filter the data if need be first...
 	cs->filterConservedData();
+	getRange(cs->rhoE1, "rhoE1", Nx, Ny, Nz);
 
 	//Then we'll update the nonconserved variables...
 	cs->updateNonConservedData();

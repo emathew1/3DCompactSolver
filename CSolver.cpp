@@ -152,8 +152,6 @@ void CSolver::initializeSolverData(){
     transVy = new double[Nx*Ny*Nz];
     transWy = new double[Nx*Ny*Nz];
 
-
-
  
 }
 
@@ -362,7 +360,7 @@ void CSolver::preStepDerivatives(){
 	rhoEP = rhoEk; 
     }
 
-    const int blocksize = 16;
+    const int blocksize = 1;
  
     ///////////////////
     // X-DERIVATIVES //
@@ -704,7 +702,7 @@ void CSolver::preStepDerivatives(){
     #pragma omp parallel for
     FOR_XYZ temp[ip]  = transRhoU[ip]*W[ip];
     #pragma omp parallel for
-    FOR_XYZ temp2[ip] = transRhoV[ip]*W[ip] + p[ip];
+    FOR_XYZ temp2[ip] = transRhoV[ip]*W[ip];
     #pragma omp parallel for
     FOR_XYZ temp3[ip] = transRhoW[ip]*W[ip] + p[ip];
     #pragma omp parallel for
@@ -924,6 +922,8 @@ void CSolver::solveContinuity(){
         FOR_XYZ rhok2[ip] *= ts->dt;
 
     }
+
+    getRange(rhok2, "rhok2", Nx, Ny, Nz);
 }
 
 void CSolver::solveXMomentum(){
@@ -981,6 +981,7 @@ void CSolver::solveXMomentum(){
 	#pragma omp parallel for
 	FOR_XYZ rhoUk2[ip] *= ts->dt;
 
+    getRange(rhoUk2, "rhoUk2", Nx, Ny, Nz);
 }
 
 void CSolver::solveYMomentum(){
@@ -1037,6 +1038,7 @@ void CSolver::solveYMomentum(){
     #pragma omp parallel for
     FOR_XYZ rhoVk2[ip] *= ts->dt;
 
+    getRange(rhoVk2, "rhoVk2", Nx, Ny, Nz);
 }
 
 void CSolver::solveZMomentum(){
@@ -1089,6 +1091,7 @@ void CSolver::solveZMomentum(){
     #pragma omp parallel for
     FOR_XYZ rhoWk2[ip] *= ts->dt;
 
+    getRange(rhoWk2, "rhoWk2", Nx, Ny, Nz);
 }
 
 
@@ -1122,8 +1125,10 @@ void CSolver::solveEnergy(){
     FOR_XYZ{ 
 	//Heat Transfer Terms
 	qtemp[ip] += mu[ip]*Txx[ip] + mu[ip]*Tyy[ip] + mu[ip]*Tzz[ip];
-	qtemp[ip] *= ig->cp/ig->Pr;
     }
+
+    #pragma omp parallel for
+    FOR_XYZ qtemp[ip] *= ig->cp/ig->Pr;
 
     //Viscous Energy terms w/o viscosity derivatives...
     #pragma omp parallel for
@@ -1244,11 +1249,14 @@ void CSolver::solveEnergy(){
 
     }
 
+    getRange(qtemp, "qtemp", Nx, Ny, Nz);
+
     delete[] qtemp;
     delete[] vtemp1;
     delete[] vtemp2;
     delete[] engyEuler;
 
+    getRange(rhoEk2, "rhoEk2", Nx, Ny, Nz);
 }
 
 void CSolver::postStepBCHandling(){
@@ -1516,12 +1524,14 @@ void CSolver::updateConservedData(){
 
 void CSolver::filterConservedData(){
 
-    const int blocksize = 16;
+    const int blocksize = 1;
     const int halfThreadCount = omp_get_num_threads()/2;
     omp_set_nested(1);
 
+
     //Need to do round robin of filtering directions...
-    if(ts->filterStep%timeStep == 0){
+    if(timeStep%ts->filterStep == 0){
+	cout << "here1" << endl;
 
         //Advance the filtering time step       
         filterTimeStep++;
@@ -1620,7 +1630,7 @@ void CSolver::filterConservedData(){
                 transposeZXYtoXYZ_Fast(temp4,  Nx, Ny, Nz, rhoE1, blocksize);
 	    }
             //from being cute with memory allocation need to copy rho2 to rho1
-            memcpy(rho2, rho1, sizeof(double)*Nx*Ny*Nz);
+            memcpy(rho1, rho2, sizeof(double)*Nx*Ny*Nz);
 
         }else if(filterTimeStep%3 == 2){
 
@@ -1717,7 +1727,7 @@ void CSolver::filterConservedData(){
 	    }
 
             //from being cute with memory allocation need to copy rho2 to rho1
-            memcpy(rho2, rho1, sizeof(double)*Nx*Ny*Nz);
+            memcpy(rho1, rho2, sizeof(double)*Nx*Ny*Nz);
 
 
         }else{
@@ -1832,18 +1842,20 @@ void CSolver::filterConservedData(){
  
     //If not filtering, need to copy the solution over to the *1 variables
     }else{
+	cout << "here2" << endl;
         #pragma omp parallel sections  
   	{
+
 	    #pragma omp section
-	    memcpy(rho2,  rho1,  sizeof(double)*N);
+	    memcpy(rho1,  rho2, sizeof(double)*Nx*Ny*Nz);
 	    #pragma omp section
-	    memcpy(rhoU2, rhoU1, sizeof(double)*N);
+	    memcpy(rhoU1, rhoU2, sizeof(double)*Nx*Ny*Nz);
 	    #pragma omp section
-	    memcpy(rhoV2, rhoV1, sizeof(double)*N);
+	    memcpy(rhoV1, rhoV2, sizeof(double)*Nx*Ny*Nz);
 	    #pragma omp section
-	    memcpy(rhoW2, rhoW1, sizeof(double)*N);
+	    memcpy(rhoW1, rhoW2, sizeof(double)*Nx*Ny*Nz);
 	    #pragma omp section
-	    memcpy(rhoE2, rhoE1, sizeof(double)*N);
+	    memcpy(rhoE1, rhoE2, sizeof(double)*Nx*Ny*Nz);
 	}
 
     }
@@ -1889,6 +1901,8 @@ void CSolver::updateNonConservedData(){
 	FOR_XYZ sos[ip] = ig->solveSOS(rho1[ip], p[ip]);
 
     }
+
+    getRange(T, "T", Nx, Ny, Nz);
 }
 
 
@@ -2007,6 +2021,8 @@ void CSolver::checkSolution(){
 
 
 void CSolver::dumpSolution(){
+
+    cout << timeStep%ts->dumpStep << endl;
 
     if(timeStep%ts->dumpStep == 0){
         cout << endl;
