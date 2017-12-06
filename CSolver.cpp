@@ -250,6 +250,7 @@ void CSolver::calcDtFromCFL(){
     
     //Calculate the wave speed over the local spacings...
     double *UChar_dx = new double[N];
+    #pragma omp parallel for
     FOR_XYZ{
 	UChar_dx[ip] = (fabs(U[ip]) + sos[ip])/dom->dx + (fabs(V[ip])+sos[ip])/dom->dy + (fabs(W[ip]) + sos[ip])/dom->dz;
     }
@@ -262,8 +263,6 @@ void CSolver::calcDtFromCFL(){
 	}
     }
 
-    cout << max_UChar_dx << endl;   
- 
     //done with UChar_dx
     delete[] UChar_dx;
 
@@ -362,7 +361,6 @@ void CSolver::preStepDerivatives(){
 	rhoEP = rhoEk; 
     }
 
-    const int blocksize = 1;
  
     ///////////////////
     // X-DERIVATIVES //
@@ -385,7 +383,7 @@ void CSolver::preStepDerivatives(){
 
     omp_set_nested(1);
 
-    const int halfThreadCount = omp_get_num_threads()/2;
+    const int halfThreadCount = omp_get_num_threads()/4;
 
     #pragma omp parallel sections num_threads(halfThreadCount) 
     {
@@ -1520,14 +1518,12 @@ void CSolver::updateConservedData(){
 
 void CSolver::filterConservedData(){
 
-    const int blocksize = 1;
-    const int halfThreadCount = omp_get_num_threads()/2;
+    const int halfThreadCount = omp_get_num_threads()/4;
     omp_set_nested(1);
 
 
     //Need to do round robin of filtering directions...
     if(timeStep%ts->filterStep == 0){
-	cout << "here1" << endl;
 
         //Advance the filtering time step       
         filterTimeStep++;
@@ -1838,7 +1834,6 @@ void CSolver::filterConservedData(){
  
     //If not filtering, need to copy the solution over to the *1 variables
     }else{
-	cout << "here2" << endl;
         #pragma omp parallel sections  
   	{
 
@@ -2016,8 +2011,6 @@ void CSolver::checkSolution(){
 
 
 void CSolver::dumpSolution(){
-
-    cout << timeStep%ts->dumpStep << endl;
 
     if(timeStep%ts->dumpStep == 0){
         cout << endl;

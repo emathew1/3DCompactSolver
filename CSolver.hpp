@@ -29,6 +29,7 @@ class CSolver{
 
 	//Make local copies for macros...
 	int Nx, Ny, Nz, N;
+	int blocksize;
 
 	//Track the local step in the Runge-Kutta integration...
 	int rkStep;
@@ -105,7 +106,7 @@ class CSolver{
 
 
 	//Constructor to use for this class...
-	CSolver(Domain *dom, BC *bc, TimeStepping *ts, double alphaF, double mu_ref){
+	CSolver(Domain *dom, BC *bc, TimeStepping *ts, double alphaF, double mu_ref, int blocksize){
 
 	    //Take in input information and initialize data structures...
 	    this->dom = dom;
@@ -114,7 +115,7 @@ class CSolver{
 	    this->alphaF = alphaF;
 	    this->mu_ref = mu_ref;
 
-	    ig = new IdealGas(dom);
+	    ig = new IdealGas(dom, mu_ref);
 
 	    //give ourselves the local copies of the domain sizes
 	    Nx = dom->Nx;
@@ -150,6 +151,8 @@ class CSolver{
 	    filtX  = new Filter(alphaF, dom, bc->bcXType, Derivatives::DIRX);
 	    filtY  = new Filter(alphaF, dom, bc->bcYType, Derivatives::DIRY);
 	    filtZ  = new Filter(alphaF, dom, bc->bcZType, Derivatives::DIRZ);
+
+	    this->blocksize = blocksize;
 
 	}
 

@@ -36,22 +36,22 @@ int main(int argc, char *argv[]){
     /////////////////////////
     //Initialize the Domain//
     /////////////////////////
-    int    Nx = 32, 
-	   Ny = 32, 
-	   Nz = 32;
-    double Lx = 2.0*M_PI*((double)Nx - 1.0)/(double(Nx)), 
-	   Ly = 2.0*M_PI*((double)Ny - 1.0)/(double(Ny)), 
-	   Lz = 2.0*M_PI*((double)Nz - 1.0)/(double(Nz));
+    int    Nx = 1024, 
+	   Ny = 16, 
+	   Nz = 16;
+    double Lx = 1.0, 
+	   Ly = 1.0, 
+	   Lz = 1.0;
     Domain *dom = new Domain(Nx, Ny, Nz, Lx, Ly, Lz);
 
     ////////////////////////////////////
     //Time Stepping info intialization//
     ////////////////////////////////////
     TimeStepping::TimeSteppingType timeSteppingType = TimeStepping::CONST_CFL;
-    double CFL 	     = 0.05;
-    int maxTimeStep  = 1000;
-    double maxTime   = 10.0;
-    int filterStep   = 1;
+    double CFL 	     = 0.25;
+    int maxTimeStep  = 10000;
+    double maxTime   = 1.0;
+    int filterStep   = 5;
     int checkStep    = 1;
     int dumpStep     = 1000;
     TimeStepping *ts = new TimeStepping(timeSteppingType, CFL, maxTimeStep, maxTime, filterStep, checkStep, dumpStep);
@@ -80,9 +80,10 @@ int main(int argc, char *argv[]){
     /////////////////////////
     //Initialize the Solver//
     /////////////////////////
-    double alphaF = 0.1;
-    double mu_ref = 0.001;
-    CSolver *cs   = new CSolver(dom, bc, ts, alphaF, mu_ref); 
+    double alphaF = 0.48;
+    double mu_ref = 0.00001;
+    int blocksize = 16;
+    CSolver *cs   = new CSolver(dom, bc, ts, alphaF, mu_ref, blocksize); 
 
 
     ///////////////////////////////
@@ -96,13 +97,13 @@ int main(int argc, char *argv[]){
 		cs->V0[ii]   = 0.0;//sin(cs->dom->y[j]);
 		cs->W0[ii]   = 0.0;//sin(cs->dom->z[k]);
 	
-//		if(cs->dom->x[i] > 0.5){
-//		    cs->rho0[ii] = 0.125;
-//		    cs->p0[ii]   = 0.1/cs->ig->gamma;
-//		}else{
+		if(cs->dom->x[i] > 0.5){
+		    cs->rho0[ii] = 0.125;
+ 		    cs->p0[ii]   = 0.1/cs->ig->gamma;
+		}else{
 	  	    cs->rho0[ii] = 1.0;
 		    cs->p0[ii]   = 1.0/cs->ig->gamma;
-//		}
+		}
 	    }
 	}
     }
@@ -118,7 +119,7 @@ int main(int argc, char *argv[]){
         cs->rkStep = 1;
 
 	cs->preStepBCHandling();
-	
+
 	cs->preStepDerivatives();
 
 	cs->solveContinuity();
@@ -131,8 +132,6 @@ int main(int argc, char *argv[]){
 
 	cs->updateConservedData();
 	cs->updateNonConservedData();
-
-//	cs->reportAll();
 
 	//start rkStep 2
         cs->rkStep = 2;
@@ -152,8 +151,6 @@ int main(int argc, char *argv[]){
 	cs->updateConservedData();
 	cs->updateNonConservedData();
 
-//	cs->reportAll();
-
 	//start rkStep 3
         cs->rkStep = 3;
 
@@ -172,8 +169,6 @@ int main(int argc, char *argv[]){
 	cs->updateConservedData();
 	cs->updateNonConservedData();
 
-//	cs->reportAll();
-
 	//start rkStep 4
         cs->rkStep = 4;
 
@@ -191,7 +186,6 @@ int main(int argc, char *argv[]){
 
 	cs->updateConservedData();
 
-//	cs->reportAll();
 	//on rk step 4 we'll filter the data if need be first...
 	cs->filterConservedData();
 
@@ -210,7 +204,6 @@ int main(int argc, char *argv[]){
 	//Check if we've met our end conditions yet...
 	cs->checkEnd();
 
-//	cs->reportAll();
     }
 
 

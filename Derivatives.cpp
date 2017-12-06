@@ -2,7 +2,7 @@
 
 void Derivatives::calc1stDerivField(double *dataIn, double *dataOut){
 
-    const int numThreads = 1;
+    const int numThreads = 4;
 
     if(currentDir == DIRX){
 
@@ -50,8 +50,11 @@ void Derivatives::calc1stDerivField(double *dataIn, double *dataOut){
 
 void Derivatives::calc2ndDerivField(double *dataIn, double *dataOut){
 
+    const int numThreads = 4;
+
     if(currentDir == DIRX){
 
+	#pragma omp parallel for schedule(dynamic) num_threads(numThreads) 
 	FOR_Z{
 	    FOR_Y{
 		double *dataInLocal, *dataOutLocal;
@@ -64,6 +67,7 @@ void Derivatives::calc2ndDerivField(double *dataIn, double *dataOut){
 
     }else if(currentDir == DIRY){
 
+	#pragma omp parallel for schedule(dynamic) num_threads(numThreads) 
 	FOR_X{
 	    FOR_Z{
 		double *dataInLocal, *dataOutLocal;
@@ -76,6 +80,7 @@ void Derivatives::calc2ndDerivField(double *dataIn, double *dataOut){
 
     }else if(currentDir == DIRZ){
 
+	#pragma omp parallel for schedule(dynamic) num_threads(numThreads) 
 	FOR_Y{
 	    FOR_X{
 		double *dataInLocal, *dataOutLocal;

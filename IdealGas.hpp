@@ -32,7 +32,7 @@ class IdealGas{
 	cp = R_gas*gamma/(gamma - 1.0);
     }
 
-    IdealGas(Domain *domain){
+    IdealGas(Domain *domain, double mu_ref){
 	this->Nx = domain->Nx; 
 	this->Ny = domain->Ny;
 	this->Nz = domain->Nz;
@@ -41,7 +41,7 @@ class IdealGas{
 	p_ref = 1.0/gamma;
 	rho_ref = 1.0;
 	T_ref = 1.0;
-	mu_ref = 1.0;
+	this->mu_ref = mu_ref;
 	R_gas = p_ref/rho_ref/T_ref;
 	cp = R_gas*gamma/(gamma - 1.0);
     } 
