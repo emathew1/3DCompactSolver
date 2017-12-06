@@ -261,7 +261,9 @@ void CSolver::calcDtFromCFL(){
 	    max_UChar_dx = UChar_dx[ip];
 	}
     }
-    
+
+    cout << max_UChar_dx << endl;   
+ 
     //done with UChar_dx
     delete[] UChar_dx;
 
@@ -810,7 +812,7 @@ void CSolver::preStepDerivatives(){
 		#pragma omp section
 		{
 			memcpy(transUy, Tzz, sizeof(double)*Nx*Ny*Nz);
-			transposeZXYtoXYZ_Fast(transWy, Nx, Ny, Nz, Tzz, blocksize);
+			transposeZXYtoXYZ_Fast(transUy, Nx, Ny, Nz, Tzz, blocksize);
 		}
 
 		#pragma omp section
@@ -923,7 +925,6 @@ void CSolver::solveContinuity(){
 
     }
 
-    getRange(rhok2, "rhok2", Nx, Ny, Nz);
 }
 
 void CSolver::solveXMomentum(){
@@ -981,7 +982,6 @@ void CSolver::solveXMomentum(){
 	#pragma omp parallel for
 	FOR_XYZ rhoUk2[ip] *= ts->dt;
 
-    getRange(rhoUk2, "rhoUk2", Nx, Ny, Nz);
 }
 
 void CSolver::solveYMomentum(){
@@ -1038,7 +1038,6 @@ void CSolver::solveYMomentum(){
     #pragma omp parallel for
     FOR_XYZ rhoVk2[ip] *= ts->dt;
 
-    getRange(rhoVk2, "rhoVk2", Nx, Ny, Nz);
 }
 
 void CSolver::solveZMomentum(){
@@ -1091,7 +1090,6 @@ void CSolver::solveZMomentum(){
     #pragma omp parallel for
     FOR_XYZ rhoWk2[ip] *= ts->dt;
 
-    getRange(rhoWk2, "rhoWk2", Nx, Ny, Nz);
 }
 
 
@@ -1249,14 +1247,12 @@ void CSolver::solveEnergy(){
 
     }
 
-    getRange(qtemp, "qtemp", Nx, Ny, Nz);
 
     delete[] qtemp;
     delete[] vtemp1;
     delete[] vtemp2;
     delete[] engyEuler;
 
-    getRange(rhoEk2, "rhoEk2", Nx, Ny, Nz);
 }
 
 void CSolver::postStepBCHandling(){
@@ -1902,7 +1898,6 @@ void CSolver::updateNonConservedData(){
 
     }
 
-    getRange(T, "T", Nx, Ny, Nz);
 }
 
 
@@ -2106,3 +2101,101 @@ void CSolver::checkEnd(){
 
 }
 
+void CSolver::reportAll(){
+
+   cout << "REPORT ALL" << endl;
+
+   getRange(Ux, "Ux", Nx, Ny, Nz);
+   getRange(Uxx, "Uxx", Nx, Ny, Nz);
+   getRange(Uy, "Uy", Nx, Ny, Nz);
+   getRange(Uyy, "Uyy", Nx, Ny, Nz);
+   getRange(Uz, "Uz", Nx, Ny, Nz);
+   getRange(Uzz, "Uzz", Nx, Ny, Nz);
+   getRange(Uxy, "Uxy", Nx, Ny, Nz);
+   getRange(Uyz, "Uyz", Nx, Ny, Nz);
+   getRange(Uxz, "Uxz", Nx, Ny, Nz);
+cout << " " << endl;
+   getRange(Vx, "Vx", Nx, Ny, Nz);
+   getRange(Vxx, "Vxx", Nx, Ny, Nz);
+   getRange(Vy, "Vy", Nx, Ny, Nz);
+   getRange(Vyy, "Vyy", Nx, Ny, Nz);
+   getRange(Vz, "Vz", Nx, Ny, Nz);
+   getRange(Vzz, "Vzz", Nx, Ny, Nz);
+   getRange(Vxy, "Vxy", Nx, Ny, Nz);
+   getRange(Vyz, "Vyz", Nx, Ny, Nz);
+   getRange(Vxz, "Vxz", Nx, Ny, Nz);
+cout << " " << endl;
+   getRange(Wx, "Wx", Nx, Ny, Nz);
+   getRange(Wxx, "Wxx", Nx, Ny, Nz);
+   getRange(Wy, "Wy", Nx, Ny, Nz);
+   getRange(Wyy, "Wyy", Nx, Ny, Nz);
+   getRange(Wz, "Wz", Nx, Ny, Nz);
+   getRange(Wzz, "Wzz", Nx, Ny, Nz);
+   getRange(Wxy, "Wxy", Nx, Ny, Nz);
+   getRange(Wyz, "Wyz", Nx, Ny, Nz);
+   getRange(Wxz, "Wxz", Nx, Ny, Nz);
+cout << " " << endl;
+   getRange(Tx, "Ux", Nx, Ny, Nz);
+   getRange(Txx, "Uxx", Nx, Ny, Nz);
+   getRange(Ty, "Uy", Nx, Ny, Nz);
+   getRange(Tyy, "Uyy", Nx, Ny, Nz);
+   getRange(Tz, "Uz", Nx, Ny, Nz);
+   getRange(Tzz, "Uzz", Nx, Ny, Nz);
+cout << " " << endl;
+   getRange(contEulerX, "contEulerX", Nx, Ny, Nz);
+   getRange(contEulerY, "contEulerY", Nx, Ny, Nz);
+   getRange(contEulerZ, "contEulerZ", Nx, Ny, Nz);
+cout << " " << endl;
+   getRange(momXEulerX, "momXEulerX", Nx, Ny, Nz);
+   getRange(momXEulerY, "momXEulerY", Nx, Ny, Nz);
+   getRange(momXEulerZ, "momXEulerZ", Nx, Ny, Nz);
+cout << " " << endl;
+   getRange(momYEulerX, "momYEulerX", Nx, Ny, Nz);
+   getRange(momYEulerY, "momYEulerY", Nx, Ny, Nz);
+   getRange(momYEulerZ, "momYEulerZ", Nx, Ny, Nz);
+cout << " " << endl;
+   getRange(momZEulerX, "momZEulerX", Nx, Ny, Nz);
+   getRange(momZEulerY, "momZEulerY", Nx, Ny, Nz);
+   getRange(momZEulerZ, "momZEulerZ", Nx, Ny, Nz);
+cout << " " << endl;
+   getRange(engyEulerX, "engyEulerX", Nx, Ny, Nz);
+   getRange(engyEulerY, "engyEulerY", Nx, Ny, Nz);
+   getRange(engyEulerZ, "engyEulerZ", Nx, Ny, Nz);
+cout << " " << endl;
+   getRange(rho1, "rho1", Nx, Ny, Nz);
+   getRange(rhok, "rhok", Nx, Ny, Nz);
+   getRange(rhok2, "rhok2", Nx, Ny, Nz);
+   getRange(rho2, "rho2", Nx, Ny, Nz);
+cout << " " << endl;
+   getRange(rhoU1, "rhoU1", Nx, Ny, Nz);
+   getRange(rhoUk, "rhoUk", Nx, Ny, Nz);
+   getRange(rhoUk2, "rhoUk2", Nx, Ny, Nz);
+   getRange(rhoU2, "rhoU2", Nx, Ny, Nz);
+cout << " " << endl;
+   getRange(rhoV1, "rhoV1", Nx, Ny, Nz);
+   getRange(rhoVk, "rhoVk", Nx, Ny, Nz);
+   getRange(rhoVk2, "rhoVk2", Nx, Ny, Nz);
+   getRange(rhoV2, "rhoV2", Nx, Ny, Nz);
+cout << " " << endl;
+   getRange(rhoW1, "rhoW1", Nx, Ny, Nz);
+   getRange(rhoWk, "rhoWk", Nx, Ny, Nz);
+   getRange(rhoWk2, "rhoWk2", Nx, Ny, Nz);
+   getRange(rhoW2, "rhoW2", Nx, Ny, Nz);
+cout << " " << endl;
+   getRange(rhoE1, "rhoE1", Nx, Ny, Nz);
+   getRange(rhoEk, "rhoEk", Nx, Ny, Nz);
+   getRange(rhoEk2, "rhoEk2", Nx, Ny, Nz);
+   getRange(rhoE2, "rhoE2", Nx, Ny, Nz);
+cout << " " << endl;
+   getRange(p, "p", Nx, Ny, Nz);
+   getRange(U, "U", Nx, Ny, Nz);
+   getRange(V, "V", Nx, Ny, Nz);
+   getRange(W, "W", Nx, Ny, Nz);
+   getRange(T, "T", Nx, Ny, Nz);
+   getRange(mu, "mu", Nx, Ny, Nz);
+   getRange(Amu, "Amu", Nx, Ny, Nz);
+   getRange(sos, "sos", Nx, Ny, Nz);
+cout << " " << endl;
+
+
+}

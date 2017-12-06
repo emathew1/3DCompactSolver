@@ -188,6 +188,8 @@ class CSolver{
 	
 	void checkEnd();
 
+	void reportAll();
+
 };
 
 #endif
