@@ -36,9 +36,9 @@ int main(int argc, char *argv[]){
     /////////////////////////
     //Initialize the Domain//
     /////////////////////////
-    int    Nx = 1024, 
-	   Ny = 16, 
-	   Nz = 16;
+    int    Nx = 32, 
+	   Ny = 32, 
+	   Nz = 32;
     double Lx = 1.0, 
 	   Ly = 1.0, 
 	   Lz = 1.0;
@@ -60,16 +60,16 @@ int main(int argc, char *argv[]){
     ///////////////////////////
     //Boundary Condition Info//
     ///////////////////////////
-    BC::BCType bcXType = BC::PERIODIC_SOLVE; 
-    BC::BCType bcYType = BC::PERIODIC_SOLVE; 
-    BC::BCType bcZType = BC::PERIODIC_SOLVE; 
+    BC::BCType bcXType = BC::DIRICHLET_SOLVE; 
+    BC::BCType bcYType = BC::DIRICHLET_SOLVE; 
+    BC::BCType bcZType = BC::DIRICHLET_SOLVE; 
 
-    BC::BCKind bcX0 = BC::PERIODIC;
-    BC::BCKind bcX1 = BC::PERIODIC;
-    BC::BCKind bcY0 = BC::PERIODIC;
-    BC::BCKind bcY1 = BC::PERIODIC;
-    BC::BCKind bcZ0 = BC::PERIODIC;
-    BC::BCKind bcZ1 = BC::PERIODIC;
+    BC::BCKind bcX0 = BC::ADIABATIC_WALL;
+    BC::BCKind bcX1 = BC::ADIABATIC_WALL;
+    BC::BCKind bcY0 = BC::ADIABATIC_WALL;
+    BC::BCKind bcY1 = BC::ADIABATIC_WALL;
+    BC::BCKind bcZ0 = BC::ADIABATIC_WALL;
+    BC::BCKind bcZ1 = BC::ADIABATIC_WALL;
 
     BC *bc = new BC(bcXType, bcX0, bcX1,
 		    bcYType, bcY0, bcY1,
@@ -97,13 +97,13 @@ int main(int argc, char *argv[]){
 		cs->V0[ii]   = 0.0;//sin(cs->dom->y[j]);
 		cs->W0[ii]   = 0.0;//sin(cs->dom->z[k]);
 	
-		if(cs->dom->x[i] > 0.5){
-		    cs->rho0[ii] = 0.125;
- 		    cs->p0[ii]   = 0.1/cs->ig->gamma;
-		}else{
+//		if(cs->dom->x[i] > 0.5){
+//		    cs->rho0[ii] = 0.125;
+// 		    cs->p0[ii]   = 0.1/cs->ig->gamma;
+//		}else{
 	  	    cs->rho0[ii] = 1.0;
 		    cs->p0[ii]   = 1.0/cs->ig->gamma;
-		}
+//		}
 	    }
 	}
     }

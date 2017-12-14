@@ -62,6 +62,10 @@ class IdealGas{
         return (gamma-1)*(rhoE - 0.5 * rho*(U*U + V*V + W*W));
     }
 
+    inline double solvep_idealgas(double rho, double T){
+        return rho*R_gas*T;
+    }
+
     inline double solveT(double rho, double p){
         return  p/(rho*R_gas);
     }
