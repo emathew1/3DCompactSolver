@@ -1178,13 +1178,13 @@ void CSolver::solveYMomentum(){
     {
         #pragma omp for nowait
         FOR_XYZ{ 
-	    double MuY = Amu[ip]*Tx[ip];
+	    double MuY = Amu[ip]*Ty[ip];
 	    rhoVk2[ip] += (4.0/3.0)*MuY*(Vy[ip] - 0.5*Ux[ip] - 0.5*Wz[ip]);
         }
 
         #pragma omp for nowait
         FOR_XYZ{
-	    double MuX = Amu[ip]*Ty[ip];
+	    double MuX = Amu[ip]*Tx[ip];
 	    rhoVk2[ip] += MuX*(Uy[ip] + Vx[ip]); 
         }
 
@@ -1231,19 +1231,19 @@ void CSolver::solveZMomentum(){
 
     #pragma omp parallel for
     FOR_XYZ{
-	double MuZ = Amu[ip]*Tx[ip];
+	double MuZ = Amu[ip]*Tz[ip];
 	rhoWk2[ip] += (4.0/3.0)*MuZ*(Wz[ip] - 0.5*Ux[ip] - 0.5*Vy[ip]);
     }
 
     #pragma omp parallel for
     FOR_XYZ{
-	double MuX = Amu[ip]*Ty[ip];
+	double MuX = Amu[ip]*Tx[ip];
 	rhoWk2[ip] += MuX*(Wx[ip] + Uz[ip]); 
     }
 
     #pragma omp parallel for
     FOR_XYZ{
-	double MuY = Amu[ip]*Tz[ip];
+	double MuY = Amu[ip]*Ty[ip];
 	rhoWk2[ip] += MuY*(Wy[ip] + Vz[ip]); 
     }
 
