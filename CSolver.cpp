@@ -2255,6 +2255,18 @@ void CSolver::dumpSolution(){
             outfile << rhoE1[ip] << " ";
         }
         outfile.close();
+
+	int dumpSigma = 0;
+	if(dumpSigma == 1){
+	    outputFileName = "sigma.out";
+            outputFileName.append(to_string(timeStep));
+            outfile.open(outputFileName);
+            outfile.precision(17);
+            FOR_XYZ{
+                 outfile << spg->sigma[ip] << " ";
+            }
+	    outfile.close();
+	}
     }
 }
 
