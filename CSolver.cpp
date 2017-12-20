@@ -2267,6 +2267,30 @@ void CSolver::dumpSolution(){
             }
 	    outfile.close();
 	}
+
+	int dumpVorticityMag = 1;
+	if(dumpVorticityMag == 1){
+	   double *vortMag = new double[N];
+	   #pragma omp parallel for
+	   FOR_XYZ{
+		double wx, wy, wz;
+		wx = Wy[ip] - Vz[ip];
+		wy = Uz[ip] - Wx[ip];
+		wz = Vx[ip] - Uy[ip];
+		vortMag[ip] = sqrt(wx*wx + wy*wy + wz*wz);
+	   }
+
+	   outputFileName = "vortMag.out.";
+           outputFileName.append(to_string(timeStep));
+           outfile.open(outputFileName);
+           outfile.precision(17);
+           FOR_XYZ{
+                outfile << vortMag[ip] << " ";
+           }
+	   outfile.close();
+	   delete[] vortMag;
+	}
+
     }
 }
 
