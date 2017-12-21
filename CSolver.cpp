@@ -195,6 +195,10 @@ void CSolver::setInitialConditions(){
     //This is where we'll do the boundary condition specific stuff...
     bool wallBCFlag = false;
 
+    //--------------------------------
+    //No-Slip Wall Boundary Conditions
+    //--------------------------------
+
     if(bc->bcX0 == BC::ADIABATIC_WALL){
 	wallBCFlag = true;
         #pragma omp parallel for
@@ -308,6 +312,127 @@ void CSolver::setInitialConditions(){
         }END_FORZ1
     }
 
+    //-------------------------------
+    //Moving Wall Boundary Conditions
+    //-------------------------------
+
+    if(bc->bcX0 == BC::MOVING_ADIABATIC_WALL){
+	wallBCFlag = true;
+        #pragma omp parallel for
+        FOR_X0{
+            U[ip]  = 0.0;
+            V[ip]  = X0WallV;
+            W[ip]  = X0WallW;
+            rhoU1[ip] = 0.0;
+            rhoV1[ip] = rho1[ip]*X0WallV;
+            rhoW1[ip] = rho1[ip]*X0WallW;
+            T[ip] = calcNeumann(T[GET3DINDEX_XYZ_Xp1],
+                                T[GET3DINDEX_XYZ_Xp2],
+                                T[GET3DINDEX_XYZ_Xp3],
+                                T[GET3DINDEX_XYZ_Xp4],
+                                T[GET3DINDEX_XYZ_Xp5],
+                                T[GET3DINDEX_XYZ_Xp6]);
+        }END_FORX0
+    }
+
+    if(bc->bcX1 == BC::MOVING_ADIABATIC_WALL){
+	wallBCFlag = true;
+        #pragma omp parallel for
+        FOR_X1{
+            U[ip]  = 0.0;
+            V[ip]  = X1WallV;
+            W[ip]  = X1WallW;
+            rhoU1[ip] = 0.0;
+            rhoV1[ip] = rho1[ip]*X1WallV;
+            rhoW1[ip] = rho1[ip]*X1WallW;
+            T[ip] = calcNeumann(T[GET3DINDEX_XYZ_Xm1],
+                                T[GET3DINDEX_XYZ_Xm2],
+                                T[GET3DINDEX_XYZ_Xm3],
+                                T[GET3DINDEX_XYZ_Xm4],
+                                T[GET3DINDEX_XYZ_Xm5],
+                                T[GET3DINDEX_XYZ_Xm6]);
+        }END_FORX1
+    }
+
+    if(bc->bcY0 == BC::MOVING_ADIABATIC_WALL){
+	wallBCFlag = true;
+        #pragma omp parallel for
+        FOR_Y0{
+            U[ip]  = Y0WallU;
+            V[ip]  = 0.0;
+            W[ip]  = Y0WallW;
+            rhoU1[ip] = rho1[ip]*Y0WallU;
+            rhoV1[ip] = 0.0;
+            rhoW1[ip] = rho1[ip]*Y0WallW;
+            T[ip] = calcNeumann(T[GET3DINDEX_XYZ_Yp1],
+                                T[GET3DINDEX_XYZ_Yp2],
+                                T[GET3DINDEX_XYZ_Yp3],
+                                T[GET3DINDEX_XYZ_Yp4],
+                                T[GET3DINDEX_XYZ_Yp5],
+                                T[GET3DINDEX_XYZ_Yp6]);
+        }END_FORY0
+    }
+
+    if(bc->bcY1 == BC::MOVING_ADIABATIC_WALL){
+	wallBCFlag = true;
+        #pragma omp parallel for
+        FOR_Y1{
+            U[ip]  = Y1WallU;
+            V[ip]  = 0.0;
+            W[ip]  = Y1WallW;
+            rhoU1[ip] = rho1[ip]*Y1WallU;
+            rhoV1[ip] = 0.0;
+            rhoW1[ip] = rho1[ip]*Y1WallW;
+            T[ip] = calcNeumann(T[GET3DINDEX_XYZ_Ym1],
+                                T[GET3DINDEX_XYZ_Ym2],
+                                T[GET3DINDEX_XYZ_Ym3],
+                                T[GET3DINDEX_XYZ_Ym4],
+                                T[GET3DINDEX_XYZ_Ym5],
+                                T[GET3DINDEX_XYZ_Ym6]);
+        }END_FORY1
+    }
+
+    if(bc->bcZ0 == BC::MOVING_ADIABATIC_WALL){
+	wallBCFlag = true;
+        #pragma omp parallel for
+        FOR_Z0{
+            U[ip]  = Z0WallU;
+            V[ip]  = Z0WallV;
+            W[ip]  = 0.0;
+            rhoU1[ip] = rho1[ip]*Z0WallU;
+            rhoV1[ip] = rho1[ip]*Z0WallV;
+            rhoW1[ip] = 0.0;
+            T[ip] = calcNeumann(T[GET3DINDEX_XYZ_Zp1],
+                                T[GET3DINDEX_XYZ_Zp2],
+                                T[GET3DINDEX_XYZ_Zp3],
+                                T[GET3DINDEX_XYZ_Zp4],
+                                T[GET3DINDEX_XYZ_Zp5],
+                                T[GET3DINDEX_XYZ_Zp6]);
+        }END_FORZ0
+    }
+
+    if(bc->bcZ1 == BC::MOVING_ADIABATIC_WALL){
+	wallBCFlag = true;
+        #pragma omp parallel for
+        FOR_Z1{
+            U[ip]  = Z1WallU;
+            V[ip]  = Z1WallV;
+            W[ip]  = 0.0;
+            rhoU1[ip] = rho1[ip]*Z1WallU;
+            rhoV1[ip] = rho1[ip]*Z1WallV;
+            rhoW1[ip] = 0.0;
+            T[ip] = calcNeumann(T[GET3DINDEX_XYZ_Zm1],
+                                T[GET3DINDEX_XYZ_Zm2],
+                                T[GET3DINDEX_XYZ_Zm3],
+                                T[GET3DINDEX_XYZ_Zm4],
+                                T[GET3DINDEX_XYZ_Zm5],
+                                T[GET3DINDEX_XYZ_Zm6]);
+        }END_FORZ1
+    }
+
+
+
+
     if(wallBCFlag == true){
 	//Need to update the pressure, sos, and rhoE fields at the boundaries with walls...
 	FOR_XYZ{
@@ -395,6 +520,10 @@ void CSolver::preStepBCHandling(){
 	rhoWP = rhoWk;
 	rhoEP = rhoEk;
     }
+
+    //--------------------------------
+    //No-slip wall boundary conditions
+    //--------------------------------
 
     if(bc->bcX0 == BC::ADIABATIC_WALL){
 	#pragma omp parallel for
@@ -516,6 +645,131 @@ void CSolver::preStepBCHandling(){
 	    rhoEP[ip] = ig->solverhoE(rhoP[ip], p[ip], U[ip], V[ip], W[ip]); //Not 100% about this?
 	}END_FORZ1
     }
+
+    //-------------------------------
+    //Moving wall boundary conditions
+    //-------------------------------
+
+    if(bc->bcX0 == BC::MOVING_ADIABATIC_WALL){
+        #pragma omp parallel for
+        FOR_X0{
+            U[ip]  = 0.0;
+            V[ip]  = X0WallV;
+            W[ip]  = X0WallW;
+            rhoUP[ip] = 0.0;
+            rhoVP[ip] = rhoP[ip]*X0WallV;
+            rhoWP[ip] = rhoP[ip]*X0WallW;
+            T[ip] = calcNeumann(T[GET3DINDEX_XYZ_Xp1],
+                                T[GET3DINDEX_XYZ_Xp2],
+                                T[GET3DINDEX_XYZ_Xp3],
+                                T[GET3DINDEX_XYZ_Xp4],
+                                T[GET3DINDEX_XYZ_Xp5],
+                                T[GET3DINDEX_XYZ_Xp6]);
+	    p[ip] = ig->solvep_idealgas(rhoP[ip], T[ip]);
+	    rhoEP[ip] = ig->solverhoE(rhoP[ip], p[ip], U[ip], V[ip], W[ip]); //Not 100% about this?
+        }END_FORX0
+    }
+
+    if(bc->bcX1 == BC::MOVING_ADIABATIC_WALL){
+        #pragma omp parallel for
+        FOR_X1{
+            U[ip]  = 0.0;
+            V[ip]  = X1WallV;
+            W[ip]  = X1WallW;
+            rhoUP[ip] = 0.0;
+            rhoVP[ip] = rhoP[ip]*X1WallV;
+            rhoWP[ip] = rhoP[ip]*X1WallW;
+            T[ip] = calcNeumann(T[GET3DINDEX_XYZ_Xm1],
+                                T[GET3DINDEX_XYZ_Xm2],
+                                T[GET3DINDEX_XYZ_Xm3],
+                                T[GET3DINDEX_XYZ_Xm4],
+                                T[GET3DINDEX_XYZ_Xm5],
+                                T[GET3DINDEX_XYZ_Xm6]);
+	    p[ip] = ig->solvep_idealgas(rhoP[ip], T[ip]);
+	    rhoEP[ip] = ig->solverhoE(rhoP[ip], p[ip], U[ip], V[ip], W[ip]); //Not 100% about this?
+        }END_FORX1
+    }
+
+    if(bc->bcY0 == BC::MOVING_ADIABATIC_WALL){
+        #pragma omp parallel for
+        FOR_Y0{
+            U[ip]  = Y0WallU;
+            V[ip]  = 0.0;
+            W[ip]  = Y0WallW;
+            rhoUP[ip] = rhoP[ip]*Y0WallU;
+            rhoVP[ip] = 0.0;
+            rhoWP[ip] = rhoP[ip]*Y0WallW;
+            T[ip] = calcNeumann(T[GET3DINDEX_XYZ_Yp1],
+                                T[GET3DINDEX_XYZ_Yp2],
+                                T[GET3DINDEX_XYZ_Yp3],
+                                T[GET3DINDEX_XYZ_Yp4],
+                                T[GET3DINDEX_XYZ_Yp5],
+                                T[GET3DINDEX_XYZ_Yp6]);
+	    p[ip] = ig->solvep_idealgas(rhoP[ip], T[ip]);
+	    rhoEP[ip] = ig->solverhoE(rhoP[ip], p[ip], U[ip], V[ip], W[ip]); //Not 100% about this?
+        }END_FORY0
+    }
+
+    if(bc->bcY1 == BC::MOVING_ADIABATIC_WALL){
+        #pragma omp parallel for
+        FOR_Y1{
+            U[ip]  = Y1WallU;
+            V[ip]  = 0.0;
+            W[ip]  = Y1WallW;
+            rhoUP[ip] = rhoP[ip]*Y1WallU;
+            rhoVP[ip] = 0.0;
+            rhoWP[ip] = rhoP[ip]*Y1WallW;
+            T[ip] = calcNeumann(T[GET3DINDEX_XYZ_Ym1],
+                                T[GET3DINDEX_XYZ_Ym2],
+                                T[GET3DINDEX_XYZ_Ym3],
+                                T[GET3DINDEX_XYZ_Ym4],
+                                T[GET3DINDEX_XYZ_Ym5],
+                                T[GET3DINDEX_XYZ_Ym6]);
+	    p[ip] = ig->solvep_idealgas(rhoP[ip], T[ip]);
+	    rhoEP[ip] = ig->solverhoE(rhoP[ip], p[ip], U[ip], V[ip], W[ip]); //Not 100% about this?
+        }END_FORY1
+    }
+
+    if(bc->bcZ0 == BC::MOVING_ADIABATIC_WALL){
+        #pragma omp parallel for
+        FOR_Z0{
+            U[ip]  = Z0WallU;
+            V[ip]  = Z0WallV;
+            W[ip]  = 0.0;
+            rhoUP[ip] = rhoP[ip]*Z0WallU;
+            rhoVP[ip] = rhoP[ip]*Z0WallV;
+            rhoWP[ip] = 0.0;
+            T[ip] = calcNeumann(T[GET3DINDEX_XYZ_Zp1],
+                                T[GET3DINDEX_XYZ_Zp2],
+                                T[GET3DINDEX_XYZ_Zp3],
+                                T[GET3DINDEX_XYZ_Zp4],
+                                T[GET3DINDEX_XYZ_Zp5],
+                                T[GET3DINDEX_XYZ_Zp6]);
+	    p[ip] = ig->solvep_idealgas(rhoP[ip], T[ip]);
+	    rhoEP[ip] = ig->solverhoE(rhoP[ip], p[ip], U[ip], V[ip], W[ip]); //Not 100% about this?
+        }END_FORZ0
+    }
+
+    if(bc->bcZ1 == BC::MOVING_ADIABATIC_WALL){
+        #pragma omp parallel for
+        FOR_Z1{
+            U[ip]  = Z1WallU;
+            V[ip]  = Z1WallV;
+            W[ip]  = 0.0;
+            rhoUP[ip] = rhoP[ip]*Z1WallU;
+            rhoVP[ip] = rhoP[ip]*Z1WallV;
+            rhoWP[ip] = 0.0;
+            T[ip] = calcNeumann(T[GET3DINDEX_XYZ_Zm1],
+                                T[GET3DINDEX_XYZ_Zm2],
+                                T[GET3DINDEX_XYZ_Zm3],
+                                T[GET3DINDEX_XYZ_Zm4],
+                                T[GET3DINDEX_XYZ_Zm5],
+                                T[GET3DINDEX_XYZ_Zm6]);
+	    p[ip] = ig->solvep_idealgas(rhoP[ip], T[ip]);
+	    rhoEP[ip] = ig->solverhoE(rhoP[ip], p[ip], U[ip], V[ip], W[ip]); //Not 100% about this?
+        }END_FORZ1
+    }
+
 
 }
 
@@ -1453,11 +1707,11 @@ void CSolver::postStepBCHandling(){
 	rhoEP = rhoEk;
     }
 
-    /////////////////////
-    //ADIABATIC WALL BC// 
-    /////////////////////
+    ////////////////////////////////
+    //ADIABATIC AND MOVING WALL BC// 
+    ////////////////////////////////
 
-    if(bc->bcX0 == BC::ADIABATIC_WALL){
+    if(bc->bcX0 == BC::ADIABATIC_WALL || bc->bcX0 == BC::MOVING_ADIABATIC_WALL){
 	#pragma omp parallel for
 	FOR_X0{
 	    rhok2[ip]  = -ts->dt*contEulerX[ip];
@@ -1469,7 +1723,7 @@ void CSolver::postStepBCHandling(){
 	}END_FORX0
     }
 
-    if(bc->bcX1 == BC::ADIABATIC_WALL){
+    if(bc->bcX1 == BC::ADIABATIC_WALL  || bc->bcX1 == BC::MOVING_ADIABATIC_WALL){
 	#pragma omp parallel for
 	FOR_X1{
 	    rhok2[ip]  = -ts->dt*contEulerX[ip];
@@ -1481,7 +1735,7 @@ void CSolver::postStepBCHandling(){
 	}END_FORX1
     }   
 
-    if(bc->bcY0 == BC::ADIABATIC_WALL){
+    if(bc->bcY0 == BC::ADIABATIC_WALL || bc->bcY0 == BC::MOVING_ADIABATIC_WALL){
 	#pragma omp parallel for
 	FOR_Y0{
 	    rhok2[ip]  = -ts->dt*contEulerY[ip];
@@ -1493,7 +1747,7 @@ void CSolver::postStepBCHandling(){
 	}END_FORY0
     }
 
-    if(bc->bcY1 == BC::ADIABATIC_WALL){
+    if(bc->bcY1 == BC::ADIABATIC_WALL || bc->bcY1 == BC::MOVING_ADIABATIC_WALL){
 	#pragma omp parallel for
 	FOR_Y1{
 	    rhok2[ip]  = -ts->dt*contEulerY[ip];
@@ -1505,7 +1759,7 @@ void CSolver::postStepBCHandling(){
 	}END_FORY1
     }
 
-    if(bc->bcZ0 == BC::ADIABATIC_WALL){
+    if(bc->bcZ0 == BC::ADIABATIC_WALL || bc->bcZ0 == BC::MOVING_ADIABATIC_WALL){
 	#pragma omp parallel for
 	FOR_Z0{
 	    rhok2[ip]  = -ts->dt*contEulerZ[ip];
@@ -1517,7 +1771,7 @@ void CSolver::postStepBCHandling(){
 	}END_FORZ0
     }
 
-    if(bc->bcZ1 == BC::ADIABATIC_WALL){
+    if(bc->bcZ1 == BC::ADIABATIC_WALL || bc->bcZ1 == BC::MOVING_ADIABATIC_WALL){
 	#pragma omp parallel for
 	FOR_Z1{
 	    rhok2[ip]  = -ts->dt*contEulerZ[ip];
@@ -1528,10 +1782,6 @@ void CSolver::postStepBCHandling(){
 	    rhoEk2[ip] = 0.0;//Not 100% 
 	}END_FORZ1
     }
-
-    //////////////////
-    //MOVING WALL BC// 
-    //////////////////
 
 
     /////////////

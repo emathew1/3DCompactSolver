@@ -99,6 +99,12 @@ class CSolver{
 
 	bool spongeFlag;
 	SpongeBC *spg; 
+
+	//Moving Wall BC Velocities
+	double X0WallV, X0WallW, X1WallV, X1WallW;
+	double Y0WallU, Y0WallW, Y1WallU, Y1WallW;
+	double Z0WallU, Z0WallV, Z1WallU, Z1WallV;
+
 	enum Eqn {CONT, XMOM, YMOM, ZMOM, ENGY};
 
 	Derivatives *derivX, *derivY, *derivZ;
@@ -153,6 +159,10 @@ class CSolver{
 	    filtZ  = new Filter(alphaF, dom, bc->bcZType, Derivatives::DIRZ);
 
 	    this->blocksize = blocksize;
+
+ 	    X0WallV = 0.0; X0WallW = 0.0; X1WallV = 0.0; X1WallW = 0.0;
+	    Y0WallU = 0.0; Y0WallW = 0.0; Y1WallU = 0.0; Y1WallW = 0.0;
+	    Z0WallU = 0.0; Z0WallV = 0.0; Z1WallU = 0.0; Z1WallV = 0.0;
 
 	}
 

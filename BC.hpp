@@ -8,7 +8,7 @@ class BC{
     public:
 
 	enum BCType {PERIODIC_SOLVE, DIRICHLET_SOLVE};
-	enum BCKind {PERIODIC, SPONGE, ADIABATIC_WALL, MOVING_WALL, INLET};
+	enum BCKind {PERIODIC, SPONGE, ADIABATIC_WALL, MOVING_ADIABATIC_WALL, INLET};
 
 	BCType bcXType, bcYType, bcZType;
 	BCKind bcX0, bcX1, bcY0, bcY1, bcZ0, bcZ1;
@@ -39,7 +39,7 @@ class BC{
 		    std::cout << " > X0=SPG";
 		}else if(bcX0 == ADIABATIC_WALL){
 		    std::cout << " > X0=ABW";
-		}else if(bcX0 == MOVING_WALL){
+		}else if(bcX0 == MOVING_ADIABATIC_WALL){
 		    std::cout << " > X0=MOW";
 		}
 
@@ -47,7 +47,7 @@ class BC{
 		    std::cout << "----------------SPG=X1" << std::endl;
 		}else if(bcX1 == ADIABATIC_WALL){
 		    std::cout << "----------------ABW=X1" << std::endl;
-		}else if(bcX1 == MOVING_WALL){
+		}else if(bcX1 == MOVING_ADIABATIC_WALL){
 		    std::cout << "----------------MOW=X1" << std::endl;
 		}
 
@@ -61,7 +61,7 @@ class BC{
 		    std::cout << " > Y0=SPG";
 		}else if(bcY0 == ADIABATIC_WALL){
 		    std::cout << " > Y0=ABW";
-		}else if(bcY0 == MOVING_WALL){
+		}else if(bcY0 == MOVING_ADIABATIC_WALL){
 		    std::cout << " > Y0=MOW";
 		}
 
@@ -69,7 +69,7 @@ class BC{
 		    std::cout << "----------------SPG=Y1" << std::endl;
 		}else if(bcY1 == ADIABATIC_WALL){
 		    std::cout << "----------------ABW=Y1" << std::endl;
-		}else if(bcY1 == MOVING_WALL){
+		}else if(bcY1 == MOVING_ADIABATIC_WALL){
 		    std::cout << "----------------MOW=Y1" << std::endl;
 		}
 
@@ -83,7 +83,7 @@ class BC{
 		    std::cout << " > Z0=SPG";
 		}else if(bcZ0 == ADIABATIC_WALL){
 		    std::cout << " > Z0=ABW";
-		}else if(bcZ0 == MOVING_WALL){
+		}else if(bcZ0 == MOVING_ADIABATIC_WALL){
 		    std::cout << " > Z0=MOW";
 		}
 
@@ -91,7 +91,7 @@ class BC{
 		    std::cout << "----------------SPG=Z1" << std::endl;
 		}else if(bcZ1 == ADIABATIC_WALL){
 		    std::cout << "----------------ABW=Z1" << std::endl;
-		}else if(bcZ1 == MOVING_WALL){
+		}else if(bcZ1 == MOVING_ADIABATIC_WALL){
 		    std::cout << "----------------MOW=Z1" << std::endl;
 		}
 	     }
