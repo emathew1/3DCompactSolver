@@ -97,7 +97,7 @@ class CSolver{
 	double *transUx, *transVx, *transWx;
 	double *transUy, *transVy, *transWy;
 
-	double *turbdiss, *uprime2, *uvar;
+	double *turbdiss, *uprime2, *uvar, *kineticEng;
 
 	bool spongeFlag;
 	SpongeBC *spg; 

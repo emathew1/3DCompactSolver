@@ -153,10 +153,10 @@ void CSolver::initializeSolverData(){
     transWy = new double[Nx*Ny*Nz];
 
     //turbulence quantities
-    turbdiss = new double[Nx*Ny*Nz];
-    uprime2  = new double[Nx*Ny*Nz];
-    uvar     = new double[Nx*Ny*Nz];
- 
+    turbdiss   = new double[Nx*Ny*Nz];
+    uprime2    = new double[Nx*Ny*Nz];
+    uvar       = new double[Nx*Ny*Nz];
+    kineticEng = new double[Nx*Ny*Nz];
 }
 
 
@@ -2456,14 +2456,27 @@ void CSolver::calcTurbulenceQuantities(){
 	turbdiss[ip] += Sij[2][2]*Wz[ip];
 	turbdiss[ip] *= 2*mu[ip];
 	
-	uprime2[ip] = (U[ip]*U[ip] + V[ip]*V[ip] + W[ip]*W[ip])/3.0; 
-	uvar[ip]    = (U[ip]*U[ip] + V[ip]*V[ip] + W[ip]*W[ip]); 
-
+	uprime2[ip]    = (U[ip]*U[ip] + V[ip]*V[ip] + W[ip]*W[ip])/3.0; 
+	uvar[ip]       = (U[ip]*U[ip] + V[ip]*V[ip] + W[ip]*W[ip]); 
+	kineticEng[ip] = rho1[ip]*uvar[ip];
 
     }
 
     double taylor2_denom = 0;
-    double meanRho = 0.0, meanMu = 0.0, meanTurbDiss = 0.0, meanSOS = 0.0,turbMach = 0.0, uprime = 0.0, urms = 0.0, kolNu = 0.0;
+    double meanRho = 0.0;
+    double meanMu = 0.0;
+    double meanTurbDiss = 0.0;
+    double meanSOS = 0.0; 
+
+    double turbMach = 0.0;
+    double uprime = 0.0;
+    double urms = 0.0;
+    double kolNu = 0.0;
+    double meanKineticEng = 0.0;
+ 
+    double rhoprime = 0.0;
+    double dilprime = 0.0;
+    double vortprime = 0.0;
 
     FOR_XYZ{
 	meanRho += rho1[ip]/((double)(Nx*Ny*Nz));
@@ -2473,7 +2486,22 @@ void CSolver::calcTurbulenceQuantities(){
 	urms   += uvar[ip]/((double)(Nx*Ny*Nz));
 	meanSOS += sos[ip]/((double)(Nx*Ny*Nz));
 	taylor2_denom += (Ux[ip]*Ux[ip])/((double)(Nx*Ny*Nz));
+	meanKineticEng += kineticEng[ip]/((double)(Nx*Ny*Nz))/2.0;
     }
+
+    FOR_XYZ{
+	rhoprime += ((rho1[ip] - meanRho)*(rho1[ip] - meanRho))/((double)(Nx*Ny*Nz));
+	dilprime += ((Ux[ip] + Vy[ip] + Wz[ip])*(Ux[ip] + Vy[ip] + Wz[ip]))/((double)(Nx*Ny*Nz));
+
+	double wx, wy, wz;
+        wx = Wy[ip] - Vz[ip];
+        wy = Uz[ip] - Wx[ip];
+        wz = Vx[ip] - Uy[ip];
+	vortprime += ((wx*wx + wy*wy + wz*wz))/((double)(Nx*Ny*Nz));
+    }
+    rhoprime  = sqrt(rhoprime);
+    dilprime  = sqrt(dilprime);
+    vortprime = sqrt(vortprime);
 
     double meanNu = meanMu/meanRho; 
     meanTurbDiss /= meanRho;
@@ -2484,10 +2512,9 @@ void CSolver::calcTurbulenceQuantities(){
 
 
     double taylorMicro  = sqrt(15.0 * meanNu / meanTurbDiss)*urms;
-    double taylorMicro2 = sqrt(uprime*uprime/taylor2_denom); 
-
-    double taylorReyn  = urms * taylorMicro / meanNu;
-    double taylorReyn2 = urms*urms*sqrt(15.0/(meanNu*meanTurbDiss));
+    double taylorReyn  = uprime * taylorMicro / meanNu;
+    double taylorReyn2 = urms*urms*sqrt(5.0/(meanNu*meanTurbDiss));
+    double tau = sqrt(2.0*M_PI)/4.0/uprime;
 
 
     //Kolmogorov Scale
@@ -2497,14 +2524,31 @@ void CSolver::calcTurbulenceQuantities(){
     cout << " taylorReyn2: "  << taylorReyn2 << endl;
     cout << " turbMach: "  << turbMach << endl;
     cout << " taylorMicro: " << taylorMicro << endl;
-    cout << " taylorMicro2: " << taylorMicro2 << endl;
     cout << " meanTurbDiss: " << meanTurbDiss << endl;
     cout << " uprime: "      << uprime << endl;
     cout << " urms: "        << urms << endl;
     cout << " meanRho: "     << meanRho << endl;
     cout << " meanMu: "      << meanMu << endl;
     cout << " KolmogorovNu: " << kolNu << endl;
-    cout << " dx: " << dom->dx << endl;
+    cout << " rhoprime: " << rhoprime << endl;
+    cout << " dilprime: " << dilprime << endl;
+    cout << " vortprime: " << vortprime << endl;
+    cout << " tau: " << tau << endl;
+    cout << " t/tau: " << time/tau << endl;
+    cout << " meanKineticEng: " << meanKineticEng << endl << endl;
+
+        ofstream outfile;
+        outfile.precision(17);
+        string outputFileName;
+        outputFileName = "turbdata.out";
+        outfile.open(outputFileName, fstream::app);
+        outfile.precision(17);
+        outfile << time << " " << tau << " " << taylorReyn << " " << turbMach << " ";
+	outfile << meanTurbDiss << " " << uprime << " " << kolNu << " ";
+	outfile << rhoprime << " " << dilprime << " " << vortprime << " " << meanKineticEng << " ";
+	outfile << endl;
+        outfile.close();
+
 
 
 };
@@ -2543,7 +2587,7 @@ void CSolver::dumpSolution(){
         ofstream outfile;
         outfile.precision(17);
         string outputFileName;
-/*
+
         outputFileName = "rho.out.";
         outputFileName.append(to_string(timeStep));
         outfile.open(outputFileName);
@@ -2600,8 +2644,8 @@ void CSolver::dumpSolution(){
             }
 	    outfile.close();
 	}
-*/
-	int dumpVorticityMag = 1;
+
+	int dumpVorticityMag = 0;
 	if(dumpVorticityMag == 1){
 	   double *vortMag = new double[N];
 	   #pragma omp parallel for
@@ -2612,22 +2656,6 @@ void CSolver::dumpSolution(){
 		wz = Vx[ip] - Uy[ip];
 		vortMag[ip] = sqrt(wx*wx + wy*wy + wz*wz);
 	   }
-/*
-	   outputFileName = "vortMag.out.";
-           outputFileName.append(to_string(timeStep));
-           outfile.open(outputFileName);
-           outfile.precision(17);
-           FOR_Z{
-	       FOR_Y{
-		   FOR_X{
-		       int ii = GET3DINDEX_XYZ;
-                       outfile << dom->x[i] << " " << dom->y[j] << " " << dom->z[k] << " " << vortMag[ii] << endl;
-		   }
-	       }
-           }
-	   outfile.close();
-	   delete[] vortMag;
-*/
 	   string str = "vortMag.";
 	   str.append(to_string(timeStep));
 	   str.append(".out");

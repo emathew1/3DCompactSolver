@@ -40,14 +40,14 @@ uprime = np.sqrt(uprime)
 q = np.sqrt(q)
 q_old = q
 
-k0 = 8
+k0 = 4
 A = 16*np.sqrt(2/np.pi)*uprime**2/k0**5
 
 #%%
 uprimeGoal = np.sqrt(1/3)
 Unew = U*uprimeGoal/uprime
 Vnew = V*uprimeGoal/uprime
-Wnew = V*uprimeGoal/uprime
+Wnew = W*uprimeGoal/uprime
 
 #%%
 
@@ -66,8 +66,8 @@ q = np.sqrt(q)
 
 #%%
 
-k0 = 8
-mu = 0.0034
+k0 = 4
+mu = 0.0069
 dx = 2*np.pi/128
 A = 16*np.sqrt(2/np.pi)*uprime**2/k0**5
 kineng = (3*A/64)*np.sqrt(2*np.pi)*k0**5
@@ -76,9 +76,9 @@ tau = np.sqrt(32/A)*(2*np.pi)**(1/4)*k0**(-7/2)
 omega = (15*A/256)*np.sqrt(2*np.pi)*k0**7
 kolEta = (2*omega*(mu)**-2)**(-1/4)
 #%%
-f = open('U_Mt0p3_N128_k8.dat','w');
-g = open('V_Mt0p3_N128_k8.dat','w');
-h = open('W_Mt0p3_N128_k8.dat','w');
+f = open('U_Mt0p3_N128_k4.dat','w');
+g = open('V_Mt0p3_N128_k4.dat','w');
+h = open('W_Mt0p3_N128_k4.dat','w');
 for k in range(0,N-1):
     for j in range(0,N-1):
         for i in range(0,N-1):

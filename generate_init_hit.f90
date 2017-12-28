@@ -5,6 +5,8 @@
 !export PATH=/usr/bin:$PATH
 !gfortran -I/usr/local/Cellar/fftw/3.3.7/include/ -o generate_init_hit generate_init_hit.f90 -L/usr/local/Cellar/fftw/3.3.7/lib -lfftw3
 
+! gfortran -I/usr/include/ -o generate_init_hit generate_init_hit.f90 -lfftw3
+
 !ifort -I$WORKDIR/SRC/fftw/include -o generate_init_hit generate_init_hit.f90 -L$WORKDIR/SRC/fftw/lib -lfftw3
 
 module rand_tools_m
@@ -94,7 +96,7 @@ program generate_init_hit
 
   integer, parameter :: N_box = 129
 
-  real(8), parameter :: k0 = 8.0_8
+  real(8), parameter :: k0 = 4.0_8
 
   integer, parameter :: divergence_flag = 0
   !            0: use the noraml construction which gives 
@@ -212,7 +214,7 @@ program generate_init_hit
   allocate( phi3(kx_max_i,ky_max_i,kz_max_i) )
 
   ! call random number generator
-  call randset(1)
+  call randset(100)
   call randvec(phi1,kx_max_i*ky_max_i*kz_max_i)
   call randvec(phi2,kx_max_i*ky_max_i*kz_max_i)
   call randvec(phi3,kx_max_i*ky_max_i*kz_max_i)
@@ -423,9 +425,10 @@ program generate_init_hit
   !dump the statistics on the screen
   write(*,*) '*****************************************************************************'
   write(*,*) 'initial condition'
-  !write(*,*) '   maximum mach number             =  ', max_u
-  !write(*,*) '   minimum mach number             =  ', min_u
-  !write(*,*) '   mean velocity                   =  ', mean_u(1:3)/box_volume
+  write(*,*) '   maximum mach number             =  ', max_u
+  write(*,*) '   minimum mach number             =  ', min_u
+  write(*,*) '   mean velocity                   =  ', mean_u(1:3)/box_volume
+  write(*,*) '   mean velocity2                  =  ', mean_u(1:3)
   write(*,*) '   maximum divergence of velocity  =  ', max_divergence
   write(*,*) '*****************************************************************************'      
   

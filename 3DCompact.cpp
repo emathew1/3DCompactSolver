@@ -49,11 +49,11 @@ int main(int argc, char *argv[]){
     ////////////////////////////////////
     TimeStepping::TimeSteppingType timeSteppingType = TimeStepping::CONST_CFL;
     double CFL 	     = 0.25;
-    int maxTimeStep  = 3000;
-    double maxTime   = 100.0;
+    int maxTimeStep  = 10000;
+    double maxTime   = 10.0;
     int filterStep   = 10;
     int checkStep    = 1;
-    int dumpStep     = 15;
+    int dumpStep     = 500;
     TimeStepping *ts = new TimeStepping(timeSteppingType, CFL, maxTimeStep, maxTime, filterStep, checkStep, dumpStep);
 
 
@@ -80,8 +80,8 @@ int main(int argc, char *argv[]){
     /////////////////////////
     //Initialize the Solver//
     /////////////////////////
-    double alphaF = 0.49;
-    double mu_ref = 0.001;
+    double alphaF = 0.495;
+    double mu_ref = 0.001235;
     int blocksize = 16;
     CSolver *cs   = new CSolver(dom, bc, ts, alphaF, mu_ref, blocksize); 
 
@@ -90,9 +90,9 @@ int main(int argc, char *argv[]){
     //load in turbulence output//
     /////////////////////////////
     ifstream uFile, vFile, wFile;
-    uFile.open("U_Mt0p3_N128_k8.dat",ifstream::in);
-    vFile.open("V_Mt0p3_N128_k8.dat",ifstream::in);
-    wFile.open("W_Mt0p3_N128_k8.dat",ifstream::in);
+    uFile.open("U_Mt0p3_N128_k4.dat",ifstream::in);
+    vFile.open("V_Mt0p3_N128_k4.dat",ifstream::in);
+    wFile.open("W_Mt0p3_N128_k4.dat",ifstream::in);
 
     double *u_temp = new double[Nx*Ny*Nz];
     double *v_temp = new double[Nx*Ny*Nz];
@@ -146,6 +146,10 @@ int main(int argc, char *argv[]){
 	    }
 	}
     }
+
+    delete[] u_temp;
+    delete[] v_temp;
+    delete[] w_temp;
 
     cs->setInitialConditions();
     cs->dumpSolution();
