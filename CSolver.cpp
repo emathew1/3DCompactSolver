@@ -152,6 +152,10 @@ void CSolver::initializeSolverData(){
     transVy = new double[Nx*Ny*Nz];
     transWy = new double[Nx*Ny*Nz];
 
+    //turbulence quantities
+    turbdiss = new double[Nx*Ny*Nz];
+    uprime2  = new double[Nx*Ny*Nz];
+    uvar     = new double[Nx*Ny*Nz];
  
 }
 
@@ -2426,6 +2430,85 @@ void CSolver::updateSponge(){
     }
 };
 
+void CSolver::calcTurbulenceQuantities(){
+
+
+    FOR_XYZ{
+	double Sij[3][3];
+	Sij[0][0] = 0.5*(Ux[ip] + Ux[ip]) - (1.0/3.0)*Ux[ip];
+	Sij[1][1] = 0.5*(Vy[ip] + Vy[ip]) - (1.0/3.0)*Vy[ip];
+	Sij[2][2] = 0.5*(Wz[ip] + Wz[ip]) - (1.0/3.0)*Wz[ip];
+	Sij[0][1] = 0.5*(Uy[ip] + Vx[ip]);
+	Sij[1][0] = 0.5*(Uy[ip] + Vx[ip]);
+	Sij[0][2] = 0.5*(Uz[ip] + Wx[ip]);
+	Sij[2][0] = 0.5*(Uz[ip] + Wx[ip]);
+	Sij[1][2] = 0.5*(Vz[ip] + Wy[ip]);
+	Sij[2][1] = 0.5*(Vz[ip] + Wy[ip]);
+
+	turbdiss[ip]  = Sij[0][0]*Ux[ip];
+	turbdiss[ip] += Sij[0][1]*Uy[ip];
+	turbdiss[ip] += Sij[0][2]*Uz[ip];
+	turbdiss[ip] += Sij[1][0]*Vx[ip];
+	turbdiss[ip] += Sij[1][1]*Vy[ip];
+	turbdiss[ip] += Sij[1][2]*Vz[ip];
+	turbdiss[ip] += Sij[2][0]*Wx[ip];
+	turbdiss[ip] += Sij[2][1]*Wy[ip];
+	turbdiss[ip] += Sij[2][2]*Wz[ip];
+	turbdiss[ip] *= 2*mu[ip];
+	
+	uprime2[ip] = (U[ip]*U[ip] + V[ip]*V[ip] + W[ip]*W[ip])/3.0; 
+	uvar[ip]    = (U[ip]*U[ip] + V[ip]*V[ip] + W[ip]*W[ip]); 
+
+
+    }
+
+    double taylor2_denom = 0;
+    double meanRho = 0.0, meanMu = 0.0, meanTurbDiss = 0.0, meanSOS = 0.0,turbMach = 0.0, uprime = 0.0, urms = 0.0, kolNu = 0.0;
+
+    FOR_XYZ{
+	meanRho += rho1[ip]/((double)(Nx*Ny*Nz));
+	meanMu  += mu[ip]/((double)(Nx*Ny*Nz));
+	meanTurbDiss += turbdiss[ip]/((double)(Nx*Ny*Nz));
+	uprime += uprime2[ip]/((double)(Nx*Ny*Nz));
+	urms   += uvar[ip]/((double)(Nx*Ny*Nz));
+	meanSOS += sos[ip]/((double)(Nx*Ny*Nz));
+	taylor2_denom += (Ux[ip]*Ux[ip])/((double)(Nx*Ny*Nz));
+    }
+
+    double meanNu = meanMu/meanRho; 
+    meanTurbDiss /= meanRho;
+    uprime = sqrt(uprime);
+    urms = sqrt(urms);
+
+    turbMach = urms/meanSOS;
+
+
+    double taylorMicro  = sqrt(15.0 * meanNu / meanTurbDiss)*urms;
+    double taylorMicro2 = sqrt(uprime*uprime/taylor2_denom); 
+
+    double taylorReyn  = urms * taylorMicro / meanNu;
+    double taylorReyn2 = urms*urms*sqrt(15.0/(meanNu*meanTurbDiss));
+
+
+    //Kolmogorov Scale
+    kolNu = pow(pow(meanNu,3.0)/meanTurbDiss,0.25);
+
+    cout << " taylorReyn: "  << taylorReyn << endl;
+    cout << " taylorReyn2: "  << taylorReyn2 << endl;
+    cout << " turbMach: "  << turbMach << endl;
+    cout << " taylorMicro: " << taylorMicro << endl;
+    cout << " taylorMicro2: " << taylorMicro2 << endl;
+    cout << " meanTurbDiss: " << meanTurbDiss << endl;
+    cout << " uprime: "      << uprime << endl;
+    cout << " urms: "        << urms << endl;
+    cout << " meanRho: "     << meanRho << endl;
+    cout << " meanMu: "      << meanMu << endl;
+    cout << " KolmogorovNu: " << kolNu << endl;
+    cout << " dx: " << dom->dx << endl;
+
+
+};
+
 void CSolver::checkSolution(){
     if(timeStep%ts->checkStep == 0){
         t2Save = std::chrono::system_clock::now();
@@ -2457,10 +2540,10 @@ void CSolver::dumpSolution(){
         cout << ">  DUMPING FIELD " << endl;
         cout << "> ===============" << endl;
 
-
         ofstream outfile;
         outfile.precision(17);
         string outputFileName;
+/*
         outputFileName = "rho.out.";
         outputFileName.append(to_string(timeStep));
         outfile.open(outputFileName);
@@ -2517,7 +2600,7 @@ void CSolver::dumpSolution(){
             }
 	    outfile.close();
 	}
-
+*/
 	int dumpVorticityMag = 1;
 	if(dumpVorticityMag == 1){
 	   double *vortMag = new double[N];
@@ -2529,16 +2612,45 @@ void CSolver::dumpSolution(){
 		wz = Vx[ip] - Uy[ip];
 		vortMag[ip] = sqrt(wx*wx + wy*wy + wz*wz);
 	   }
-
+/*
 	   outputFileName = "vortMag.out.";
            outputFileName.append(to_string(timeStep));
            outfile.open(outputFileName);
            outfile.precision(17);
-           FOR_XYZ{
-                outfile << vortMag[ip] << " ";
+           FOR_Z{
+	       FOR_Y{
+		   FOR_X{
+		       int ii = GET3DINDEX_XYZ;
+                       outfile << dom->x[i] << " " << dom->y[j] << " " << dom->z[k] << " " << vortMag[ii] << endl;
+		   }
+	       }
            }
 	   outfile.close();
 	   delete[] vortMag;
+*/
+	   string str = "vortMag.";
+	   str.append(to_string(timeStep));
+	   str.append(".out");
+	   FILE *fp = fopen(str.c_str(), "wb");
+	   fwrite((void *)vortMag, sizeof(double), Nx*Ny*Nx, fp);
+	   fclose(fp);
+
+           outputFileName = "vortMag.";
+           outputFileName.append(to_string(timeStep));
+	   outputFileName.append(".bov");
+           outfile.open(outputFileName);
+           outfile.precision(17);
+	   outfile << "TIME: " << time << endl;	   
+	   outfile << "DATA_FILE: " << str << endl;	   
+	   outfile << "DATA_SIZE: " << Nx << " " << Ny << " " << Nz << endl;	   
+	   outfile << "DATA_FORMAT: DOUBLE" << endl;	   
+	   outfile << "VARIABLE: vortmag" << endl;	   
+	   outfile << "DATA_ENDIAN: LITTLE" << endl;	   
+	   outfile << "CENTERING: ZONAL" << endl;	   
+	   outfile << "BRICK_ORIGIN: 0. 0. 0." << endl;	   
+	   outfile << "BRICK_SIZE:" << Nx << ". " << Ny << ". " << Nz << ". " << endl;	   
+	   outfile.close();
+
 	}
 
     }

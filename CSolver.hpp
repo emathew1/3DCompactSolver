@@ -97,6 +97,8 @@ class CSolver{
 	double *transUx, *transVx, *transWx;
 	double *transUy, *transVy, *transWy;
 
+	double *turbdiss, *uprime2, *uvar;
+
 	bool spongeFlag;
 	SpongeBC *spg; 
 
@@ -192,6 +194,8 @@ class CSolver{
 	void filterConservedData();
 
 	void updateNonConservedData();
+
+	void calcTurbulenceQuantities();
 
 	void updateSponge();
 

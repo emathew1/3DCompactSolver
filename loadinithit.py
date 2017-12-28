@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-filename = '..\init_field_hit.dat'
+filename = './init_field_hit.dat'
 dataIn = np.loadtxt(filename,dtype=np.double)
 
 N = 129
@@ -57,15 +57,15 @@ uprime = np.sqrt(uprime)
 q = np.sqrt(q)
 
 #%%
-f = open('U_Mt0p3_N128.dat','w');
-g = open('V_Mt0p3_N128.dat','w');
-h = open('W_Mt0p3_N128.dat','w');
+f = open('U_Mt0p3_N128_k8.dat','w');
+g = open('V_Mt0p3_N128_k8.dat','w');
+h = open('W_Mt0p3_N128_k8.dat','w');
 for k in range(0,N-1):
     for j in range(0,N-1):
         for i in range(0,N-1):
-            f.write(str(Unew[i,j,k]))
-            g.write(str(Vnew[i,j,k]))
-            h.write(str(Wnew[i,j,k]))
+            f.write("".join([str(Unew[i,j,k]), "\n"]))
+            g.write("".join([str(Vnew[i,j,k]), "\n"]))
+            h.write("".join([str(Wnew[i,j,k]), "\n"]))
 f.close()
 g.close()
 h.close()

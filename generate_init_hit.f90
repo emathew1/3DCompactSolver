@@ -2,6 +2,9 @@
 !Adapted from M. Shoeybi's code
 
 !compilation
+!export PATH=/usr/bin:$PATH
+!gfortran -I/usr/local/Cellar/fftw/3.3.7/include/ -o generate_init_hit generate_init_hit.f90 -L/usr/local/Cellar/fftw/3.3.7/lib -lfftw3
+
 !ifort -I$WORKDIR/SRC/fftw/include -o generate_init_hit generate_init_hit.f90 -L$WORKDIR/SRC/fftw/lib -lfftw3
 
 module rand_tools_m
@@ -89,9 +92,9 @@ program generate_init_hit
   !include fftw header file
   include "fftw3.f"
 
-  integer, parameter :: N_box = 101
+  integer, parameter :: N_box = 129
 
-  real(8), parameter :: k0 = 20.0_8
+  real(8), parameter :: k0 = 8.0_8
 
   integer, parameter :: divergence_flag = 0
   !            0: use the noraml construction which gives 
