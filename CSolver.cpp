@@ -155,6 +155,7 @@ void CSolver::initializeSolverData(){
     //turbulence quantities
     turbdiss   = new double[Nx*Ny*Nz];
     uprime2    = new double[Nx*Ny*Nz];
+    uiprime2    = new double[Nx*Ny*Nz];
     uvar       = new double[Nx*Ny*Nz];
     kineticEng = new double[Nx*Ny*Nz];
 }
@@ -2435,9 +2436,9 @@ void CSolver::calcTurbulenceQuantities(){
 
     FOR_XYZ{
 	double Sij[3][3];
-	Sij[0][0] = 0.5*(Ux[ip] + Ux[ip]) - (1.0/3.0)*Ux[ip];
-	Sij[1][1] = 0.5*(Vy[ip] + Vy[ip]) - (1.0/3.0)*Vy[ip];
-	Sij[2][2] = 0.5*(Wz[ip] + Wz[ip]) - (1.0/3.0)*Wz[ip];
+	Sij[0][0] = 0.5*(Ux[ip] + Ux[ip]) - (1.0/3.0)*(Ux[ip] + Vy[ip] + Wz[ip]);
+	Sij[1][1] = 0.5*(Vy[ip] + Vy[ip]) - (1.0/3.0)*(Ux[ip] + Vy[ip] + Wz[ip]);
+	Sij[2][2] = 0.5*(Wz[ip] + Wz[ip]) - (1.0/3.0)*(Ux[ip] + Vy[ip] + Wz[ip]);
 	Sij[0][1] = 0.5*(Uy[ip] + Vx[ip]);
 	Sij[1][0] = 0.5*(Uy[ip] + Vx[ip]);
 	Sij[0][2] = 0.5*(Uz[ip] + Wx[ip]);
@@ -2458,6 +2459,7 @@ void CSolver::calcTurbulenceQuantities(){
 	
 	uprime2[ip]    = (U[ip]*U[ip] + V[ip]*V[ip] + W[ip]*W[ip])/3.0; 
 	uvar[ip]       = (U[ip]*U[ip] + V[ip]*V[ip] + W[ip]*W[ip]); 
+	uiprime2[ip]   = (Ux[ip]*Ux[ip] + Vy[ip]*Vy[ip] + Wz[ip]*Wz[ip])/3.0; 
 	kineticEng[ip] = rho1[ip]*uvar[ip];
 
     }
@@ -2470,6 +2472,7 @@ void CSolver::calcTurbulenceQuantities(){
 
     double turbMach = 0.0;
     double uprime = 0.0;
+    double uiprime = 0.0;
     double urms = 0.0;
     double kolNu = 0.0;
     double meanKineticEng = 0.0;
@@ -2483,11 +2486,13 @@ void CSolver::calcTurbulenceQuantities(){
 	meanMu  += mu[ip]/((double)(Nx*Ny*Nz));
 	meanTurbDiss += turbdiss[ip]/((double)(Nx*Ny*Nz));
 	uprime += uprime2[ip]/((double)(Nx*Ny*Nz));
+	uiprime += uiprime2[ip]/((double)(Nx*Ny*Nz));
 	urms   += uvar[ip]/((double)(Nx*Ny*Nz));
 	meanSOS += sos[ip]/((double)(Nx*Ny*Nz));
 	taylor2_denom += (Ux[ip]*Ux[ip])/((double)(Nx*Ny*Nz));
 	meanKineticEng += kineticEng[ip]/((double)(Nx*Ny*Nz))/2.0;
     }
+
 
     FOR_XYZ{
 	rhoprime += ((rho1[ip] - meanRho)*(rho1[ip] - meanRho))/((double)(Nx*Ny*Nz));
@@ -2498,7 +2503,11 @@ void CSolver::calcTurbulenceQuantities(){
         wy = Uz[ip] - Wx[ip];
         wz = Vx[ip] - Uy[ip];
 	vortprime += ((wx*wx + wy*wy + wz*wz))/((double)(Nx*Ny*Nz));
+	
     }
+
+    double enstrophy2Mu = meanMu*vortprime;
+
     rhoprime  = sqrt(rhoprime);
     dilprime  = sqrt(dilprime);
     vortprime = sqrt(vortprime);
@@ -2506,25 +2515,28 @@ void CSolver::calcTurbulenceQuantities(){
     double meanNu = meanMu/meanRho; 
     meanTurbDiss /= meanRho;
     uprime = sqrt(uprime);
+    uiprime = sqrt(uiprime);
     urms = sqrt(urms);
 
     turbMach = urms/meanSOS;
 
-
+    double taylorMicro2 = uprime/uiprime; //this is the correct one for Samtaney paper
     double taylorMicro  = sqrt(15.0 * meanNu / meanTurbDiss)*urms;
     double taylorReyn  = uprime * taylorMicro / meanNu;
     double taylorReyn2 = urms*urms*sqrt(5.0/(meanNu*meanTurbDiss));
-    double tau = sqrt(2.0*M_PI)/4.0/uprime;
+    double taylorReyn3  = uprime * taylorMicro2 / meanNu; //correct one for Samtaney paper
+    double k0 = 8.0;
+    double tau = sqrt(2.0*M_PI)/k0/uprime;
 
 
     //Kolmogorov Scale
     kolNu = pow(pow(meanNu,3.0)/meanTurbDiss,0.25);
 
-    cout << " taylorReyn: "  << taylorReyn << endl;
-    cout << " taylorReyn2: "  << taylorReyn2 << endl;
+    cout << " taylorReyn3: "  << taylorReyn3 << endl;
     cout << " turbMach: "  << turbMach << endl;
-    cout << " taylorMicro: " << taylorMicro << endl;
+    cout << " taylorMicro2: " << taylorMicro2 << endl;
     cout << " meanTurbDiss: " << meanTurbDiss << endl;
+    cout << " enstropy2Mu: " << enstrophy2Mu << endl;
     cout << " uprime: "      << uprime << endl;
     cout << " urms: "        << urms << endl;
     cout << " meanRho: "     << meanRho << endl;
@@ -2543,9 +2555,84 @@ void CSolver::calcTurbulenceQuantities(){
         outputFileName = "turbdata.out";
         outfile.open(outputFileName, fstream::app);
         outfile.precision(17);
-        outfile << time << " " << tau << " " << taylorReyn << " " << turbMach << " ";
+        outfile << time << " " << tau << " " << taylorReyn3 << " " << turbMach << " ";
 	outfile << meanTurbDiss << " " << uprime << " " << kolNu << " ";
 	outfile << rhoprime << " " << dilprime << " " << vortprime << " " << meanKineticEng << " ";
+	outfile << endl;
+        outfile.close();
+
+
+
+};
+
+void CSolver::calcTaylorGreenQuantities(){
+
+    double enstrophySum = 0.0;
+    double enstrophySum2Mu = 0.0;
+    double turbDissSum = 0.0;
+    double kineticEngSum = 0.0;
+    double rhoprime = 0.0;
+    double dilprime = 0.0;
+    double meanMu   = 0.0;
+
+    FOR_XYZ{
+	double Sij[3][3];
+	Sij[0][0] = 0.5*(Ux[ip] + Ux[ip]) - (1.0/3.0)*(Ux[ip] + Vy[ip] + Wz[ip]);
+	Sij[1][1] = 0.5*(Vy[ip] + Vy[ip]) - (1.0/3.0)*(Ux[ip] + Vy[ip] + Wz[ip]);
+	Sij[2][2] = 0.5*(Wz[ip] + Wz[ip]) - (1.0/3.0)*(Ux[ip] + Vy[ip] + Wz[ip]);
+	Sij[0][1] = 0.5*(Uy[ip] + Vx[ip]);
+	Sij[1][0] = 0.5*(Uy[ip] + Vx[ip]);
+	Sij[0][2] = 0.5*(Uz[ip] + Wx[ip]);
+	Sij[2][0] = 0.5*(Uz[ip] + Wx[ip]);
+	Sij[1][2] = 0.5*(Vz[ip] + Wy[ip]);
+	Sij[2][1] = 0.5*(Vz[ip] + Wy[ip]);
+
+	turbdiss[ip]  = Sij[0][0]*Ux[ip];
+	turbdiss[ip] += Sij[0][1]*Uy[ip];
+	turbdiss[ip] += Sij[0][2]*Uz[ip];
+	turbdiss[ip] += Sij[1][0]*Vx[ip];
+	turbdiss[ip] += Sij[1][1]*Vy[ip];
+	turbdiss[ip] += Sij[1][2]*Vz[ip];
+	turbdiss[ip] += Sij[2][0]*Wx[ip];
+	turbdiss[ip] += Sij[2][1]*Wy[ip];
+	turbdiss[ip] += Sij[2][2]*Wz[ip];
+	turbdiss[ip] *= 2*mu[ip];
+
+        uvar[ip]       = (U[ip]*U[ip] + V[ip]*V[ip] + W[ip]*W[ip]);
+	kineticEng[ip] = rho1[ip]*uvar[ip];
+
+	double wx, wy, wz;
+        wx = Wy[ip] - Vz[ip];
+        wy = Uz[ip] - Wx[ip];
+        wz = Vx[ip] - Uy[ip];
+	enstrophySum += (1.0/2.0)*rho1[ip]*(wx*wx + wy*wy + wz*wz);
+	enstrophySum2Mu += mu[ip]*rho1[ip]*(wx*wx + wy*wy + wz*wz);
+	
+	turbDissSum += turbdiss[ip];
+	kineticEngSum += kineticEng[ip]/2.0;
+
+	dilprime += ((Ux[ip] + Vy[ip] + Wz[ip])*(Ux[ip] + Vy[ip] + Wz[ip]))/((double)(Nx*Ny*Nz));
+
+	meanMu += mu[ip]/((double)(Nx*Ny*Nz));
+    }
+
+    dilprime  = sqrt(dilprime);
+
+
+    cout << " > kineticEngSum: " << kineticEngSum <<  endl;
+    cout << " > turbDissSum:   " << turbDissSum <<  endl;
+    cout << " > enstrophySum:  " << enstrophySum <<  endl;
+    cout << " > enstrophySum*2mu :  " << enstrophySum2Mu <<  endl;
+    cout << " > meanMu:        " << meanMu << endl;
+    cout << " > dilprime:      " << dilprime << endl << endl;
+
+        ofstream outfile;
+        outfile.precision(17);
+        string outputFileName;
+        outputFileName = "taylorgreen.out";
+        outfile.open(outputFileName, fstream::app);
+        outfile.precision(17);
+        outfile << time << " " << kineticEngSum << " " << turbDissSum << " " << enstrophySum << " " << enstrophySum2Mu << " " << meanMu << " " << dilprime;
 	outfile << endl;
         outfile.close();
 

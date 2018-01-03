@@ -97,7 +97,7 @@ class CSolver{
 	double *transUx, *transVx, *transWx;
 	double *transUy, *transVy, *transWy;
 
-	double *turbdiss, *uprime2, *uvar, *kineticEng;
+	double *turbdiss, *uprime2, *uiprime2, *uvar, *kineticEng;
 
 	bool spongeFlag;
 	SpongeBC *spg; 
@@ -196,6 +196,7 @@ class CSolver{
 	void updateNonConservedData();
 
 	void calcTurbulenceQuantities();
+	void calcTaylorGreenQuantities();
 
 	void updateSponge();
 
