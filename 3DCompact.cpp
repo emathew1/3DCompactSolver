@@ -81,7 +81,7 @@ int main(int argc, char *argv[]){
     //Initialize the Solver//
     /////////////////////////
     double alphaF = 0.495;
-    double mu_ref = 0.00033;
+    double mu_ref = 0.000704;
     int blocksize = 16;
     CSolver *cs   = new CSolver(dom, bc, ts, alphaF, mu_ref, blocksize); 
 
@@ -90,9 +90,9 @@ int main(int argc, char *argv[]){
     //load in turbulence output//
     /////////////////////////////
     ifstream uFile, vFile, wFile;
-    uFile.open("U_Mt0p3_N128_k8.dat",ifstream::in);
-    vFile.open("V_Mt0p3_N128_k8.dat",ifstream::in);
-    wFile.open("W_Mt0p3_N128_k8.dat",ifstream::in);
+    uFile.open("homogenous_turbulence/U_Mt0p3_N128_k8.dat",ifstream::in);
+    vFile.open("homogenous_turbulence/V_Mt0p3_N128_k8.dat",ifstream::in);
+    wFile.open("homogenous_turbulence/W_Mt0p3_N128_k8.dat",ifstream::in);
 
     double *u_temp = new double[Nx*Ny*Nz];
     double *v_temp = new double[Nx*Ny*Nz];
@@ -124,7 +124,7 @@ int main(int argc, char *argv[]){
 		int ii = GET3DINDEX_XYZ;
 
 		cs->rho0[ii] = 1.0;
-		cs->p0[ii]   = 11.1111111/cs->ig->gamma;
+		cs->p0[ii]   = 4.0/cs->ig->gamma;
 		cs->U0[ii]   = u_temp[ii];
 		cs->V0[ii]   = v_temp[ii];
 		cs->W0[ii]   = w_temp[ii];
