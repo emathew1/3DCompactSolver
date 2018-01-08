@@ -499,16 +499,6 @@ void CSolver::calcDtFromCFL(){
 
 }
 
-double CSolver::calcSpongeSource(double phi, double phiSpongeAvg, double sigma){
-
-    if(spongeFlag){
-        return sigma*(phiSpongeAvg - phi);
-    }else{
-        return 0.0;
-    }
-
-}
-
 void CSolver::preStepBCHandling(){
 
     double *rhoP, *rhoUP, *rhoVP, *rhoWP, *rhoEP;
@@ -1339,144 +1329,111 @@ void CSolver::preStepDerivatives(){
 
 
 void CSolver::solveContinuity(){
-    
+   
+
     #pragma omp parallel
     {
-
-	#pragma omp for
-        FOR_XYZ rhok2[ip]  = - contEulerX[ip] - contEulerY[ip] - contEulerZ[ip];
-
-        if(spongeFlag){
-            double *rhoP;
-            if(rkStep == 1){
-	        rhoP = rho1;
-            }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
-	        rhoP = rhok;
-            }
-
-	    #pragma omp for
-	    FOR_XYZ{
-	        rhok2[ip]  += calcSpongeSource(rhoP[ip], spg->spongeRhoAvg[ip], spg->sigma[ip]);	
-	    }
+        double *rhoP;
+  	if(rkStep == 1){
+            rhoP = rho1;
+        }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
+            rhoP = rhok;
         }
+	
+	double spgSource; 
 
 	#pragma omp for
-        FOR_XYZ rhok2[ip] *= ts->dt;
+        FOR_XYZ{
 
+	    if(spongeFlag)
+		spgSource = calcSpongeSource(rhoP[ip], spg->spongeRhoAvg[ip], spg->sigma[ip]);
+	    else
+		spgSource = 0.0;
+		
+	    rhok2[ip]  = ts->dt*(-contEulerX[ip] - contEulerY[ip] - contEulerZ[ip] + spgSource);
+	}
     }
 
 }
 
 void CSolver::solveXMomentum(){
 
-	//Viscous Terms
-
-	#pragma omp parallel for
-    	FOR_XYZ{
-            rhoUk2[ip]  = mu[ip]*((4.0/3.0)*Uxx[ip] + Uyy[ip] + Uzz[ip] + (1.0/3.0)*Vxy[ip] + (1.0/3.0)*Wxz[ip]);
-	}
-
 	#pragma omp parallel
 	{
+            double *rhoUP;
+            if(rkStep == 1){
+                rhoUP = rhoU1;
+            }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
+                rhoUP = rhoUk;
+            }
 
-	    #pragma omp for nowait
-	    FOR_XYZ{
-	        double MuX = Amu[ip]*Tx[ip];
-	        rhoUk2[ip] += (4.0/3.0)*MuX*(Ux[ip] - 0.5*Vy[ip] - 0.5*Wz[ip]);
+	    double MuX, MuY, MuZ, spgSource;
+	    #pragma omp for
+     	    FOR_XYZ{
+
+
+	        if(spongeFlag)
+	   	    spgSource = calcSpongeSource(rhoUP[ip], spg->spongeRhoUAvg[ip], spg->sigma[ip]);
+	        else
+		    spgSource = 0.0;
+
+		//Calculate the viscosity derivatives
+	        MuX = Amu[ip]*Tx[ip];
+	        MuY = Amu[ip]*Ty[ip];
+	        MuZ = Amu[ip]*Tz[ip];
+
+		//Viscous Terms
+                rhoUk2[ip]  = mu[ip]*((4.0/3.0)*Uxx[ip] + Uyy[ip] + Uzz[ip] + (1.0/3.0)*Vxy[ip] + (1.0/3.0)*Wxz[ip]);
+	        rhoUk2[ip] += (4.0/3.0)*MuX*(Ux[ip] - 0.5*Vy[ip] - 0.5*Wz[ip]) + MuY*(Uy[ip] + Vx[ip]) + MuZ*(Wx[ip] + Uz[ip]);
+
+		//Euler Terms
+	        rhoUk2[ip] += -momXEulerX[ip] -momXEulerY[ip] -momXEulerZ[ip] + spgSource;
+		rhoUk2[ip] *= ts->dt;
 	    }
-
-	    #pragma omp for nowait
-	    FOR_XYZ{
-	        double MuY = Amu[ip]*Ty[ip];
- 	        rhoUk2[ip] += MuY*(Uy[ip] + Vx[ip]); 
-	    }
-
-	    #pragma omp for nowait
-	    FOR_XYZ{
-	        double MuZ = Amu[ip]*Tz[ip];
-	        rhoUk2[ip] += MuZ*(Wx[ip] + Uz[ip]); 
-	    }
-
-	    #pragma omp for nowait
-	    FOR_XYZ{
- 	        //Euler Terms
-	        rhoUk2[ip] += -momXEulerX[ip] -momXEulerY[ip] -momXEulerZ[ip];
-    	    }
-
-    	    if(spongeFlag){
-                double *rhoUP;
-                if(rkStep == 1){
-            	    rhoUP = rhoU1;
-                }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
-            	    rhoUP = rhoUk;
-                }
-
-	        #pragma omp for nowait
-                FOR_XYZ{
-            	    rhoUk2[ip]  += calcSpongeSource(rhoUP[ip], spg->spongeRhoUAvg[ip], spg->sigma[ip]);
-                }
-   	     }
 
 	}
-
-	#pragma omp parallel for
-	FOR_XYZ rhoUk2[ip] *= ts->dt;
 
 }
 
 void CSolver::solveYMomentum(){
 
 
-    //Viscous Terms
-    #pragma omp parallel for
-    FOR_XYZ{
-        rhoVk2[ip]  = mu[ip]*((4.0/3.0)*Vyy[ip] + Vxx[ip] + Vzz[ip] + (1.0/3.0)*Uxy[ip] + (1.0/3.0)*Wyz[ip]);
-    }
-
     #pragma omp parallel
     {
-        #pragma omp for nowait
+
+        double *rhoVP;
+        if(rkStep == 1){
+            rhoVP = rhoV1;
+        }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
+            rhoVP = rhoVk;
+        }
+
+	double MuY, MuX, MuZ, spgSource;
+
+        #pragma omp for
         FOR_XYZ{ 
-	    double MuY = Amu[ip]*Ty[ip];
-	    rhoVk2[ip] += (4.0/3.0)*MuY*(Vy[ip] - 0.5*Ux[ip] - 0.5*Wz[ip]);
+
+            if(spongeFlag)
+      	        spgSource = calcSpongeSource(rhoVP[ip], spg->spongeRhoVAvg[ip], spg->sigma[ip]);
+	    else
+	        spgSource = 0.0;
+
+		
+	    MuX = Amu[ip]*Tx[ip];
+	    MuY = Amu[ip]*Ty[ip];
+  	    MuZ = Amu[ip]*Tz[ip];
+
+            //Viccous Terms 
+	    rhoVk2[ip]  = mu[ip]*((4.0/3.0)*Vyy[ip] + Vxx[ip] + Vzz[ip] + (1.0/3.0)*Uxy[ip] + (1.0/3.0)*Wyz[ip]);
+	    rhoVk2[ip] += (4.0/3.0)*MuY*(Vy[ip] - 0.5*Ux[ip] - 0.5*Wz[ip]) + MuX*(Uy[ip] + Vx[ip]) + MuZ*(Wy[ip] + Vz[ip]);
+	    //Euler Terms
+	    rhoVk2[ip] += -momYEulerX[ip] -momYEulerY[ip] -momYEulerZ[ip] + spgSource;
+	
+	    rhoVk2[ip] *= ts->dt;
         }
-
-        #pragma omp for nowait
-        FOR_XYZ{
-	    double MuX = Amu[ip]*Tx[ip];
-	    rhoVk2[ip] += MuX*(Uy[ip] + Vx[ip]); 
-        }
-
-        #pragma omp for nowait
-        FOR_XYZ{
-  	    double MuZ = Amu[ip]*Tz[ip];
-	    rhoVk2[ip] += MuZ*(Wy[ip] + Vz[ip]); 
-        }
-
-        //Euler Terms
-        #pragma omp for nowait
-        FOR_XYZ{
-	    rhoVk2[ip] += -momYEulerX[ip] -momYEulerY[ip] -momYEulerZ[ip];
-        }
-
-        if(spongeFlag){
-            double *rhoVP;
-            if(rkStep == 1){
-                rhoVP = rhoV1;
-            }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
-                rhoVP = rhoVk;
-            }
-
-            #pragma omp for nowait
-            FOR_XYZ{
-                rhoVk2[ip]  += calcSpongeSource(rhoVP[ip], spg->spongeRhoVAvg[ip], spg->sigma[ip]);
-            }
-         }
 
     }
 
-    #pragma omp parallel for
-    FOR_XYZ rhoVk2[ip] *= ts->dt;
 
 }
 

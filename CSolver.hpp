@@ -148,6 +148,8 @@ class CSolver{
 	    if(bc->bcX0 == BC::SPONGE || bc->bcX1 == BC::SPONGE || bc->bcY0 == BC::SPONGE || bc->bcY1 == BC::SPONGE || bc->bcZ0 == BC::SPONGE || bc->bcZ1 == BC::SPONGE){
 		spongeFlag = true;
 		spg = new SpongeBC(dom, ig, bc);
+	    }else{
+		spg = NULL;
 	    }
 
 	    //Initialize our derivative calculations for each direction...
@@ -175,7 +177,9 @@ class CSolver{
 
 	void calcDtFromCFL();
 
-	double calcSpongeSource(double phi, double phiSpongeAvg, double sigma);
+	inline double calcSpongeSource(double phi, double phiSpongeAvg, double sigma){
+        	return sigma*(phiSpongeAvg - phi);
+	};
 
 	void preStepBCHandling();
 
