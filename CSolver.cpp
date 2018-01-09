@@ -1439,38 +1439,10 @@ void CSolver::solveYMomentum(){
 
 void CSolver::solveZMomentum(){
 
-    //Viscous Terms
-    #pragma omp parallel for
-    FOR_XYZ{
-        rhoWk2[ip]  = mu[ip]*((4.0/3.0)*Wzz[ip] + Wyy[ip] + Wxx[ip] + (1.0/3.0)*Uxz[ip] + (1.0/3.0)*Vyz[ip]);
-    }
 
-    #pragma omp parallel for
-    FOR_XYZ{
-	double MuZ = Amu[ip]*Tz[ip];
-	rhoWk2[ip] += (4.0/3.0)*MuZ*(Wz[ip] - 0.5*Ux[ip] - 0.5*Vy[ip]);
-    }
+    #pragma omp parallel
+    {
 
-    #pragma omp parallel for
-    FOR_XYZ{
-	double MuX = Amu[ip]*Tx[ip];
-	rhoWk2[ip] += MuX*(Wx[ip] + Uz[ip]); 
-    }
-
-    #pragma omp parallel for
-    FOR_XYZ{
-	double MuY = Amu[ip]*Ty[ip];
-	rhoWk2[ip] += MuY*(Wy[ip] + Vz[ip]); 
-    }
-
-    #pragma omp parallel for
-    FOR_XYZ{
-	//Euler Terms
-	rhoWk2[ip] += -momZEulerX[ip] -momZEulerY[ip] -momZEulerZ[ip];
-	
-    }
-
-    if(spongeFlag){
         double *rhoWP;
         if(rkStep == 1){
             rhoWP = rhoW1;
@@ -1478,177 +1450,104 @@ void CSolver::solveZMomentum(){
             rhoWP = rhoWk;
         }
 
-    #pragma omp parallel for
-        FOR_XYZ{
-            rhoWk2[ip]  += calcSpongeSource(rhoWP[ip], spg->spongeRhoWAvg[ip], spg->sigma[ip]);
-        }
+        double MuY, MuX, MuZ, spgSource;
+
+
+	#pragma omp for
+	FOR_XYZ{
+
+            if(spongeFlag)
+      	        spgSource = calcSpongeSource(rhoWP[ip], spg->spongeRhoWAvg[ip], spg->sigma[ip]);
+	    else
+	        spgSource = 0.0;
+
+	    MuZ = Amu[ip]*Tz[ip];
+	    MuX = Amu[ip]*Tx[ip];
+	    MuY = Amu[ip]*Ty[ip];
+
+
+    	    //Viscous Terms
+            rhoWk2[ip]  = mu[ip]*((4.0/3.0)*Wzz[ip] + Wyy[ip] + Wxx[ip] + (1.0/3.0)*Uxz[ip] + (1.0/3.0)*Vyz[ip]);
+	    rhoWk2[ip] += (4.0/3.0)*MuZ*(Wz[ip] - 0.5*Ux[ip] - 0.5*Vy[ip]) + MuX*(Wx[ip] + Uz[ip]) + MuY*(Wy[ip] + Vz[ip]);
+
+	    //Euler Terms
+	    rhoWk2[ip] += -momZEulerX[ip] -momZEulerY[ip] -momZEulerZ[ip] + spgSource;
+
+            rhoWk2[ip] *= ts->dt;
+	}
+
     }
-
-    #pragma omp parallel for
-    FOR_XYZ rhoWk2[ip] *= ts->dt;
-
 }
 
 
 void CSolver::solveEnergy(){
 
-    double *qtemp = new double[N];
-    double *vtemp1 = new double[N];
-    double *vtemp2 = new double[N];
-    double *engyEuler = new double[N];
+    #pragma omp parallel
+    {
 
-    //Heat Transfer Terms
-    #pragma omp parallel for
-    FOR_XYZ{
-	double MuX = Amu[ip]*Tx[ip];
-	qtemp[ip]  = MuX*Tx[ip];
+        double *rhoEP;
+        if(rkStep == 1){
+            rhoEP = rhoE1;
+        }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
+            rhoEP = rhoEk;
+        }
+
+	double qtemp, vtemp1, vtemp2, engyEuler;
+	double MuX, MuY, MuZ, spgSource;
+
+	#pragma omp for
+        FOR_XYZ{
+
+            if(spongeFlag)
+                spgSource = calcSpongeSource(rhoEP[ip], spg->spongeRhoEAvg[ip], spg->sigma[ip]);
+            else
+                spgSource = 0.0;
+
+	    MuX = Amu[ip]*Tx[ip];
+	    MuY = Amu[ip]*Ty[ip];
+	    MuZ = Amu[ip]*Tz[ip];
+
+    	    //Heat Transfer Terms
+	    qtemp   =  ig->cp/ig->Pr*(MuX*Tx[ip]     + MuY*Ty[ip]     +  MuZ*Tz[ip] + 
+			     	 	  mu[ip]*Txx[ip] + mu[ip]*Tyy[ip] + mu[ip]*Tzz[ip]);
+
+
+
+    	    //Viscous Energy terms w/o viscosity derivatives...
+	    vtemp1  = mu[ip]*(U[ip]*((4.0/3.0)*Uxx[ip] + Uyy[ip] + Uzz[ip]) + 
+			          V[ip]*(Vxx[ip] + (4.0/3.0)*Vyy[ip] + Vzz[ip]) + 
+		 	          W[ip]*(Wxx[ip] + Wyy[ip] + (4.0/3.0)*Wzz[ip]) + 
+			(4.0/3.0)*(Ux[ip]*Ux[ip] + Vy[ip]*Vy[ip] + Wz[ip]*Wz[ip]) +
+			           Uy[ip]*Uy[ip] + Uz[ip]*Uz[ip] + 
+			           Vx[ip]*Vx[ip] + Vz[ip]*Vz[ip] + 
+			           Wx[ip]*Wx[ip] + Wy[ip]*Wy[ip] -
+		        (4.0/3.0)*(Ux[ip]*Vy[ip] + Ux[ip]*Wz[ip] + Vy[ip]*Wz[ip]) +
+			      2.0*(Uy[ip]*Vx[ip] + Uz[ip]*Wx[ip] + Vz[ip]*Wy[ip]) +
+			(1.0/3.0)*(U[ip]*Vxy[ip] + U[ip]*Wxz[ip] + V[ip]*Uxy[ip]) +
+			(1.0/3.0)*(V[ip]*Wyz[ip] + W[ip]*Uxz[ip] + W[ip]*Vyz[ip]));
+
+
+    	    //Viscous Energy terms w/ viscosity derivatives...
+	    vtemp2  =  (4.0/3.0)*(U[ip]*MuX*Ux[ip] + V[ip]*MuY*Vy[ip] + W[ip]*MuZ*Wz[ip]) -
+			   (2.0/3.0)* U[ip]*MuX*(Vy[ip] + Wz[ip]) -
+			   (2.0/3.0)* V[ip]*MuY*(Ux[ip] + Wz[ip]) -
+			   (2.0/3.0)* W[ip]*MuZ*(Ux[ip] + Vy[ip]) +
+				      U[ip]*MuY*(Uy[ip] + Vx[ip]) +
+				      U[ip]*MuZ*(Uz[ip] + Wx[ip]) + 
+				      V[ip]*MuX*(Uy[ip] + Vx[ip]) +
+				      V[ip]*MuZ*(Vz[ip] + Wy[ip]) +
+				      W[ip]*MuX*(Uz[ip] + Wx[ip]) +
+				      W[ip]*MuY*(Vz[ip] + Wy[ip]);
+
+
+    	    //Euler terms
+	    engyEuler  = -engyEulerX[ip] - engyEulerY[ip] - engyEulerZ[ip] + spgSource;
+
+
+	    //Put it all together...
+	    rhoEk2[ip] = ts->dt*(qtemp + vtemp1 + vtemp2 + engyEuler + spgSource);
+        }
     }
-
-    #pragma omp parallel for 
-    FOR_XYZ{
-	double MuY = Amu[ip]*Ty[ip];
-	qtemp[ip] += MuY*Ty[ip];
-    }  
-
-    #pragma omp parallel for
-    FOR_XYZ{
-	double MuZ = Amu[ip]*Tz[ip];
-	qtemp[ip] += MuZ*Tz[ip];
-    }
-
-    #pragma omp parallel for
-    FOR_XYZ{ 
-	//Heat Transfer Terms
-	qtemp[ip] += mu[ip]*Txx[ip] + mu[ip]*Tyy[ip] + mu[ip]*Tzz[ip];
-    }
-
-    #pragma omp parallel for
-    FOR_XYZ qtemp[ip] *= ig->cp/ig->Pr;
-
-    //Viscous Energy terms w/o viscosity derivatives...
-    #pragma omp parallel for
-    FOR_XYZ vtemp1[ip]  = U[ip]*((4.0/3.0)*Uxx[ip] + Uyy[ip] + Uzz[ip]);
-    #pragma omp parallel for
-    FOR_XYZ vtemp1[ip] += V[ip]*(Vxx[ip] + (4.0/3.0)*Vyy[ip] + Vzz[ip]);
-    #pragma omp parallel for
-    FOR_XYZ vtemp1[ip] += W[ip]*(Wxx[ip] + Wyy[ip] + (4.0/3.0)*Wzz[ip]);
-	
-    #pragma omp parallel for
-    FOR_XYZ vtemp1[ip] += (4.0/3.0)*(Ux[ip]*Ux[ip] + Vy[ip]*Vy[ip] + Wz[ip]*Wz[ip]);
-
-    #pragma omp parallel for
-    FOR_XYZ vtemp1[ip] += Uy[ip]*Uy[ip] + Uz[ip]*Uz[ip];
-    #pragma omp parallel for
-    FOR_XYZ vtemp1[ip] += Vx[ip]*Vx[ip] + Vz[ip]*Vz[ip];
-    #pragma omp parallel for
-    FOR_XYZ vtemp1[ip] += Wx[ip]*Wx[ip] + Wy[ip]*Wy[ip];
-
-    #pragma omp parallel for
-    FOR_XYZ vtemp1[ip] += -(4.0/3.0)*(Ux[ip]*Vy[ip] + Ux[ip]*Wz[ip] + Vy[ip]*Wz[ip]);
-	
-    #pragma omp parallel for
-    FOR_XYZ vtemp1[ip] += 2.0*(Uy[ip]*Vx[ip] + Uz[ip]*Wx[ip] + Vz[ip]*Wy[ip]);
-
-    #pragma omp parallel for
-    FOR_XYZ vtemp1[ip] += (1.0/3.0)*(U[ip]*Vxy[ip] + U[ip]*Wxz[ip] + V[ip]*Uxy[ip]); 
-    #pragma omp parallel for
-    FOR_XYZ vtemp1[ip] += (1.0/3.0)*(V[ip]*Wyz[ip] + W[ip]*Uxz[ip] + W[ip]*Vyz[ip]); 
-	
-    #pragma omp parallel for
-    FOR_XYZ vtemp1[ip] *= mu[ip];
-
-    //Viscous Energy terms w/ viscosity derivatives...
-    #pragma omp parallel for
-    FOR_XYZ{ 
-	double MuX = Amu[ip]*Tx[ip];
-	double MuY = Amu[ip]*Ty[ip];
-	double MuZ = Amu[ip]*Tz[ip];
-	vtemp2[ip]   = (4.0/3.0)*(U[ip]*MuX*Ux[ip] + V[ip]*MuY*Vy[ip] + W[ip]*MuZ*Wz[ip]);
-    }
-
-    #pragma omp parallel for
-    FOR_XYZ{
-	double MuX = Amu[ip]*Tx[ip];
-	vtemp2[ip]  += -(2.0/3.0)*U[ip]*MuX*(Vy[ip] + Wz[ip]);
-    }
-
-    #pragma omp parallel for
-    FOR_XYZ{
-	double MuY = Amu[ip]*Ty[ip];
-	vtemp2[ip]  += -(2.0/3.0)*V[ip]*MuY*(Ux[ip] + Wz[ip]);
-    }
-
-    #pragma omp parallel for
-    FOR_XYZ{
-	double MuZ = Amu[ip]*Tz[ip];
-	vtemp2[ip]  += -(2.0/3.0)*W[ip]*MuZ*(Ux[ip] + Vy[ip]);
-    }
-
-    #pragma omp parallel for
-    FOR_XYZ{
-	double MuY = Amu[ip]*Ty[ip];
-	vtemp2[ip]  += U[ip]*MuY*(Uy[ip] + Vx[ip]);
-    }
-
-    #pragma omp parallel for
-    FOR_XYZ{
-	double MuZ = Amu[ip]*Tz[ip];
-        vtemp2[ip]  += U[ip]*MuZ*(Uz[ip] + Wx[ip]);
-    }
-
-    #pragma omp parallel for
-    FOR_XYZ{
-	double MuX = Amu[ip]*Tx[ip];
-	vtemp2[ip]  += V[ip]*MuX*(Uy[ip] + Vx[ip]);
-    }
-
-    #pragma omp parallel for
-    FOR_XYZ{
-	double MuZ = Amu[ip]*Tz[ip];
-	vtemp2[ip]  += V[ip]*MuZ*(Vz[ip] + Wy[ip]);
-    }
-
-    #pragma omp parallel for
-    FOR_XYZ{
-	double MuX = Amu[ip]*Tx[ip];
-	vtemp2[ip]  += W[ip]*MuX*(Uz[ip] + Wx[ip]);
-    }
-
-    #pragma omp parallel for
-    FOR_XYZ{
-	double MuY = Amu[ip]*Ty[ip];
-	vtemp2[ip]  += W[ip]*MuY*(Vz[ip] + Wy[ip]);
-    }
-
-    //Euler terms
-    #pragma omp parallel for
-    FOR_XYZ engyEuler[ip]  = -engyEulerX[ip] - engyEulerY[ip] - engyEulerZ[ip];
-
-    #pragma omp parallel for
-    FOR_XYZ{
-	double engySponge;
-        if(spongeFlag){
-            double *rhoEP;
-            if(rkStep == 1){
-                rhoEP = rhoE1;
-            }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
-                rhoEP = rhoEk;
-            }
-
-            engySponge  = calcSpongeSource(rhoEP[ip], spg->spongeRhoEAvg[ip], spg->sigma[ip]);
-        }else{
-	    engySponge = 0.0;
-	}	
-
-	rhoEk2[ip] = ts->dt*(qtemp[ip] + vtemp1[ip] + vtemp2[ip] + engyEuler[ip] + engySponge);
-
-    }
-
-
-    delete[] qtemp;
-    delete[] vtemp1;
-    delete[] vtemp2;
-    delete[] engyEuler;
 
 }
 
