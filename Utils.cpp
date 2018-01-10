@@ -245,10 +245,12 @@ void transposeYZXtoXYZ_Fast(const double *in, int Nx, int Ny, int Nz, double *ou
 void getRange(double *phi, std::string dataName, int Nx, int Ny, int Nz){
 
     double dataMin = 1000000;
+    #pragma omp parallel for reduction(min:dataMin)
     for(int ip = 0; ip < Nx*Ny*Nz; ip++)
         dataMin = min(dataMin, phi[ip]);
 
     double dataMax = -1000000;
+    #pragma omp parallel for reduction(max:dataMax)
     for(int ip = 0; ip < Nx*Ny*Nz; ip++) 
         dataMax = max(dataMax, phi[ip]);
     

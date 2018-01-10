@@ -84,7 +84,8 @@ int main(int argc, char *argv[]){
     double alphaF = 0.495;
     double mu_ref = 0.000014625;
     int blocksize = 16;
-    CSolver *cs   = new CSolver(dom, bc, ts, alphaF, mu_ref, blocksize); 
+    CSolver_AWS *cs   = new CSolver_AWS(dom, bc, ts, alphaF, mu_ref, blocksize); 
+    //CSolver *cs   = new CSolver(dom, bc, ts, alphaF, mu_ref, blocksize); 
 
 
     /////////////////////////////

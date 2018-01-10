@@ -96,6 +96,17 @@ class CSolver_AWS{
 	double *transRho, *transRhoU, *transRhoV, *transRhoW, *transRhoE;
 	double *transUx, *transVx, *transWx;
 	double *transUy, *transVy, *transWy;
+        double *transTempUy;
+        double *transTempVy;
+    	double *transTempWy;
+    	double *transTempUyy;
+    	double *transTempVyy;
+    	double *transTempWyy;
+    	double *transTempTy; 
+    	double *transTempTyy; 
+
+
+
 
 	double *turbdiss, *uprime2, *uiprime2, *uvar, *kineticEng;
 

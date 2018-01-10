@@ -152,6 +152,17 @@ void CSolver_AWS::initializeSolverData(){
     transVy = new double[Nx*Ny*Nz];
     transWy = new double[Nx*Ny*Nz];
 
+    transTempUy = new double[N]; 
+    transTempVy = new double[N]; 
+    transTempWy = new double[N]; 
+    transTempUyy = new double[N]; 
+    transTempVyy = new double[N]; 
+    transTempWyy = new double[N]; 
+    transTempTy = new double[N]; 
+    transTempTyy = new double[N]; 
+
+
+
     //turbulence quantities
     turbdiss   = new double[Nx*Ny*Nz];
     uprime2    = new double[Nx*Ny*Nz];
@@ -167,6 +178,7 @@ void CSolver_AWS::setInitialConditions(){
     cout << " > Setting initial conditions..." << endl; 
 
     //just do the simple stuff in a loop...
+    #pragma omp parallel for
     FOR_XYZ{
 	rho1[ip] = rho0[ip];
 	U[ip]	 = U0[ip];
@@ -187,16 +199,13 @@ void CSolver_AWS::setInitialConditions(){
 
     //Call the ideal gas relations for the slightly more involved stuff..
     #pragma omp parallel for
-    FOR_XYZ rhoE1[ip] = ig->solverhoE(rho1[ip], p[ip], U[ip], V[ip], W[ip]);
-    #pragma omp parallel for
-    FOR_XYZ T[ip]     = ig->solveT(rho1[ip], p[ip]);
-    #pragma omp parallel for
-    FOR_XYZ mu[ip]    = ig->solveMu(T[ip]);
-    #pragma omp parallel for
-    FOR_XYZ Amu[ip]   = ig->solveAmu(T[ip]);
-    #pragma omp parallel for
-    FOR_XYZ sos[ip]   = ig->solveSOS(rho1[ip], p[ip]);
-
+    FOR_XYZ{
+	rhoE1[ip] = ig->solverhoE(rho1[ip], p[ip], U[ip], V[ip], W[ip]);
+    	T[ip]     = ig->solveT(rho1[ip], p[ip]);
+        mu[ip]    = ig->solveMu(T[ip]);
+        Amu[ip]   = ig->solveAmu(T[ip]);
+        sos[ip]   = ig->solveSOS(rho1[ip], p[ip]);
+    }
     //This is where we'll do the boundary condition specific stuff...
     bool wallBCFlag = false;
 
@@ -440,6 +449,7 @@ void CSolver_AWS::setInitialConditions(){
 
     if(wallBCFlag == true){
 	//Need to update the pressure, sos, and rhoE fields at the boundaries with walls...
+	#pragma omp parallel for
 	FOR_XYZ{
 	    p[ip]     = ig->solvep_idealgas(rho1[ip], T[ip]);
 	    sos[ip]   = ig->solveSOS(rho1[ip],p[ip]);
@@ -448,6 +458,7 @@ void CSolver_AWS::setInitialConditions(){
     }
 
     if(spongeFlag == true){
+        #pragma omp parallel for
 	FOR_XYZ{
 	    spg->spongeRhoAvg[ip]  = rho1[ip];
 	    spg->spongeRhoUAvg[ip] = rhoU1[ip];
@@ -473,6 +484,7 @@ void CSolver_AWS::calcDtFromCFL(){
 
     //Get the largest value in the domain
     double max_UChar_dx = -100000.0;
+    #pragma omp parallel for reduction(max: max_UChar_dx)
     FOR_XYZ{
 	if(UChar_dx[ip] > max_UChar_dx){
 	    max_UChar_dx = UChar_dx[ip];
@@ -793,7 +805,6 @@ void CSolver_AWS::preStepDerivatives(){
 	rhoEP = rhoEk; 
     }
 
- 
     ///////////////////
     // X-DERIVATIVES //
     ///////////////////
@@ -802,16 +813,12 @@ void CSolver_AWS::preStepDerivatives(){
 
     //Calculate the Euler Components of the equations... 
     #pragma omp parallel for 
-    FOR_XYZ temp[ip]  = rhoUP[ip]*U[ip] + p[ip];
-
-    #pragma omp parallel for
-    FOR_XYZ temp2[ip] = rhoVP[ip]*U[ip];
-
-    #pragma omp parallel for
-    FOR_XYZ temp3[ip] = rhoWP[ip]*U[ip];
-
-    #pragma omp parallel for
-    FOR_XYZ temp4[ip] = rhoEP[ip]*U[ip] + U[ip]*p[ip];
+    FOR_XYZ{
+	temp[ip]  = rhoUP[ip]*U[ip] + p[ip];
+    	temp2[ip] = rhoVP[ip]*U[ip];
+    	temp3[ip] = rhoWP[ip]*U[ip];
+    	temp4[ip] = rhoEP[ip]*U[ip] + U[ip]*p[ip];
+    }
 
     omp_set_nested(1);
 
@@ -821,25 +828,45 @@ void CSolver_AWS::preStepDerivatives(){
     {
         //Calculate the stuff needed for viscous derivatives
 	#pragma omp section
-        derivX->calc1stDerivField(U, Ux);
+	{
+            derivX->calc1stDerivField(U, Ux);
+            transposeXYZtoYZX_Fast(Ux, Nx, Ny, Nz, transUx, blocksize);
+	}
+
 	#pragma omp section
+	{
+            derivX->calc1stDerivField(rhoUP, contEulerX);
+            transposeXYZtoYZX_Fast(rhoUP, Nx, Ny, Nz, transRhoU, blocksize);
+	}
+
+	#pragma omp section
+	{
+            derivX->calc1stDerivField(V, Vx);
+            transposeXYZtoYZX_Fast(Vx, Nx, Ny, Nz, transVx, blocksize);
+	}
+
+	#pragma omp section
+	{
+            derivX->calc1stDerivField(W, Wx);
+            transposeXYZtoYZX_Fast(Wx,    Nx, Ny, Nz, transWx, blocksize);
+	}
+
+ 	#pragma omp section
         derivX->calc2ndDerivField(U, Uxx);
+
 	#pragma omp section
-        derivX->calc1stDerivField(V, Vx);
-	#pragma omp section
-        derivX->calc2ndDerivField(V, Vxx);
-	#pragma omp section
-        derivX->calc1stDerivField(W, Wx);
+	derivX->calc2ndDerivField(V, Vxx);
+
 	#pragma omp section
         derivX->calc2ndDerivField(W, Wxx);
+
 	#pragma omp section
         derivX->calc1stDerivField(T, Tx);
+
 	#pragma omp section
         derivX->calc2ndDerivField(T, Txx);
 
         //Compute the Euler Derivatives
-	#pragma omp section
-        derivX->calc1stDerivField(rhoUP, contEulerX);
 	#pragma omp section
         derivX->calc1stDerivField(temp,  momXEulerX);
 	#pragma omp section
@@ -849,25 +876,8 @@ void CSolver_AWS::preStepDerivatives(){
 	#pragma omp section
         derivX->calc1stDerivField(temp4, engyEulerX);
 
-    }
-
-
-    //auto t1 = std::chrono::system_clock::now();
-   //derivX->calc1stDerivField(temp4, engyEulerX);
-    //auto t2 = std::chrono::system_clock::now();
-    //cout << "part 1 deriv test, sectioned: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;    
-
-
-
-    omp_set_nested(1);
-    #pragma omp parallel sections num_threads(halfThreadCount) 
-    {
-        //Do the transposes
 	#pragma omp section
         transposeXYZtoYZX_Fast(rhoP,  Nx, Ny, Nz, transRho, blocksize);
-
-	#pragma omp section
-        transposeXYZtoYZX_Fast(rhoUP, Nx, Ny, Nz, transRhoU, blocksize);
 
 	#pragma omp section
         transposeXYZtoYZX_Fast(rhoVP, Nx, Ny, Nz, transRhoV, blocksize);
@@ -878,42 +888,34 @@ void CSolver_AWS::preStepDerivatives(){
 	#pragma omp section
         transposeXYZtoYZX_Fast(rhoEP, Nx, Ny, Nz, transRhoE, blocksize);
 
-	#pragma omp section
-        transposeXYZtoYZX_Fast(Ux,    Nx, Ny, Nz, transUx, blocksize);
-
-	#pragma omp section
-        transposeXYZtoYZX_Fast(Vx,    Nx, Ny, Nz, transVx, blocksize);
-
-	#pragma omp section
-        transposeXYZtoYZX_Fast(Wx,    Nx, Ny, Nz, transWx, blocksize);
     }
+
+
+    //auto t1 = std::chrono::system_clock::now();
+   //derivX->calc1stDerivField(temp4, engyEulerX);
+    //auto t2 = std::chrono::system_clock::now();
+    //cout << "part 1 deriv test, sectioned: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()/(double)1000000000 << endl;    
+
 
     ///////////////////
     // Y-DERIVATIVES //
     ///////////////////
 
-    //Now recalculate properties in the new space
     #pragma omp parallel for
-    FOR_XYZ U[ip] = transRhoU[ip]/transRho[ip];
-    #pragma omp parallel for
-    FOR_XYZ V[ip] = transRhoV[ip]/transRho[ip];
-    #pragma omp parallel for
-    FOR_XYZ W[ip] = transRhoW[ip]/transRho[ip];
+    FOR_XYZ{
+        //Now recalculate properties in the new space
+	U[ip] = transRhoU[ip]/transRho[ip];
+    	V[ip] = transRhoV[ip]/transRho[ip];
+    	W[ip] = transRhoW[ip]/transRho[ip];
+    	p[ip] = ig->solvep(transRho[ip], transRhoE[ip], U[ip], V[ip], W[ip]);
+    	T[ip] = ig->solveT(transRho[ip], p[ip]);
 
-    #pragma omp parallel for
-    FOR_XYZ p[ip] = ig->solvep(transRho[ip], transRhoE[ip], U[ip], V[ip], W[ip]);
-    #pragma omp parallel for
-    FOR_XYZ T[ip] = ig->solveT(transRho[ip], p[ip]);
-
-    //Calculate the stuff for Euler derivatives in new space
-    #pragma omp parallel for
-    FOR_XYZ temp[ip]  = transRhoU[ip]*V[ip];
-    #pragma omp parallel for
-    FOR_XYZ temp2[ip] = transRhoV[ip]*V[ip] + p[ip];
-    #pragma omp parallel for
-    FOR_XYZ temp3[ip] = transRhoW[ip]*V[ip];
-    #pragma omp parallel for
-    FOR_XYZ temp4[ip] = transRhoE[ip]*V[ip] + V[ip]*p[ip];
+        //Calculate the stuff for Euler derivatives in new space
+    	temp[ip]  = transRhoU[ip]*V[ip];
+    	temp2[ip] = transRhoV[ip]*V[ip] + p[ip];
+    	temp3[ip] = transRhoW[ip]*V[ip];
+    	temp4[ip] = transRhoE[ip]*V[ip] + V[ip]*p[ip];
+    }
 
     omp_set_nested(1);
     #pragma omp parallel sections num_threads(halfThreadCount)
@@ -921,42 +923,82 @@ void CSolver_AWS::preStepDerivatives(){
 
         //Calculate Viscous Derivatives
 	#pragma omp section
-        derivY->calc1stDerivField(U, Uy);
+	{
+            derivY->calc1stDerivField(U, transTempUy);
+            transposeYZXtoZXY_Fast(transTempUy, Nx, Ny, Nz, transUy, blocksize);
+            transposeYZXtoXYZ_Fast(transTempUy, Nx, Ny, Nz, Uy, blocksize);
+	}
 
 	#pragma omp section
-        derivY->calc2ndDerivField(U, Uyy);
+	{
+            derivY->calc1stDerivField(V, transTempVy);
+            transposeYZXtoZXY_Fast(transTempVy, Nx, Ny, Nz, transVy, blocksize);
+            transposeYZXtoXYZ_Fast(transTempVy, Nx, Ny, Nz, Vy, blocksize);
+
+	}
 
 	#pragma omp section
-        derivY->calc1stDerivField(V, Vy);
+	{
+            derivY->calc1stDerivField(W, transTempWy);
+            transposeYZXtoZXY_Fast(transTempWy, Nx, Ny, Nz, transWy, blocksize);
+            transposeYZXtoXYZ_Fast(transTempWy, Nx, Ny, Nz, Wy, blocksize);
+	}
 
 	#pragma omp section
-        derivY->calc2ndDerivField(V, Vyy);
+	{
+            derivY->calc1stDerivField(transUx, Uxy);
+            transposeXYZtoZXY_Fast(Ux, Nx, Ny, Nz, transUx, blocksize); //This could be separated if new transUx made
+	}
 
 	#pragma omp section
-        derivY->calc1stDerivField(W, Wy);
+	{
+            derivY->calc1stDerivField(transVx, Vxy);
+            transposeXYZtoZXY_Fast(Vx, Nx, Ny, Nz, transVx, blocksize); //Could be separated if new transVx made
+	}
 
 	#pragma omp section
-        derivY->calc2ndDerivField(W, Wyy);
+	{
+            derivY->calc1stDerivField(transWx, Wxy);
+            transposeXYZtoZXY_Fast(Wx, Nx, Ny, Nz, transWx, blocksize); //Could be separated if new transWx made
+	}
 
 	#pragma omp section
-        derivY->calc1stDerivField(T, Ty);
+	{
+            derivY->calc1stDerivField(transRhoV, contEulerY);
+            transposeXYZtoZXY_Fast(rhoVP, Nx, Ny, Nz, transRhoV, blocksize); //Could be separated if new transRhoV made
+	}
+
 
 	#pragma omp section
-        derivY->calc2ndDerivField(T, Tyy);
+	{
+            derivY->calc2ndDerivField(U, transTempUyy);
+            transposeYZXtoXYZ_Fast(transTempUyy, Nx, Ny, Nz, Uyy, blocksize);
+	}
 
 	#pragma omp section
-        derivY->calc1stDerivField(transUx, Uxy);
+	{
+            derivY->calc2ndDerivField(V, transTempVyy);
+            transposeYZXtoXYZ_Fast(transTempVyy, Nx, Ny, Nz, Vyy, blocksize);
+	}
 
 	#pragma omp section
-        derivY->calc1stDerivField(transVx, Vxy);
+	{
+            derivY->calc2ndDerivField(W, transTempWyy);
+            transposeYZXtoXYZ_Fast(transTempWyy, Nx, Ny, Nz, Wyy, blocksize);
+	}
+
 
 	#pragma omp section
-        derivY->calc1stDerivField(transWx, Wxy);
-
-        //Calculate the Euler Derivatives
+	{
+            derivY->calc1stDerivField(T, transTempTy);
+            transposeYZXtoXYZ_Fast(transTempTy, Nx, Ny, Nz, Ty, blocksize);
+	}
 
 	#pragma omp section
-        derivY->calc1stDerivField(transRhoV, contEulerY);
+	{
+            derivY->calc2ndDerivField(T, transTempTyy);
+            transposeYZXtoXYZ_Fast(transTempTyy, Nx, Ny, Nz, Tyy, blocksize);
+	}
 
 	#pragma omp section
         derivY->calc1stDerivField(temp, 	 momXEulerY);
@@ -969,101 +1011,28 @@ void CSolver_AWS::preStepDerivatives(){
 
 	#pragma omp section
         derivY->calc1stDerivField(temp4,	 engyEulerY);
-    }
 
-    //Moving data to ZXY
-
-    omp_set_nested(1);
-    #pragma omp parallel sections num_threads(halfThreadCount)
-    {
-        //Get the original conserved data from XYZ to ZXY
 	#pragma omp section
         transposeXYZtoZXY_Fast(rhoP,  Nx, Ny, Nz, transRho, blocksize);
+
 	#pragma omp section
         transposeXYZtoZXY_Fast(rhoUP, Nx, Ny, Nz, transRhoU, blocksize);
-	#pragma omp section
-        transposeXYZtoZXY_Fast(rhoVP, Nx, Ny, Nz, transRhoV, blocksize);
+
 	#pragma omp section
         transposeXYZtoZXY_Fast(rhoWP, Nx, Ny, Nz, transRhoW, blocksize);
+
 	#pragma omp section
         transposeXYZtoZXY_Fast(rhoEP, Nx, Ny, Nz, transRhoE, blocksize);
 
-        //Move the Y Derivative data from YZX to ZXY
-	#pragma omp section
-        transposeYZXtoZXY_Fast(Uy, Nx, Ny, Nz, transUy, blocksize);
-	#pragma omp section
-        transposeYZXtoZXY_Fast(Vy, Nx, Ny, Nz, transVy, blocksize);
-	#pragma omp section
-        transposeYZXtoZXY_Fast(Wy, Nx, Ny, Nz, transWy, blocksize);
 
-        //Move the X Derivative data from XYZ to ZXY
-	#pragma omp section
-        transposeXYZtoZXY_Fast(Ux, Nx, Ny, Nz, transUx, blocksize);
-	#pragma omp section
-        transposeXYZtoZXY_Fast(Vx, Nx, Ny, Nz, transVx, blocksize);
-	#pragma omp section
-        transposeXYZtoZXY_Fast(Wx, Nx, Ny, Nz, transWx, blocksize);
+
     }
 
-    //Moving Data from YZX to XYZ
+   //Moving Data from YZX to XYZ
 
+    //All of this could be moved within derivative sections if more memory added
     #pragma omp parallel sections num_threads(halfThreadCount)
     {
-
-	#pragma omp section
-	{
-            memcpy(temp, Uy, sizeof(double)*Nx*Ny*Nz);
-            transposeYZXtoXYZ_Fast(temp, Nx, Ny, Nz, Uy, blocksize);
-	}
-
-	#pragma omp section
-	{
-            memcpy(temp2, Uyy, sizeof(double)*Nx*Ny*Nz);
-            transposeYZXtoXYZ_Fast(temp2, Nx, Ny, Nz, Uyy, blocksize);
-	}
-
-	#pragma omp section
-	{
-            memcpy(temp3, Vy, sizeof(double)*Nx*Ny*Nz);
-            transposeYZXtoXYZ_Fast(temp3, Nx, Ny, Nz, Vy, blocksize);
-	}
-
-	#pragma omp section
-	{
-            memcpy(temp4, Vyy, sizeof(double)*Nx*Ny*Nz);
-            transposeYZXtoXYZ_Fast(temp4, Nx, Ny, Nz, Vyy, blocksize);
-	}
-	
-	#pragma omp section
-	{
-            memcpy(U, Wy, sizeof(double)*Nx*Ny*Nz); //Starting here getting cute with reusing memory
-            transposeYZXtoXYZ_Fast(U, Nx, Ny, Nz, Wy, blocksize);
-	}
-
-
-	#pragma omp section
-	{
-            memcpy(V, Wyy, sizeof(double)*Nx*Ny*Nz);
-            transposeYZXtoXYZ_Fast(V, Nx, Ny, Nz, Wyy, blocksize);
-	}
-
-
-	#pragma omp section
-	{
-            memcpy(W, Ty, sizeof(double)*Nx*Ny*Nz);
-            transposeYZXtoXYZ_Fast(W, Nx, Ny, Nz, Ty, blocksize);
-	}
-
-	#pragma omp section
-	{
-            memcpy(T, Tyy, sizeof(double)*Nx*Ny*Nz);
-            transposeYZXtoXYZ_Fast(T, Nx, Ny, Nz, Tyy, blocksize);
-	}
-    } 
-
-    #pragma omp parallel sections num_threads(halfThreadCount)
-    {
-
 	#pragma omp section
 	{
             memcpy(temp, Uxy, sizeof(double)*Nx*Ny*Nz);
@@ -1113,32 +1082,26 @@ void CSolver_AWS::preStepDerivatives(){
 	}
     }
 
+
     ///////////////////
     // Z-DERIVATIVES //
     ///////////////////
 
     //Now recalculate properties in the new space
     #pragma omp parallel for
-    FOR_XYZ U[ip] = transRhoU[ip]/transRho[ip];
-    #pragma omp parallel for
-    FOR_XYZ V[ip] = transRhoV[ip]/transRho[ip];
-    #pragma omp parallel for
-    FOR_XYZ W[ip] = transRhoW[ip]/transRho[ip];
+    FOR_XYZ{
+        U[ip] = transRhoU[ip]/transRho[ip];
+        V[ip] = transRhoV[ip]/transRho[ip];
+        W[ip] = transRhoW[ip]/transRho[ip];
+        p[ip] = ig->solvep(transRho[ip], transRhoE[ip], U[ip], V[ip], W[ip]);
+        T[ip] = ig->solveT(transRho[ip], p[ip]);
 
-    #pragma omp parallel for
-    FOR_XYZ p[ip] = ig->solvep(transRho[ip], transRhoE[ip], U[ip], V[ip], W[ip]);
-    #pragma omp parallel for
-    FOR_XYZ T[ip] = ig->solveT(transRho[ip], p[ip]);
-
-    //Calculate the stuff for the Euler Derivatives
-    #pragma omp parallel for
-    FOR_XYZ temp[ip]  = transRhoU[ip]*W[ip];
-    #pragma omp parallel for
-    FOR_XYZ temp2[ip] = transRhoV[ip]*W[ip];
-    #pragma omp parallel for
-    FOR_XYZ temp3[ip] = transRhoW[ip]*W[ip] + p[ip];
-    #pragma omp parallel for
-    FOR_XYZ temp4[ip] = transRhoE[ip]*W[ip] + W[ip]*p[ip];
+        //Calculate the stuff for the Euler Derivatives
+        temp[ip]  = transRhoU[ip]*W[ip];
+        temp2[ip] = transRhoV[ip]*W[ip];
+        temp3[ip] = transRhoW[ip]*W[ip] + p[ip];
+        temp4[ip] = transRhoE[ip]*W[ip] + W[ip]*p[ip];
+    }
 
     omp_set_nested(1);
     #pragma omp parallel sections num_threads(halfThreadCount)
@@ -1314,16 +1277,13 @@ void CSolver_AWS::preStepDerivatives(){
 
     //Going back to original...
     #pragma omp parallel for
-    FOR_XYZ U[ip] = rhoUP[ip]/rhoP[ip];
-    #pragma omp parallel for
-    FOR_XYZ V[ip] = rhoVP[ip]/rhoP[ip];
-    #pragma omp parallel for
-    FOR_XYZ W[ip] = rhoWP[ip]/rhoP[ip];
-
-    #pragma omp parallel for
-    FOR_XYZ p[ip] = ig->solvep(rhoP[ip], rhoEP[ip], U[ip], V[ip], W[ip]);
-    #pragma omp parallel for
-    FOR_XYZ T[ip] = ig->solveT(rhoP[ip], p[ip]);
+    FOR_XYZ{
+	U[ip] = rhoUP[ip]/rhoP[ip];
+        V[ip] = rhoVP[ip]/rhoP[ip];
+        W[ip] = rhoWP[ip]/rhoP[ip];
+        p[ip] = ig->solvep(rhoP[ip], rhoEP[ip], U[ip], V[ip], W[ip]);
+        T[ip] = ig->solveT(rhoP[ip], p[ip]);
+    }
 
 }
 
@@ -1722,96 +1682,72 @@ void CSolver_AWS::updateConservedData(){
 
     if(rkStep == 1){
 
-	//Add to final solution
         #pragma omp parallel for
-	FOR_XYZ rho2[ip]  = rho1[ip]  + rhok2[ip]/6.0;
-        #pragma omp parallel for
-	FOR_XYZ rhoU2[ip] = rhoU1[ip] + rhoUk2[ip]/6.0;
-        #pragma omp parallel for
-	FOR_XYZ rhoV2[ip] = rhoV1[ip] + rhoVk2[ip]/6.0;
-        #pragma omp parallel for
-	FOR_XYZ rhoW2[ip] = rhoW1[ip] + rhoWk2[ip]/6.0;
-        #pragma omp parallel for
-	FOR_XYZ rhoE2[ip] = rhoE1[ip] + rhoEk2[ip]/6.0;
+	FOR_XYZ{
+	    //Add to final solution
+	    rho2[ip]  = rho1[ip]  + rhok2[ip]/6.0;
+	    rhoU2[ip] = rhoU1[ip] + rhoUk2[ip]/6.0;
+	    rhoV2[ip] = rhoV1[ip] + rhoVk2[ip]/6.0;
+	    rhoW2[ip] = rhoW1[ip] + rhoWk2[ip]/6.0;
+	    rhoE2[ip] = rhoE1[ip] + rhoEk2[ip]/6.0;
 
-	//Calculate intermediate solution
-        #pragma omp parallel for
-	FOR_XYZ rhok[ip]  = rho1[ip]  + rhok2[ip]/2.0; 
-        #pragma omp parallel for
-	FOR_XYZ rhoUk[ip] = rhoU1[ip] + rhoUk2[ip]/2.0; 
-        #pragma omp parallel for
-	FOR_XYZ rhoVk[ip] = rhoV1[ip] + rhoVk2[ip]/2.0; 
-        #pragma omp parallel for
-	FOR_XYZ rhoWk[ip] = rhoW1[ip] + rhoWk2[ip]/2.0; 
-        #pragma omp parallel for
-	FOR_XYZ rhoEk[ip] = rhoE1[ip] + rhoEk2[ip]/2.0; 
+ 	    //Calculate intermediate solution
+	    rhok[ip]  = rho1[ip]  + rhok2[ip]/2.0; 
+	    rhoUk[ip] = rhoU1[ip] + rhoUk2[ip]/2.0; 
+	    rhoVk[ip] = rhoV1[ip] + rhoVk2[ip]/2.0; 
+	    rhoWk[ip] = rhoW1[ip] + rhoWk2[ip]/2.0; 
+	    rhoEk[ip] = rhoE1[ip] + rhoEk2[ip]/2.0; 
+ 	}
 
     }else if(rkStep == 2){
 
-	//Add to final solution
         #pragma omp parallel for
-	FOR_XYZ rho2[ip]  += rhok2[ip]/3.0;
-        #pragma omp parallel for
-	FOR_XYZ rhoU2[ip] += rhoUk2[ip]/3.0;
-        #pragma omp parallel for
-	FOR_XYZ rhoV2[ip] += rhoVk2[ip]/3.0;
-        #pragma omp parallel for
-	FOR_XYZ rhoW2[ip] += rhoWk2[ip]/3.0;
-        #pragma omp parallel for
-	FOR_XYZ rhoE2[ip] += rhoEk2[ip]/3.0;
+	FOR_XYZ{
+	    //Add to final solution
+	    rho2[ip]  += rhok2[ip]/3.0;
+	    rhoU2[ip] += rhoUk2[ip]/3.0;
+	    rhoV2[ip] += rhoVk2[ip]/3.0;
+	    rhoW2[ip] += rhoWk2[ip]/3.0;
+	    rhoE2[ip] += rhoEk2[ip]/3.0;
 
-	//Calculate intermediate solution
-        #pragma omp parallel for
-	FOR_XYZ rhok[ip]  = rho1[ip]  + rhok2[ip]/2.0; 
-        #pragma omp parallel for
-	FOR_XYZ rhoUk[ip] = rhoU1[ip] + rhoUk2[ip]/2.0; 
-        #pragma omp parallel for
-	FOR_XYZ rhoVk[ip] = rhoV1[ip] + rhoVk2[ip]/2.0; 
-        #pragma omp parallel for
-	FOR_XYZ rhoWk[ip] = rhoW1[ip] + rhoWk2[ip]/2.0; 
-        #pragma omp parallel for
-	FOR_XYZ rhoEk[ip] = rhoE1[ip] + rhoEk2[ip]/2.0; 
+	    //Calculate intermediate solution
+	    rhok[ip]  = rho1[ip]  + rhok2[ip]/2.0; 
+	    rhoUk[ip] = rhoU1[ip] + rhoUk2[ip]/2.0; 
+	    rhoVk[ip] = rhoV1[ip] + rhoVk2[ip]/2.0; 
+	    rhoWk[ip] = rhoW1[ip] + rhoWk2[ip]/2.0; 
+	    rhoEk[ip] = rhoE1[ip] + rhoEk2[ip]/2.0; 
+	}
 
     }else if(rkStep == 3){
 
-	//Add to final solution
         #pragma omp parallel for
-	FOR_XYZ rho2[ip]  += rhok2[ip]/3.0;
-        #pragma omp parallel for
-	FOR_XYZ rhoU2[ip] += rhoUk2[ip]/3.0;
-        #pragma omp parallel for
-	FOR_XYZ rhoV2[ip] += rhoVk2[ip]/3.0;
-        #pragma omp parallel for
-	FOR_XYZ rhoW2[ip] += rhoWk2[ip]/3.0;
-        #pragma omp parallel for
-	FOR_XYZ rhoE2[ip] += rhoEk2[ip]/3.0;
+	FOR_XYZ{
+	    //Add to final solution
+	    rho2[ip]  += rhok2[ip]/3.0;
+	    rhoU2[ip] += rhoUk2[ip]/3.0;
+	    rhoV2[ip] += rhoVk2[ip]/3.0;
+	    rhoW2[ip] += rhoWk2[ip]/3.0;
+	    rhoE2[ip] += rhoEk2[ip]/3.0;
 
-	//Calculate intermediate solution
-        #pragma omp parallel for
-	FOR_XYZ rhok[ip]  = rho1[ip]  + rhok2[ip]; 
-        #pragma omp parallel for
-	FOR_XYZ rhoUk[ip] = rhoU1[ip] + rhoUk2[ip]; 
-        #pragma omp parallel for
-	FOR_XYZ rhoVk[ip] = rhoV1[ip] + rhoVk2[ip]; 
-        #pragma omp parallel for
-	FOR_XYZ rhoWk[ip] = rhoW1[ip] + rhoWk2[ip]; 
-        #pragma omp parallel for
-	FOR_XYZ rhoEk[ip] = rhoE1[ip] + rhoEk2[ip]; 
+	    //Calculate intermediate solution
+	    rhok[ip]  = rho1[ip]  + rhok2[ip]; 
+	    rhoUk[ip] = rhoU1[ip] + rhoUk2[ip]; 
+	    rhoVk[ip] = rhoV1[ip] + rhoVk2[ip]; 
+	    rhoWk[ip] = rhoW1[ip] + rhoWk2[ip]; 
+	    rhoEk[ip] = rhoE1[ip] + rhoEk2[ip]; 
+	}
 
     }else if(rkStep == 4){
 
-	//Add to final solution
         #pragma omp parallel for
-	FOR_XYZ rho2[ip]  += rhok2[ip]/6.0;
-        #pragma omp parallel for
-	FOR_XYZ rhoU2[ip] += rhoUk2[ip]/6.0;
-        #pragma omp parallel for
-	FOR_XYZ rhoV2[ip] += rhoVk2[ip]/6.0;
-        #pragma omp parallel for
-	FOR_XYZ rhoW2[ip] += rhoWk2[ip]/6.0;
-        #pragma omp parallel for
-	FOR_XYZ rhoE2[ip] += rhoEk2[ip]/6.0;
-
+	FOR_XYZ{
+	    //Add to final solution
+	    rho2[ip]  += rhok2[ip]/6.0;
+	    rhoU2[ip] += rhoUk2[ip]/6.0;
+	    rhoV2[ip] += rhoVk2[ip]/6.0;
+	    rhoW2[ip] += rhoWk2[ip]/6.0;
+	    rhoE2[ip] += rhoEk2[ip]/6.0;
+	}
     }
 
 }
@@ -2156,41 +2092,30 @@ void CSolver_AWS::updateNonConservedData(){
     if(rkStep == 1 || rkStep == 2 || rkStep == 3){
 
         #pragma omp parallel for
-	FOR_XYZ U[ip]   = ig->solveU(rhok[ip], rhoUk[ip]);
-        #pragma omp parallel for
-	FOR_XYZ V[ip]   = ig->solveU(rhok[ip], rhoVk[ip]);
-        #pragma omp parallel for
-	FOR_XYZ W[ip]   = ig->solveU(rhok[ip], rhoWk[ip]);
-        #pragma omp parallel for
-	FOR_XYZ p[ip]   = ig->solvep(rhok[ip], rhoEk[ip], U[ip], V[ip], W[ip]);
-        #pragma omp parallel for
-	FOR_XYZ T[ip]   = ig->solveT(rhok[ip], p[ip]);
-        #pragma omp parallel for
-	FOR_XYZ mu[ip]  = ig->solveMu(T[ip]);
-        #pragma omp parallel for
-	FOR_XYZ Amu[ip] = ig->solveAmu(T[ip]);
-        #pragma omp parallel for
-	FOR_XYZ sos[ip] = ig->solveSOS(rhok[ip], p[ip]);
+	FOR_XYZ{
+	    U[ip]   = ig->solveU(rhok[ip], rhoUk[ip]);
+	    V[ip]   = ig->solveU(rhok[ip], rhoVk[ip]);
+	    W[ip]   = ig->solveU(rhok[ip], rhoWk[ip]);
+	    p[ip]   = ig->solvep(rhok[ip], rhoEk[ip], U[ip], V[ip], W[ip]);
+	    T[ip]   = ig->solveT(rhok[ip], p[ip]);
+	    mu[ip]  = ig->solveMu(T[ip]);
+	    Amu[ip] = ig->solveAmu(T[ip]);
+	    sos[ip] = ig->solveSOS(rhok[ip], p[ip]);
+	}
 
     }else if(rkStep == 4){
 
         #pragma omp parallel for
-	FOR_XYZ U[ip]   = ig->solveU(rho1[ip], rhoU1[ip]);
-        #pragma omp parallel for
-	FOR_XYZ V[ip]   = ig->solveU(rho1[ip], rhoV1[ip]);
-        #pragma omp parallel for
-	FOR_XYZ W[ip]   = ig->solveU(rho1[ip], rhoW1[ip]);
-        #pragma omp parallel for
-	FOR_XYZ p[ip]   = ig->solvep(rho1[ip], rhoE1[ip], U[ip], V[ip], W[ip]);
-        #pragma omp parallel for
-	FOR_XYZ T[ip]   = ig->solveT(rho1[ip], p[ip]);
-        #pragma omp parallel for
-	FOR_XYZ mu[ip]  = ig->solveMu(T[ip]);
-        #pragma omp parallel for
-	FOR_XYZ Amu[ip] = ig->solveAmu(T[ip]);
-        #pragma omp parallel for
-	FOR_XYZ sos[ip] = ig->solveSOS(rho1[ip], p[ip]);
-
+	FOR_XYZ{
+	    U[ip]   = ig->solveU(rho1[ip], rhoU1[ip]);
+	    V[ip]   = ig->solveU(rho1[ip], rhoV1[ip]);
+	    W[ip]   = ig->solveU(rho1[ip], rhoW1[ip]);
+	    p[ip]   = ig->solvep(rho1[ip], rhoE1[ip], U[ip], V[ip], W[ip]);
+	    T[ip]   = ig->solveT(rho1[ip], p[ip]);
+	    mu[ip]  = ig->solveMu(T[ip]);
+	    Amu[ip] = ig->solveAmu(T[ip]);
+	    sos[ip] = ig->solveSOS(rho1[ip], p[ip]);
+	}
     }
 
 }
@@ -2200,21 +2125,16 @@ void CSolver_AWS::updateSponge(){
     if(spongeFlag){
 	double eps = 1.0/(spg->avgT/ts->dt + 1.0);
 	#pragma omp parallel for
-	FOR_XYZ spg->spongeRhoAvg[ip]  += eps*(rho1[ip]  - spg->spongeRhoAvg[ip]);	
-	#pragma omp parallel for
-	FOR_XYZ spg->spongeRhoUAvg[ip] += eps*(rhoU1[ip] - spg->spongeRhoUAvg[ip]);	
-	#pragma omp parallel for
-	FOR_XYZ spg->spongeRhoVAvg[ip] += eps*(rhoV1[ip] - spg->spongeRhoVAvg[ip]);	
-	#pragma omp parallel for
-	FOR_XYZ spg->spongeRhoWAvg[ip] += eps*(rhoW1[ip] - spg->spongeRhoWAvg[ip]);	
-	#pragma omp parallel for
-	FOR_XYZ spg->spongeRhoEAvg[ip] += eps*(rhoE1[ip] - spg->spongeRhoEAvg[ip]);	
-	
-	#pragma omp parallel for
-	FOR_XYZ spg->spongeRhoEAvg[ip] = spg->epsP*spg->spongeRhoEAvg[ip] + (1.0 -  spg->epsP)*(spg->spongeP/(ig->gamma-1.0) \
+	FOR_XYZ{
+	    spg->spongeRhoAvg[ip]  += eps*(rho1[ip]  - spg->spongeRhoAvg[ip]);	
+	    spg->spongeRhoUAvg[ip] += eps*(rhoU1[ip] - spg->spongeRhoUAvg[ip]);	
+	    spg->spongeRhoVAvg[ip] += eps*(rhoV1[ip] - spg->spongeRhoVAvg[ip]);	
+	    spg->spongeRhoWAvg[ip] += eps*(rhoW1[ip] - spg->spongeRhoWAvg[ip]);	
+	    spg->spongeRhoEAvg[ip] += eps*(rhoE1[ip] - spg->spongeRhoEAvg[ip]);	
+	    spg->spongeRhoEAvg[ip] = spg->epsP*spg->spongeRhoEAvg[ip] + (1.0 -  spg->epsP)*(spg->spongeP/(ig->gamma-1.0) \
 					 + 0.5*(spg->spongeRhoUAvg[ip]*spg->spongeRhoUAvg[ip] + spg->spongeRhoVAvg[ip]*spg->spongeRhoVAvg[ip] \
 					 + spg->spongeRhoWAvg[ip]*spg->spongeRhoWAvg[ip])/spg->spongeRhoAvg[ip]);
-
+	}
 	
         if(bc->bcX0 == BC::SPONGE){
 	    #pragma omp parallel for
@@ -2289,7 +2209,7 @@ void CSolver_AWS::updateSponge(){
 
 void CSolver_AWS::calcTurbulenceQuantities(){
 
-
+    #pragma omp parallel for
     FOR_XYZ{
 	double Sij[3][3];
 	Sij[0][0] = 0.5*(Ux[ip] + Ux[ip]) - (1.0/3.0)*(Ux[ip] + Vy[ip] + Wz[ip]);
@@ -2337,6 +2257,7 @@ void CSolver_AWS::calcTurbulenceQuantities(){
     double dilprime = 0.0;
     double vortprime = 0.0;
 
+    #pragma omp parallel for reduction(+:meanRho, meanMu, meanTurbDiss, uprime, uiprime, urms, meanSOS, taylor2_denom, meanKineticEng) 
     FOR_XYZ{
 	meanRho += rho1[ip]/((double)(Nx*Ny*Nz));
 	meanMu  += mu[ip]/((double)(Nx*Ny*Nz));
@@ -2349,7 +2270,7 @@ void CSolver_AWS::calcTurbulenceQuantities(){
 	meanKineticEng += kineticEng[ip]/((double)(Nx*Ny*Nz))/2.0;
     }
 
-
+    #pragma omp parall for reduction(+:rhoprime, dilprime, vortprime)
     FOR_XYZ{
 	rhoprime += ((rho1[ip] - meanRho)*(rho1[ip] - meanRho))/((double)(Nx*Ny*Nz));
 	dilprime += ((Ux[ip] + Vy[ip] + Wz[ip])*(Ux[ip] + Vy[ip] + Wz[ip]))/((double)(Nx*Ny*Nz));
@@ -2431,6 +2352,7 @@ void CSolver_AWS::calcTaylorGreenQuantities(){
     double dilprime = 0.0;
     double meanMu   = 0.0;
 
+    #pragma omp parallel for reduction(+:enstrophySum, enstrophySum2Mu, turbDissSum, kineticEngSum, dilprime, meanMu)
     FOR_XYZ{
 	double Sij[3][3];
 	Sij[0][0] = 0.5*(Ux[ip] + Ux[ip]) - (1.0/3.0)*(Ux[ip] + Vy[ip] + Wz[ip]);
