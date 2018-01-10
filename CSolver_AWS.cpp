@@ -152,6 +152,7 @@ void CSolver_AWS::initializeSolverData(){
     transVy = new double[Nx*Ny*Nz];
     transWy = new double[Nx*Ny*Nz];
 
+    //New memory added for AWS Solver
     transTempUy = new double[N]; 
     transTempVy = new double[N]; 
     transTempWy = new double[N]; 
@@ -161,6 +162,17 @@ void CSolver_AWS::initializeSolverData(){
     transTempTy = new double[N]; 
     transTempTyy = new double[N]; 
 
+    transTempUxy = new double[N]; 
+    transTempVxy = new double[N]; 
+    transTempWxy = new double[N]; 
+    transTempUyz = new double[N]; 
+    transTempVyz = new double[N]; 
+    transTempWyz = new double[N]; 
+    transTempContEuler = new double[N]; 
+    transTempXEuler = new double[N]; 
+    transTempYEuler = new double[N]; 
+    transTempZEuler = new double[N]; 
+    transTempEngEuler = new double[N]; 
 
 
     //turbulence quantities
@@ -946,26 +958,30 @@ void CSolver_AWS::preStepDerivatives(){
 
 	#pragma omp section
 	{
-            derivY->calc1stDerivField(transUx, Uxy);
+            derivY->calc1stDerivField(transUx, transTempUxy);
             transposeXYZtoZXY_Fast(Ux, Nx, Ny, Nz, transUx, blocksize); //This could be separated if new transUx made
+            transposeYZXtoXYZ_Fast(transTempUxy, Nx, Ny, Nz, Uxy, blocksize);
 	}
 
 	#pragma omp section
 	{
-            derivY->calc1stDerivField(transVx, Vxy);
+            derivY->calc1stDerivField(transVx, transTempVxy);
             transposeXYZtoZXY_Fast(Vx, Nx, Ny, Nz, transVx, blocksize); //Could be separated if new transVx made
+            transposeYZXtoXYZ_Fast(transTempVxy, Nx, Ny, Nz, Vxy, blocksize);
 	}
 
 	#pragma omp section
 	{
-            derivY->calc1stDerivField(transWx, Wxy);
+            derivY->calc1stDerivField(transWx, transTempWxy);
             transposeXYZtoZXY_Fast(Wx, Nx, Ny, Nz, transWx, blocksize); //Could be separated if new transWx made
+            transposeYZXtoXYZ_Fast(transTempWxy, Nx, Ny, Nz, Wxy, blocksize);
 	}
 
 	#pragma omp section
 	{
-            derivY->calc1stDerivField(transRhoV, contEulerY);
+            derivY->calc1stDerivField(transRhoV, transTempContEuler);
             transposeXYZtoZXY_Fast(rhoVP, Nx, Ny, Nz, transRhoV, blocksize); //Could be separated if new transRhoV made
+            transposeYZXtoXYZ_Fast(transTempContEuler, Nx, Ny, Nz, contEulerY, blocksize);
 	}
 
 
@@ -1001,16 +1017,28 @@ void CSolver_AWS::preStepDerivatives(){
 	}
 
 	#pragma omp section
-        derivY->calc1stDerivField(temp, 	 momXEulerY);
+	{
+            derivY->calc1stDerivField(temp, transTempXEuler);
+            transposeYZXtoXYZ_Fast(transTempXEuler, Nx, Ny, Nz, momXEulerY, blocksize);
+	}
 
 	#pragma omp section
-        derivY->calc1stDerivField(temp2,	 momYEulerY);
+	{
+            derivY->calc1stDerivField(temp2, transTempYEuler);
+            transposeYZXtoXYZ_Fast(transTempYEuler, Nx, Ny, Nz, momYEulerY, blocksize);
+	}
 
 	#pragma omp section
-        derivY->calc1stDerivField(temp3,	 momZEulerY);
-
+	{
+            derivY->calc1stDerivField(temp3, transTempZEuler);
+            transposeYZXtoXYZ_Fast(transTempZEuler, Nx, Ny, Nz, momZEulerY, blocksize);
+	}
+	
 	#pragma omp section
-        derivY->calc1stDerivField(temp4,	 engyEulerY);
+	{
+	    derivY->calc1stDerivField(temp4, transTempEngEuler);
+            transposeYZXtoXYZ_Fast(transTempEngEuler, Nx, Ny, Nz, engyEulerY, blocksize);
+	}
 
 	#pragma omp section
         transposeXYZtoZXY_Fast(rhoP,  Nx, Ny, Nz, transRho, blocksize);
@@ -1024,62 +1052,6 @@ void CSolver_AWS::preStepDerivatives(){
 	#pragma omp section
         transposeXYZtoZXY_Fast(rhoEP, Nx, Ny, Nz, transRhoE, blocksize);
 
-
-
-    }
-
-   //Moving Data from YZX to XYZ
-
-    //All of this could be moved within derivative sections if more memory added
-    #pragma omp parallel sections num_threads(halfThreadCount)
-    {
-	#pragma omp section
-	{
-            memcpy(temp, Uxy, sizeof(double)*Nx*Ny*Nz);
-            transposeYZXtoXYZ_Fast(temp, Nx, Ny, Nz, Uxy, blocksize);
-	}
-
-	#pragma omp section
-	{
-            memcpy(temp2, Vxy, sizeof(double)*Nx*Ny*Nz);
-            transposeYZXtoXYZ_Fast(temp2, Nx, Ny, Nz, Vxy, blocksize);
-	}
-
-	#pragma omp section
-	{
-            memcpy(temp3, Wxy, sizeof(double)*Nx*Ny*Nz);
-            transposeYZXtoXYZ_Fast(temp3, Nx, Ny, Nz, Wxy, blocksize);
-	}
-
-	#pragma omp section
-	{
-            memcpy(temp4, contEulerY, sizeof(double)*Nx*Ny*Nz);
-            transposeYZXtoXYZ_Fast(temp4, Nx, Ny, Nz, contEulerY, blocksize);
-	}
-
-	#pragma omp section
-	{
-            memcpy(U, momXEulerY, sizeof(double)*Nx*Ny*Nz); //Getting cute with memory here again
-            transposeYZXtoXYZ_Fast(U, Nx, Ny, Nz, momXEulerY, blocksize);
-	}
-
-	#pragma omp section
-	{
-            memcpy(V, momYEulerY, sizeof(double)*Nx*Ny*Nz);
-            transposeYZXtoXYZ_Fast(V, Nx, Ny, Nz, momYEulerY, blocksize);
-	}
-
-	#pragma omp section
-	{
-            memcpy(W, momZEulerY, sizeof(double)*Nx*Ny*Nz);
-            transposeYZXtoXYZ_Fast(W, Nx, Ny, Nz, momZEulerY, blocksize);
-	}
-
-	#pragma omp section
-	{
-            memcpy(T, engyEulerY, sizeof(double)*Nx*Ny*Nz);
-            transposeYZXtoXYZ_Fast(T, Nx, Ny, Nz, engyEulerY, blocksize);
-	}
     }
 
 
@@ -1108,171 +1080,115 @@ void CSolver_AWS::preStepDerivatives(){
     {
         //Calculate the viscous derivatives
 	#pragma omp section
-        derivZ->calc1stDerivField(U, Uz);
-	#pragma omp section
-        derivZ->calc2ndDerivField(U, Uzz);
+	{
+            derivZ->calc1stDerivField(U, transTempUy);
+	    transposeZXYtoXYZ_Fast(transTempUy, Nx, Ny, Nz, Uz, blocksize);
+	}
 
 	#pragma omp section
-        derivZ->calc1stDerivField(V, Vz);
-	#pragma omp section
-        derivZ->calc2ndDerivField(V, Vzz);
+	{
+            derivZ->calc2ndDerivField(U, transTempUyy);
+	    transposeZXYtoXYZ_Fast(transTempUyy, Nx, Ny, Nz, Uzz, blocksize);
+	}
 
 	#pragma omp section
-        derivZ->calc1stDerivField(W, Wz);
-	#pragma omp section
-        derivZ->calc2ndDerivField(W, Wzz);
+	{
+            derivZ->calc1stDerivField(V, transTempVy);
+	    transposeZXYtoXYZ_Fast(transTempVy, Nx, Ny, Nz, Vz, blocksize);
+	}
 
 	#pragma omp section
-        derivZ->calc1stDerivField(T, Tz);
+	{
+            derivZ->calc2ndDerivField(V, transTempVyy);
+	    transposeZXYtoXYZ_Fast(transTempVyy, Nx, Ny, Nz, Vzz, blocksize);
+	}
+	
 	#pragma omp section
-        derivZ->calc2ndDerivField(T, Tzz);
+	{
+            derivZ->calc1stDerivField(W, transTempWy);
+	    transposeZXYtoXYZ_Fast(transTempWy, Nx, Ny, Nz, Wz, blocksize);
+	}
 
 	#pragma omp section
-        derivZ->calc1stDerivField(transUx, Uxz);
-	#pragma omp section
-        derivZ->calc1stDerivField(transVx, Vxz);
-	#pragma omp section
-        derivZ->calc1stDerivField(transWx, Wxz);
+	{
+            derivZ->calc2ndDerivField(W, transTempWyy);
+	    transposeZXYtoXYZ_Fast(transTempWyy, Nx, Ny, Nz, Wzz, blocksize);
+	}
 
 	#pragma omp section
-        derivZ->calc1stDerivField(transUy, Uyz);
+	{
+            derivZ->calc1stDerivField(T, transTempTy);
+	    transposeZXYtoXYZ_Fast(transTempTy, Nx, Ny, Nz, Tz, blocksize);
+	}
+
 	#pragma omp section
-        derivZ->calc1stDerivField(transVy, Vyz);
+	{
+            derivZ->calc2ndDerivField(T, transTempTyy);
+	    transposeZXYtoXYZ_Fast(transTempTyy, Nx, Ny, Nz, Tzz, blocksize);
+	}
+
 	#pragma omp section
-        derivZ->calc1stDerivField(transWy, Wyz);
+	{
+            derivZ->calc1stDerivField(transUx, transTempUxy);
+	    transposeZXYtoXYZ_Fast(transTempUxy, Nx, Ny, Nz, Uxz, blocksize);
+	}
+
+	#pragma omp section
+	{
+            derivZ->calc1stDerivField(transVx, transTempVxy);
+	    transposeZXYtoXYZ_Fast(transTempVxy, Nx, Ny, Nz, Vxz, blocksize);
+	}
+	#pragma omp section
+	{
+            derivZ->calc1stDerivField(transWx, transTempWxy);
+	    transposeZXYtoXYZ_Fast(transTempWxy, Nx, Ny, Nz, Wxz, blocksize);
+	}
+
+	#pragma omp section
+	{
+            derivZ->calc1stDerivField(transUy, transTempUyz);
+	    transposeZXYtoXYZ_Fast(transTempUyz, Nx, Ny, Nz, Uyz, blocksize);
+	}
+	#pragma omp section
+	{
+            derivZ->calc1stDerivField(transVy, transTempVyz);
+	    transposeZXYtoXYZ_Fast(transTempVyz, Nx, Ny, Nz, Vyz, blocksize);
+	}
+	#pragma omp section
+	{
+            derivZ->calc1stDerivField(transWy, transTempWyz);
+	    transposeZXYtoXYZ_Fast(transTempWyz, Nx, Ny, Nz, Wyz, blocksize);
+	}
 
         //Calculate the Euler Derivatives
 	#pragma omp section
-        derivZ->calc1stDerivField(transRhoW, contEulerZ);
+	{
+            derivZ->calc1stDerivField(transRhoW, transTempContEuler);
+	    transposeZXYtoXYZ_Fast(transTempContEuler, Nx, Ny, Nz, contEulerZ, blocksize);
+	}
 	#pragma omp section
-        derivZ->calc1stDerivField(temp,	     momXEulerZ);
+	{
+            derivZ->calc1stDerivField(temp,	 transTempXEuler);
+	    transposeZXYtoXYZ_Fast(transTempXEuler, Nx, Ny, Nz, momXEulerZ, blocksize);
+	}
 	#pragma omp section
-        derivZ->calc1stDerivField(temp2,     momYEulerZ);
+	{
+            derivZ->calc1stDerivField(temp2,	 transTempYEuler);
+	    transposeZXYtoXYZ_Fast(transTempYEuler, Nx, Ny, Nz, momYEulerZ, blocksize);
+	}
+
 	#pragma omp section
-        derivZ->calc1stDerivField(temp3,     momZEulerZ);
+	{
+            derivZ->calc1stDerivField(temp3,	 transTempZEuler);
+	    transposeZXYtoXYZ_Fast(transTempZEuler, Nx, Ny, Nz, momZEulerZ, blocksize);
+	}
+
 	#pragma omp section
-        derivZ->calc1stDerivField(temp4,     engyEulerZ);
-    }
+	{
+            derivZ->calc1stDerivField(temp4,	 transTempEngEuler);
+	    transposeZXYtoXYZ_Fast(transTempEngEuler, Nx, Ny, Nz, engyEulerZ, blocksize);
+	}
 
-
-    omp_set_nested(1);
-    #pragma omp parallel sections num_threads(halfThreadCount)
-    {
-
-		//Moving all the data back to XYZ
-		#pragma omp section
-		{
-			memcpy(temp, Uz, sizeof(double)*Nx*Ny*Nz);
-			transposeZXYtoXYZ_Fast(temp, Nx, Ny, Nz, Uz, blocksize);
-		}
-
-		#pragma omp section
-		{
-			memcpy(temp2, Uzz, sizeof(double)*Nx*Ny*Nz);
-			transposeZXYtoXYZ_Fast(temp2, Nx, Ny, Nz, Uzz, blocksize);
-		}
-
-		#pragma omp section
-		{
-			memcpy(temp3, Vz, sizeof(double)*Nx*Ny*Nz);
-			transposeZXYtoXYZ_Fast(temp3, Nx, Ny, Nz, Vz, blocksize);
-		}
-
-		#pragma omp section
-		{
-			memcpy(temp4, Vzz, sizeof(double)*Nx*Ny*Nz);
-			transposeZXYtoXYZ_Fast(temp4, Nx, Ny, Nz, Vzz, blocksize);
-		}
-
-		#pragma omp section
-		{
-			memcpy(transUx, Wz, sizeof(double)*Nx*Ny*Nz); //Once again getting cute with memory starting here
-			transposeZXYtoXYZ_Fast(transUx, Nx, Ny, Nz, Wz, blocksize);
-		}
-
-		#pragma omp section
-		{
-			memcpy(transVx, Wzz, sizeof(double)*Nx*Ny*Nz);
-			transposeZXYtoXYZ_Fast(transVx, Nx, Ny, Nz, Wzz, blocksize);
-		}
-
-		#pragma omp section
-		{
-			memcpy(transWx, Tz, sizeof(double)*Nx*Ny*Nz);
-			transposeZXYtoXYZ_Fast(transWx, Nx, Ny, Nz, Tz, blocksize);
-		}
-
-		#pragma omp section
-		{
-			memcpy(transUy, Tzz, sizeof(double)*Nx*Ny*Nz);
-			transposeZXYtoXYZ_Fast(transUy, Nx, Ny, Nz, Tzz, blocksize);
-		}
-
-		#pragma omp section
-		{
-			memcpy(transVy, Uxz, sizeof(double)*Nx*Ny*Nz);
-			transposeZXYtoXYZ_Fast(transVy, Nx, Ny, Nz, Uxz, blocksize);
-		}
-
-		#pragma omp section
-		{
-			memcpy(transWy, Vxz, sizeof(double)*Nx*Ny*Nz);
-			transposeZXYtoXYZ_Fast(transWy, Nx, Ny, Nz, Vxz, blocksize);
-		}
-
-		#pragma omp section
-		{
-			memcpy(transRhoU, Wxz, sizeof(double)*Nx*Ny*Nz);
-			transposeZXYtoXYZ_Fast(transRhoU, Nx, Ny, Nz, Wxz, blocksize);
-		}
-
-		#pragma omp section
-		{
-			memcpy(transRhoV, Uyz, sizeof(double)*Nx*Ny*Nz);
-			transposeZXYtoXYZ_Fast(transRhoV, Nx, Ny, Nz, Uyz, blocksize);
-		}
-
-		#pragma omp section
-		{
-			memcpy(transRhoW, Vyz, sizeof(double)*Nx*Ny*Nz);
-			transposeZXYtoXYZ_Fast(transRhoW, Nx, Ny, Nz, Vyz, blocksize);
-		}
-
-		#pragma omp section
-		{
-			memcpy(transRhoE, Wyz, sizeof(double)*Nx*Ny*Nz);
-			transposeZXYtoXYZ_Fast(transRhoE, Nx, Ny, Nz, Wyz, blocksize);
-		}
-
-		#pragma omp section
-		{
-			memcpy(U, contEulerZ, sizeof(double)*Nx*Ny*Nz);
-			transposeZXYtoXYZ_Fast(U, Nx, Ny, Nz, contEulerZ, blocksize);
-		}
-
-		#pragma omp section
-		{
-			memcpy(V, momXEulerZ, sizeof(double)*Nx*Ny*Nz);
-			transposeZXYtoXYZ_Fast(V, Nx, Ny, Nz, momXEulerZ, blocksize);
-		}
-
-		#pragma omp section
-		{
-			memcpy(W, momYEulerZ, sizeof(double)*Nx*Ny*Nz);
-			transposeZXYtoXYZ_Fast(W, Nx, Ny, Nz, momYEulerZ, blocksize);
-		}
-
-		#pragma omp section
-		{
-			memcpy(T, momZEulerZ, sizeof(double)*Nx*Ny*Nz);
-			transposeZXYtoXYZ_Fast(T, Nx, Ny, Nz, momZEulerZ, blocksize);
-		}
-	
-		#pragma omp section
-		{
-			memcpy(p, engyEulerZ, sizeof(double)*Nx*Ny*Nz);
-			transposeZXYtoXYZ_Fast(p, Nx, Ny, Nz, engyEulerZ, blocksize);
-		}
     }
 
     //Going back to original...

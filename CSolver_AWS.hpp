@@ -96,6 +96,8 @@ class CSolver_AWS{
 	double *transRho, *transRhoU, *transRhoV, *transRhoW, *transRhoE;
 	double *transUx, *transVx, *transWx;
 	double *transUy, *transVy, *transWy;
+
+	//New memory allocated for AWS solver...
         double *transTempUy;
         double *transTempVy;
     	double *transTempWy;
@@ -104,6 +106,17 @@ class CSolver_AWS{
     	double *transTempWyy;
     	double *transTempTy; 
     	double *transTempTyy; 
+	double *transTempUxy;
+	double *transTempVxy;
+	double *transTempWxy;
+	double *transTempUyz;
+	double *transTempVyz;
+	double *transTempWyz;
+	double *transTempContEuler;
+	double *transTempXEuler;
+	double *transTempYEuler;
+	double *transTempZEuler;
+	double *transTempEngEuler;
 
 
 
