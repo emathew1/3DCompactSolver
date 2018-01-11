@@ -39,6 +39,7 @@ class CSolver_AWS{
         double time;
 	int filterTimeStep;
 	bool endFlag;
+	bool useTiming;
 
         std::chrono::system_clock::time_point t1Save, t2Save;
 
@@ -138,7 +139,7 @@ class CSolver_AWS{
 
 
 	//Constructor to use for this class...
-	CSolver_AWS(Domain *dom, BC *bc, TimeStepping *ts, double alphaF, double mu_ref, int blocksize){
+	CSolver_AWS(Domain *dom, BC *bc, TimeStepping *ts, double alphaF, double mu_ref, int blocksize, bool useTiming){
 
 	    //Take in input information and initialize data structures...
 	    this->dom = dom;
@@ -146,7 +147,9 @@ class CSolver_AWS{
 	    this->ts = ts;
 	    this->alphaF = alphaF;
 	    this->mu_ref = mu_ref;
-
+	    this->blocksize = blocksize;
+	    this->useTiming = useTiming;
+	
 	    ig = new IdealGas(dom, mu_ref);
 
 	    //give ourselves the local copies of the domain sizes
@@ -186,7 +189,6 @@ class CSolver_AWS{
 	    filtY  = new Filter(alphaF, dom, bc->bcYType, Derivatives::DIRY);
 	    filtZ  = new Filter(alphaF, dom, bc->bcZType, Derivatives::DIRZ);
 
-	    this->blocksize = blocksize;
 
  	    X0WallV = 0.0; X0WallW = 0.0; X1WallV = 0.0; X1WallW = 0.0;
 	    Y0WallU = 0.0; Y0WallW = 0.0; Y1WallU = 0.0; Y1WallW = 0.0;

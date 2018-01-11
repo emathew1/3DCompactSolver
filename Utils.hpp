@@ -1,12 +1,19 @@
 #ifndef _UTILSH_
 #define _UTILSH_
 
+#include <chrono>
 #include <math.h>
 #include <cstring>
 #include <iostream>
+#include <iomanip>
 #include "Macros.hpp"
 
 using namespace std;
+using namespace std::chrono;
+
+typedef std::chrono::high_resolution_clock Clock;
+typedef std::chrono::milliseconds milliseconds;
+
 
 void solveTri(double a[], double b[], double c[], double d[], double x[], double *work, int n);
 void cyclic(double *a, double *b, double *c, double alpha, double beta,
@@ -32,5 +39,10 @@ double fRand(double fMin, double fMax);
 inline double calcNeumann(double f1, double f2, double f3, double f4, double f5, double f6){
     return (f1*360.0 - f2*450.0 + f3*400.0 - f4*225.0 + f5*72.0 - f6*10.0)/147.0;
 }
+
+
+static Clock::time_point t0 = Clock::now();
+void tic();
+void toc();
 
 #endif

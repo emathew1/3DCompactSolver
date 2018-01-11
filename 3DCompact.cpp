@@ -6,15 +6,15 @@
 #include <assert.h>
 #include <chrono>
 
+using namespace std;
+using namespace std::chrono;
+
 #include "Macros.hpp"
 #include "Utils.hpp"
 #include "BC.hpp"
 #include "TimeStepping.hpp"
 #include "CSolver.hpp"
 #include "CSolver_AWS.hpp"
-
-using namespace std;
-using namespace std::chrono;
 
 int main(int argc, char *argv[]){
 
@@ -29,15 +29,16 @@ int main(int argc, char *argv[]){
       int threadCount = omp_get_num_threads();
       int threadID    = omp_get_thread_num();
       if(threadCount > 1 && threadID == 0){
-          cout << "Running with OpenMP using " << threadCount << " threads" << endl;
+          cout << " > Running with OpenMP using " << threadCount << " threads" << endl;
+	  cout << " > Thread limit: " << omp_get_thread_limit() << endl;
       }
     }
-
+    omp_set_max_active_levels(2);
 
     /////////////////////////
     //Initialize the Domain//
     /////////////////////////
-    int    Nx = 128, 
+    int    Nx = 256, 
 	   Ny = 128, 
 	   Nz = 128;
     double Lx = 2.0*M_PI - (2.0*M_PI/((double)(Nx))), 
@@ -81,12 +82,12 @@ int main(int argc, char *argv[]){
     /////////////////////////
     //Initialize the Solver//
     /////////////////////////
-    double alphaF = 0.495;
-    double mu_ref = 0.000014625;
-    int blocksize = 16;
-    CSolver_AWS *cs   = new CSolver_AWS(dom, bc, ts, alphaF, mu_ref, blocksize); 
-    //CSolver *cs   = new CSolver(dom, bc, ts, alphaF, mu_ref, blocksize); 
-
+    double alphaF  = 0.495;
+    double mu_ref  = 0.000014625;
+    int blocksize  = 16;
+    bool useTiming = true;
+    CSolver_AWS *cs   = new CSolver_AWS(dom, bc, ts, alphaF, mu_ref, blocksize, useTiming); 
+    //CSolver *cs   = new CSolver(dom, bc, ts, alphaF, mu_ref, blocksize, useTiming); 
 
     /////////////////////////////
     //load in turbulence output//
@@ -167,6 +168,7 @@ int main(int argc, char *argv[]){
     cs->setInitialConditions();
     cs->dumpSolution();
 
+
     double initMach = 0.0, initMu = 0.0;;
     FOR_XYZ{
 	initMach += cs->sos[ip]/((double)(Nx*Ny*Nz));
@@ -174,11 +176,12 @@ int main(int argc, char *argv[]){
     }
     initMach = u0/initMach;
     cout << " > Initial Mach # = " << initMach << endl;
-    cout << " > Re = r*u0*L/mu = " << 1.0*u0*1.0/initMu;
+    cout << " > Re = r*u0*L/mu = " << 1.0*u0*1.0/initMu << endl;
 
     while(cs->endFlag == false){
 
 	//Get the dt for this time step
+
         cs->calcDtFromCFL();
 
 	//start rkStep 1

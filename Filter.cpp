@@ -128,7 +128,7 @@ void Filter::compactFilter(double *phi, double *phiF){
 
 void Filter::filterField(double *dataIn, double *dataOut){
 
-    const int threads = NUMTHREADS;
+    const int threads = NUMTHREADSNEST;
 
     if(currentDir == Derivatives::DIRX){
         #pragma omp parallel for schedule(dynamic) num_threads(threads) 

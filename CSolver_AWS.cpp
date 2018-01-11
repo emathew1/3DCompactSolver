@@ -2,6 +2,8 @@
 
 void CSolver_AWS::initializeSolverData(){
 
+    if(useTiming) tic();
+
     cout << endl;
     cout << " > Allocating Solver Arrays..." << endl;
     double workSize = 0;
@@ -181,10 +183,18 @@ void CSolver_AWS::initializeSolverData(){
     uiprime2    = new double[Nx*Ny*Nz];
     uvar       = new double[Nx*Ny*Nz];
     kineticEng = new double[Nx*Ny*Nz];
+
+    if(useTiming){
+	cout << " > initSolDat Timing: ";
+	toc();
+    }
+
 }
 
 
 void CSolver_AWS::setInitialConditions(){
+
+    if(useTiming) tic();
 
     cout << endl;
     cout << " > Setting initial conditions..." << endl; 
@@ -482,11 +492,18 @@ void CSolver_AWS::setInitialConditions(){
 
     std::cout << " > Finished initialization of flow field " << std::endl;
 
+    if(useTiming){
+	cout << " > setInitCond Timing: ";
+	toc();
+    }
+
 }
 
 
 void CSolver_AWS::calcDtFromCFL(){
     
+    if(useTiming) tic();
+
     //Calculate the wave speed over the local spacings...
     double *UChar_dx = new double[N];
     #pragma omp parallel for
@@ -521,9 +538,17 @@ void CSolver_AWS::calcDtFromCFL(){
 	time += ts->dt;
     }
 
+    if(useTiming){
+	cout << " > calcDtCFL  Timing: ";
+	toc();
+    }
+
+
 }
 
 void CSolver_AWS::preStepBCHandling(){
+
+    if(useTiming) tic();
 
     double *rhoP, *rhoUP, *rhoVP, *rhoWP, *rhoEP;
     if(rkStep == 1){
@@ -789,14 +814,18 @@ void CSolver_AWS::preStepBCHandling(){
         }END_FORZ1
     }
 
+    if(useTiming){
+	cout << " > preBCHandl Timing: ";
+	toc();
+    }
 
 }
 
 
 void CSolver_AWS::preStepDerivatives(){
 
-    //TODO
-    //WHICH RHOU! etc. NEEDS TO CHANGE WITH THE RKSTEP!!!!
+    if(useTiming) tic();
+
     double *rhoP;
     double *rhoUP;
     double *rhoVP;
@@ -834,7 +863,7 @@ void CSolver_AWS::preStepDerivatives(){
 
     omp_set_nested(1);
 
-    const int halfThreadCount = omp_get_num_threads()/NUMTHREADS;
+    const int halfThreadCount = omp_get_num_threads()/NUMTHREADSNEST;
 
     #pragma omp parallel sections num_threads(halfThreadCount) 
     {
@@ -929,7 +958,6 @@ void CSolver_AWS::preStepDerivatives(){
     	temp4[ip] = transRhoE[ip]*V[ip] + V[ip]*p[ip];
     }
 
-    omp_set_nested(1);
     #pragma omp parallel sections num_threads(halfThreadCount)
     {
 
@@ -1075,7 +1103,6 @@ void CSolver_AWS::preStepDerivatives(){
         temp4[ip] = transRhoE[ip]*W[ip] + W[ip]*p[ip];
     }
 
-    omp_set_nested(1);
     #pragma omp parallel sections num_threads(halfThreadCount)
     {
         //Calculate the viscous derivatives
@@ -1201,11 +1228,20 @@ void CSolver_AWS::preStepDerivatives(){
         T[ip] = ig->solveT(rhoP[ip], p[ip]);
     }
 
+    omp_set_nested(0);
+
+    if(useTiming){
+        cout << " > preStepDer Timing: ";
+        toc();
+    }
+
+
 }
 
 
 void CSolver_AWS::solveContinuity(){
    
+    if(useTiming) tic();
 
     #pragma omp parallel
     {
@@ -1230,9 +1266,18 @@ void CSolver_AWS::solveContinuity(){
 	}
     }
 
+    if(useTiming){
+        cout << " > solveCont  Timing: ";
+        toc();
+    }
+
+
+
 }
 
 void CSolver_AWS::solveXMomentum(){
+
+    if(useTiming) tic();
 
 	#pragma omp parallel
 	{
@@ -1269,10 +1314,18 @@ void CSolver_AWS::solveXMomentum(){
 
 	}
 
+    if(useTiming){
+        cout << " > solveXMom  Timing: ";
+        toc();
+    }
+
+
+
 }
 
 void CSolver_AWS::solveYMomentum(){
 
+    if(useTiming) tic();
 
     #pragma omp parallel
     {
@@ -1310,11 +1363,16 @@ void CSolver_AWS::solveYMomentum(){
 
     }
 
+    if(useTiming){
+        cout << " > solveYMom  Timing: ";
+        toc();
+    }
 
 }
 
 void CSolver_AWS::solveZMomentum(){
 
+    if(useTiming) tic();
 
     #pragma omp parallel
     {
@@ -1353,10 +1411,19 @@ void CSolver_AWS::solveZMomentum(){
 	}
 
     }
+
+    if(useTiming){
+        cout << " > solveZMom  Timing: ";
+        toc();
+    }
+
+
 }
 
 
 void CSolver_AWS::solveEnergy(){
+
+    if(useTiming) tic();
 
     #pragma omp parallel
     {
@@ -1425,9 +1492,16 @@ void CSolver_AWS::solveEnergy(){
         }
     }
 
+    if(useTiming){
+        cout << " > solveEnerg Timing: ";
+        toc();
+    }
+
 }
 
 void CSolver_AWS::postStepBCHandling(){
+
+    if(useTiming) tic();
 
     double *rhoP, *rhoUP, *rhoVP, *rhoWP, *rhoEP;
     if(rkStep == 1){
@@ -1591,10 +1665,18 @@ void CSolver_AWS::postStepBCHandling(){
 	}END_FORZ1
     }
 
+    if(useTiming){
+        cout << " > postBCHand Timing: ";
+        toc();
+    }
+
+
 
 }
 
 void CSolver_AWS::updateConservedData(){
+
+    if(useTiming) tic();
 
     if(rkStep == 1){
 
@@ -1666,11 +1748,18 @@ void CSolver_AWS::updateConservedData(){
 	}
     }
 
+    if(useTiming){
+        cout << " > updateCons Timing: ";
+        toc();
+    }
+
 }
 
 void CSolver_AWS::filterConservedData(){
 
-    const int halfThreadCount = omp_get_num_threads()/NUMTHREADS;
+    if(useTiming) tic();
+
+    const int halfThreadCount = omp_get_num_threads()/NUMTHREADSNEST;
     omp_set_nested(1);
 
 
@@ -1688,93 +1777,52 @@ void CSolver_AWS::filterConservedData(){
     	    #pragma omp parallel sections num_threads(halfThreadCount) 
  	    {
 		#pragma omp section
-                filtX->filterField(rho2,  rho1);
+		{
+                    filtX->filterField(rho2,  rho1);
+                    transposeXYZtoYZX_Fast(rho1,   Nx, Ny, Nz, rho2, blocksize);
+  	            filtY->filterField(rho2,  rho1);
+                    transposeYZXtoZXY_Fast(rho1,   Nx, Ny, Nz, rho2, blocksize);
+                    filtZ->filterField(rho2,  transTempUy);
+                    transposeZXYtoXYZ_Fast(transTempUy,   Nx, Ny, Nz, rho1, blocksize);
+		}
 		#pragma omp section
-                filtX->filterField(rhoU2, temp);
+		{
+                    filtX->filterField(rhoU2, temp);
+	            transposeXYZtoYZX_Fast(temp,   Nx, Ny, Nz, rhoU2, blocksize);
+                    filtY->filterField(rhoU2, temp);
+                    transposeYZXtoZXY_Fast(temp,   Nx, Ny, Nz, rhoU2, blocksize);
+                    filtZ->filterField(rhoU2, temp);
+                    transposeZXYtoXYZ_Fast(temp,   Nx, Ny, Nz, rhoU1, blocksize);
+		}
 		#pragma omp section
-                filtX->filterField(rhoV2, temp2);
-		#pragma omp section
-                filtX->filterField(rhoW2, temp3);
-		#pragma omp section
-                filtX->filterField(rhoE2, temp4);
-	    }
+		{
+                    filtX->filterField(rhoV2, temp2);
+                    transposeXYZtoYZX_Fast(temp2,  Nx, Ny, Nz, rhoV2, blocksize);
+                    filtY->filterField(rhoV2, temp2);
+                    transposeYZXtoZXY_Fast(temp2,  Nx, Ny, Nz, rhoV2, blocksize);
+                    filtZ->filterField(rhoV2, temp2);
+                    transposeZXYtoXYZ_Fast(temp2,  Nx, Ny, Nz, rhoV1, blocksize);
 
-            //Do the transpose to YZX space
-    	    #pragma omp parallel sections num_threads(halfThreadCount) 
- 	    {
+		}
 		#pragma omp section
-                transposeXYZtoYZX_Fast(rho1,   Nx, Ny, Nz, rho2, blocksize);
+		{
+                    filtX->filterField(rhoW2, temp3);
+                    transposeXYZtoYZX_Fast(temp3,  Nx, Ny, Nz, rhoW2, blocksize);
+                    filtY->filterField(rhoW2, temp3);
+                    transposeYZXtoZXY_Fast(temp3,  Nx, Ny, Nz, rhoW2, blocksize);
+                    filtZ->filterField(rhoW2, temp3);
+                    transposeZXYtoXYZ_Fast(temp3,  Nx, Ny, Nz, rhoW1, blocksize);
+		}
 		#pragma omp section
-                transposeXYZtoYZX_Fast(temp,   Nx, Ny, Nz, rhoU2, blocksize);
-		#pragma omp section
-                transposeXYZtoYZX_Fast(temp2,  Nx, Ny, Nz, rhoV2, blocksize);
-		#pragma omp section
-                transposeXYZtoYZX_Fast(temp3,  Nx, Ny, Nz, rhoW2, blocksize);
-		#pragma omp section
-                transposeXYZtoYZX_Fast(temp4,  Nx, Ny, Nz, rhoE2, blocksize);
+		{
+                    filtX->filterField(rhoE2, temp4);
+                    transposeXYZtoYZX_Fast(temp4,  Nx, Ny, Nz, rhoE2, blocksize);
+                    filtY->filterField(rhoE2, temp4);
+                    transposeYZXtoZXY_Fast(temp4,  Nx, Ny, Nz, rhoE2, blocksize);
+                    filtZ->filterField(rhoE2, temp4);
+                    transposeZXYtoXYZ_Fast(temp4,  Nx, Ny, Nz, rhoE1, blocksize);
+		}
 	    }
-
-            //filter in the Y direction
-     	    #pragma omp parallel sections num_threads(halfThreadCount) 
- 	    {
-		#pragma omp section
-  	        filtY->filterField(rho2,  rho1);
-		#pragma omp section
-                filtY->filterField(rhoU2, temp);
-		#pragma omp section
-                filtY->filterField(rhoV2, temp2);
-		#pragma omp section
-                filtY->filterField(rhoW2, temp3);
-		#pragma omp section
-                filtY->filterField(rhoE2, temp4);
-	    }
-
-            //tranpose from YZX to ZXY
-     	    #pragma omp parallel sections num_threads(halfThreadCount) 
- 	    {
-		#pragma omp section
-                transposeYZXtoZXY_Fast(rho1,   Nx, Ny, Nz, rho2, blocksize);
-		#pragma omp section
-                transposeYZXtoZXY_Fast(temp,   Nx, Ny, Nz, rhoU2, blocksize);
-		#pragma omp section
-                transposeYZXtoZXY_Fast(temp2,  Nx, Ny, Nz, rhoV2, blocksize);
-		#pragma omp section
-                transposeYZXtoZXY_Fast(temp3,  Nx, Ny, Nz, rhoW2, blocksize);
-		#pragma omp section
-                transposeYZXtoZXY_Fast(temp4,  Nx, Ny, Nz, rhoE2, blocksize);
-	    }
-
-            //filter in the Y direction
-     	    #pragma omp parallel sections num_threads(halfThreadCount) 
- 	    {
-		#pragma omp section
-                filtZ->filterField(rho2,  rho1);
-		#pragma omp section
-                filtZ->filterField(rhoU2, temp);
-		#pragma omp section
-                filtZ->filterField(rhoV2, temp2);
-		#pragma omp section
-                filtZ->filterField(rhoW2, temp3);
-		#pragma omp section
-                filtZ->filterField(rhoE2, temp4);
-	    }
-
-            //get us back to XYZ from ZXY
-     	    #pragma omp parallel sections num_threads(halfThreadCount) 
- 	    {
-		#pragma omp section
-                transposeZXYtoXYZ_Fast(rho1,   Nx, Ny, Nz, rho2, blocksize);
-		#pragma omp section
-                transposeZXYtoXYZ_Fast(temp,   Nx, Ny, Nz, rhoU1, blocksize);
-		#pragma omp section
-                transposeZXYtoXYZ_Fast(temp2,  Nx, Ny, Nz, rhoV1, blocksize);
-		#pragma omp section
-                transposeZXYtoXYZ_Fast(temp3,  Nx, Ny, Nz, rhoW1, blocksize);
-		#pragma omp section
-                transposeZXYtoXYZ_Fast(temp4,  Nx, Ny, Nz, rhoE1, blocksize);
-	    }
-            //from being cute with memory allocation need to copy rho2 to rho1
-            memcpy(rho1, rho2, sizeof(double)*Nx*Ny*Nz);
 
         }else if(filterTimeStep%3 == 2){
 
@@ -1784,95 +1832,51 @@ void CSolver_AWS::filterConservedData(){
       	    #pragma omp parallel sections num_threads(halfThreadCount) 
  	    { 
 		#pragma omp section
-                transposeXYZtoYZX_Fast(rho2,   Nx, Ny, Nz, rho1, blocksize);
+		{
+                    transposeXYZtoYZX_Fast(rho2,   Nx, Ny, Nz, rho1, blocksize);
+                    filtY->filterField(rho1,  rho2);
+                    transposeYZXtoZXY_Fast(rho2,   Nx, Ny, Nz, rho1, blocksize);
+                    filtZ->filterField(rho1,  rho2);
+                    transposeZXYtoXYZ_Fast(rho2,   Nx, Ny, Nz, transTempUy, blocksize);
+                    filtX->filterField(transTempUy,  rho1);
+		}
 		#pragma omp section
-                transposeXYZtoYZX_Fast(rhoU2,  Nx, Ny, Nz, temp, blocksize);
+		{
+                    transposeXYZtoYZX_Fast(rhoU2,  Nx, Ny, Nz, temp, blocksize);
+                    filtY->filterField(temp,  rhoU2);
+                    transposeYZXtoZXY_Fast(rhoU2,  Nx, Ny, Nz, temp, blocksize);
+                    filtZ->filterField(temp,  rhoU2);
+                    transposeZXYtoXYZ_Fast(rhoU2,  Nx, Ny, Nz, temp, blocksize);
+                    filtX->filterField(temp,  rhoU1);
+		}	
 		#pragma omp section
-                transposeXYZtoYZX_Fast(rhoV2,  Nx, Ny, Nz, temp2, blocksize);
+		{
+                    transposeXYZtoYZX_Fast(rhoV2,  Nx, Ny, Nz, temp2, blocksize);
+                    filtY->filterField(temp2, rhoV2);
+                    transposeYZXtoZXY_Fast(rhoV2,  Nx, Ny, Nz, temp2, blocksize);
+                    filtZ->filterField(temp2, rhoV2);
+                    transposeZXYtoXYZ_Fast(rhoV2,  Nx, Ny, Nz, temp2, blocksize);
+                    filtX->filterField(temp2, rhoV1);
+		}
 		#pragma omp section
-                transposeXYZtoYZX_Fast(rhoW2,  Nx, Ny, Nz, temp3, blocksize);
+		{ 
+                    transposeXYZtoYZX_Fast(rhoW2,  Nx, Ny, Nz, temp3, blocksize);
+                    filtY->filterField(temp3, rhoW2);
+                    transposeYZXtoZXY_Fast(rhoW2,  Nx, Ny, Nz, temp3, blocksize);
+                    filtZ->filterField(temp3, rhoW2);
+                    transposeZXYtoXYZ_Fast(rhoW2,  Nx, Ny, Nz, temp3, blocksize);
+                    filtX->filterField(temp3, rhoW1);
+		}
 		#pragma omp section
-                transposeXYZtoYZX_Fast(rhoE2,  Nx, Ny, Nz, temp4, blocksize);
+		{
+                    transposeXYZtoYZX_Fast(rhoE2,  Nx, Ny, Nz, temp4, blocksize);
+                    filtY->filterField(temp4, rhoE2);
+                    transposeYZXtoZXY_Fast(rhoE2,  Nx, Ny, Nz, temp4, blocksize);
+                    filtZ->filterField(temp4, rhoE2);
+                    transposeZXYtoXYZ_Fast(rhoE2,  Nx, Ny, Nz, temp4, blocksize);
+                    filtX->filterField(temp4, rhoE1);
+		}
 	    }	
-
-            //filter in the Y direction
-       	    #pragma omp parallel sections num_threads(halfThreadCount) 
- 	    { 
-		#pragma omp section
-                filtY->filterField(rho1,  rho2);
-		#pragma omp section
-                filtY->filterField(temp,  rhoU2);
-		#pragma omp section
-                filtY->filterField(temp2, rhoV2);
-		#pragma omp section
-                filtY->filterField(temp3, rhoW2);
-		#pragma omp section
-                filtY->filterField(temp4, rhoE2);
-	    }
-
-            //Move to ZXY space next
-       	    #pragma omp parallel sections num_threads(halfThreadCount) 
- 	    { 
-		#pragma omp section
-                transposeYZXtoZXY_Fast(rho2,   Nx, Ny, Nz, rho1, blocksize);
-		#pragma omp section
-                transposeYZXtoZXY_Fast(rhoU2,  Nx, Ny, Nz, temp, blocksize);
-		#pragma omp section
-                transposeYZXtoZXY_Fast(rhoV2,  Nx, Ny, Nz, temp2, blocksize);
-		#pragma omp section
-                transposeYZXtoZXY_Fast(rhoW2,  Nx, Ny, Nz, temp3, blocksize);
-		#pragma omp section
-                transposeYZXtoZXY_Fast(rhoE2,  Nx, Ny, Nz, temp4, blocksize);
-	    }
-
-            //filter in the Z direction
-       	    #pragma omp parallel sections num_threads(halfThreadCount) 
- 	    { 
-		#pragma omp section
-                filtZ->filterField(rho1,  rho2);
-		#pragma omp section
-                filtZ->filterField(temp,  rhoU2);
-		#pragma omp section
-                filtZ->filterField(temp2, rhoV2);
-		#pragma omp section
-                filtZ->filterField(temp3, rhoW2);
-		#pragma omp section
-                filtZ->filterField(temp4, rhoE2);
-	    }
-
-            //transpose from ZXY to XYZ
-       	    #pragma omp parallel sections num_threads(halfThreadCount) 
- 	    { 
-		#pragma omp section
-                transposeZXYtoXYZ_Fast(rho2,   Nx, Ny, Nz, rho1, blocksize);
-		#pragma omp section
-                transposeZXYtoXYZ_Fast(rhoU2,  Nx, Ny, Nz, temp, blocksize);
-		#pragma omp section
-                transposeZXYtoXYZ_Fast(rhoV2,  Nx, Ny, Nz, temp2, blocksize);
-		#pragma omp section
-                transposeZXYtoXYZ_Fast(rhoW2,  Nx, Ny, Nz, temp3, blocksize);
-		#pragma omp section
-                transposeZXYtoXYZ_Fast(rhoE2,  Nx, Ny, Nz, temp4, blocksize);
-	    }
-
-            //filter in the X direction
-       	    #pragma omp parallel sections num_threads(halfThreadCount) 
-  	    { 
-		#pragma omp section
-                filtX->filterField(rho1,  rho2);
-		#pragma omp section
-                filtX->filterField(temp,  rhoU1);
-		#pragma omp section
-                filtX->filterField(temp2, rhoV1);
-		#pragma omp section
-                filtX->filterField(temp3, rhoW1);
-		#pragma omp section
-                filtX->filterField(temp4, rhoE1);
-	    }
-
-            //from being cute with memory allocation need to copy rho2 to rho1
-            memcpy(rho1, rho2, sizeof(double)*Nx*Ny*Nz);
-
 
         }else{
 
@@ -1881,105 +1885,55 @@ void CSolver_AWS::filterConservedData(){
        	    #pragma omp parallel sections num_threads(halfThreadCount) 
   	    { 
 		#pragma omp section
-                transposeXYZtoZXY_Fast(rho2,   Nx, Ny, Nz, rho1, blocksize);
+		{
+                    transposeXYZtoZXY_Fast(rho2,   Nx, Ny, Nz, rho1, blocksize);
+                    filtZ->filterField(rho1,  rho2);
+                    transposeZXYtoXYZ_Fast(rho2,   Nx, Ny, Nz, rho1, blocksize);
+                    filtX->filterField(rho1,  rho2);
+                    transposeXYZtoYZX_Fast(rho2,   Nx, Ny, Nz, rho1, blocksize);
+	            filtY->filterField(rho1,  rho2);
+	            transposeYZXtoXYZ_Fast(rho2,   Nx, Ny, Nz, rho1, blocksize);
+		}
 		#pragma omp section
-                transposeXYZtoZXY_Fast(rhoU2,  Nx, Ny, Nz, temp, blocksize);
+                {
+		    transposeXYZtoZXY_Fast(rhoU2,  Nx, Ny, Nz, temp, blocksize);
+                    filtZ->filterField(temp,  rhoU2);
+                    transposeZXYtoXYZ_Fast(rhoU2,  Nx, Ny, Nz, temp, blocksize);
+                    filtX->filterField(temp,  rhoU2);
+                    transposeXYZtoYZX_Fast(rhoU2,  Nx, Ny, Nz, temp, blocksize);
+                    filtY->filterField(temp,  rhoU2);
+                    transposeYZXtoXYZ_Fast(rhoU2,  Nx, Ny, Nz, rhoU1, blocksize);
+		}
 		#pragma omp section
-                transposeXYZtoZXY_Fast(rhoV2,  Nx, Ny, Nz, temp2, blocksize);
+                {
+		    transposeXYZtoZXY_Fast(rhoV2,  Nx, Ny, Nz, temp2, blocksize);
+                    filtZ->filterField(temp2, rhoV2);
+                    transposeZXYtoXYZ_Fast(rhoV2,  Nx, Ny, Nz, temp2, blocksize);
+                    filtX->filterField(temp2, rhoV2);
+                    transposeXYZtoYZX_Fast(rhoV2,  Nx, Ny, Nz, temp2, blocksize);
+                    filtY->filterField(temp2, rhoV2);
+                    transposeYZXtoXYZ_Fast(rhoV2,  Nx, Ny, Nz, rhoV1, blocksize);
+		}
 		#pragma omp section
-                transposeXYZtoZXY_Fast(rhoW2,  Nx, Ny, Nz, temp3, blocksize);
+		{
+                    transposeXYZtoZXY_Fast(rhoW2,  Nx, Ny, Nz, temp3, blocksize);
+                    filtZ->filterField(temp3, rhoW2);
+                    transposeZXYtoXYZ_Fast(rhoW2,  Nx, Ny, Nz, temp3, blocksize);
+                    filtX->filterField(temp3, rhoW2);
+                    transposeXYZtoYZX_Fast(rhoW2,  Nx, Ny, Nz, temp3, blocksize);
+                    filtY->filterField(temp3, rhoW2);
+                    transposeYZXtoXYZ_Fast(rhoW2,  Nx, Ny, Nz, rhoW1, blocksize);
+		}
 		#pragma omp section
-                transposeXYZtoZXY_Fast(rhoE2,  Nx, Ny, Nz, temp4, blocksize);
-	    }
-
-            //filter in the Z direction
-            #pragma omp parallel sections num_threads(halfThreadCount) 
-  	    {
-		#pragma omp section
-                filtZ->filterField(rho1,  rho2);
-		#pragma omp section
-                filtZ->filterField(temp,  rhoU2);
-		#pragma omp section
-                filtZ->filterField(temp2, rhoV2);
-		#pragma omp section
-                filtZ->filterField(temp3, rhoW2);
-		#pragma omp section
-                filtZ->filterField(temp4, rhoE2);
-	    }
-
-            //Move to XYZ space next
-            #pragma omp parallel sections num_threads(halfThreadCount) 
-  	    {
-		#pragma omp section
-                transposeZXYtoXYZ_Fast(rho2,   Nx, Ny, Nz, rho1, blocksize);
-		#pragma omp section
-                transposeZXYtoXYZ_Fast(rhoU2,  Nx, Ny, Nz, temp, blocksize);
-		#pragma omp section
-                transposeZXYtoXYZ_Fast(rhoV2,  Nx, Ny, Nz, temp2, blocksize);
-		#pragma omp section
-                transposeZXYtoXYZ_Fast(rhoW2,  Nx, Ny, Nz, temp3, blocksize);
-		#pragma omp section
-                transposeZXYtoXYZ_Fast(rhoE2,  Nx, Ny, Nz, temp4, blocksize);
-	    }
-
-            //filter in the X direction
-            #pragma omp parallel sections num_threads(halfThreadCount) 
-  	    {
-		#pragma omp section
-                filtX->filterField(rho1,  rho2);
-		#pragma omp section
-                filtX->filterField(temp,  rhoU2);
-		#pragma omp section
-                filtX->filterField(temp2, rhoV2);
-		#pragma omp section
-                filtX->filterField(temp3, rhoW2);
-		#pragma omp section
-                filtX->filterField(temp4, rhoE2);
-	    }
-
-            //transpose from XYZ to YZX
-            #pragma omp parallel sections num_threads(halfThreadCount) 
-  	    { 
-		#pragma omp section
-                transposeXYZtoYZX_Fast(rho2,   Nx, Ny, Nz, rho1, blocksize);
-		#pragma omp section
-                transposeXYZtoYZX_Fast(rhoU2,  Nx, Ny, Nz, temp, blocksize);
-		#pragma omp section
-                transposeXYZtoYZX_Fast(rhoV2,  Nx, Ny, Nz, temp2, blocksize);
-		#pragma omp section
-                transposeXYZtoYZX_Fast(rhoW2,  Nx, Ny, Nz, temp3, blocksize);
-		#pragma omp section
-                transposeXYZtoYZX_Fast(rhoE2,  Nx, Ny, Nz, temp4, blocksize);
-	    }
-
-            //filter in the Y direction
-            #pragma omp parallel sections num_threads(halfThreadCount) 
-  	    { 
-		#pragma omp section
-	        filtY->filterField(rho1,  rho2);
-		#pragma omp section
-                filtY->filterField(temp,  rhoU2);
-		#pragma omp section
-                filtY->filterField(temp2, rhoV2);
-		#pragma omp section
-                filtY->filterField(temp3, rhoW2);
-		#pragma omp section
-                filtY->filterField(temp4, rhoE2);
-	    }
-
-            //have an extra step here to go from YZX to XYZ
-            #pragma omp parallel sections num_threads(halfThreadCount) 
-  	    { 
-		#pragma omp section
-	        transposeYZXtoXYZ_Fast(rho2,   Nx, Ny, Nz, rho1, blocksize);
-		#pragma omp section
-                transposeYZXtoXYZ_Fast(rhoU2,  Nx, Ny, Nz, rhoU1, blocksize);
-		#pragma omp section
-                transposeYZXtoXYZ_Fast(rhoV2,  Nx, Ny, Nz, rhoV1, blocksize);
-		#pragma omp section
-                transposeYZXtoXYZ_Fast(rhoW2,  Nx, Ny, Nz, rhoW1, blocksize);
-		#pragma omp section
-                transposeYZXtoXYZ_Fast(rhoE2,  Nx, Ny, Nz, rhoE1, blocksize);
+		{
+                    transposeXYZtoZXY_Fast(rhoE2,  Nx, Ny, Nz, temp4, blocksize);
+                    filtZ->filterField(temp4, rhoE2);
+                    transposeZXYtoXYZ_Fast(rhoE2,  Nx, Ny, Nz, temp4, blocksize);
+                    filtX->filterField(temp4, rhoE2);
+                    transposeXYZtoYZX_Fast(rhoE2,  Nx, Ny, Nz, temp4, blocksize);
+                    filtY->filterField(temp4, rhoE2);
+                    transposeYZXtoXYZ_Fast(rhoE2,  Nx, Ny, Nz, rhoE1, blocksize);
+		}
 	    }
 
         }
@@ -2002,9 +1956,22 @@ void CSolver_AWS::filterConservedData(){
 	}
 
     }
+
+
+    omp_set_nested(0);
+
+    if(useTiming){
+        cout << " > filterCons Timing: ";
+        toc();
+    }
+
+
 };
 
 void CSolver_AWS::updateNonConservedData(){
+
+    if(useTiming) tic();
+
     if(rkStep == 1 || rkStep == 2 || rkStep == 3){
 
         #pragma omp parallel for
@@ -2034,10 +2001,19 @@ void CSolver_AWS::updateNonConservedData(){
 	}
     }
 
+    if(useTiming){
+        cout << " > updNonCons Timing: ";
+        toc();
+    }
+
+
+
 }
 
-
 void CSolver_AWS::updateSponge(){
+
+    if(useTiming) tic();
+
     if(spongeFlag){
 	double eps = 1.0/(spg->avgT/ts->dt + 1.0);
 	#pragma omp parallel for
@@ -2121,9 +2097,18 @@ void CSolver_AWS::updateSponge(){
         }
 
     }
+
+    if(useTiming){
+        cout << " > updateSpge Timing: ";
+        toc();
+    }
+
+
 };
 
 void CSolver_AWS::calcTurbulenceQuantities(){
+
+    if(useTiming) tic();
 
     #pragma omp parallel for
     FOR_XYZ{
@@ -2254,11 +2239,19 @@ void CSolver_AWS::calcTurbulenceQuantities(){
 	outfile << endl;
         outfile.close();
 
+    if(useTiming){
+        cout << " > calcTrbDat Timing: ";
+        toc();
+    }
+
 
 
 };
 
 void CSolver_AWS::calcTaylorGreenQuantities(){
+
+
+    if(useTiming) tic();
 
     double enstrophySum = 0.0;
     double enstrophySum2Mu = 0.0;
@@ -2330,11 +2323,19 @@ void CSolver_AWS::calcTaylorGreenQuantities(){
 	outfile << endl;
         outfile.close();
 
+    if(useTiming){
+        cout << " > calcTayGrn Timing: ";
+        toc();
+    }
+
 
 
 };
 
 void CSolver_AWS::checkSolution(){
+
+    if(useTiming) tic();
+
     if(timeStep%ts->checkStep == 0){
         t2Save = std::chrono::system_clock::now();
         cout << "-------------------------------------------------" << endl;
@@ -2354,10 +2355,19 @@ void CSolver_AWS::checkSolution(){
 
         t1Save = std::chrono::system_clock::now();
     }
+
+    if(useTiming){
+        cout << " > checkSoln  Timing: ";
+        toc();
+    }
+
+
 };
 
 
 void CSolver_AWS::dumpSolution(){
+
+    if(useTiming) tic();
 
     if(timeStep%ts->dumpStep == 0){
         cout << endl;
@@ -2463,9 +2473,17 @@ void CSolver_AWS::dumpSolution(){
 	}
 
     }
+    if(useTiming){
+        cout << " > dumpSoln   Timing: ";
+        toc();
+    }
+
+
 }
 
 void CSolver_AWS::checkEnd(){
+
+    if(useTiming) tic();
 
     if(time >= ts->maxTime){
 	cout << "=================" << endl;
@@ -2488,6 +2506,10 @@ void CSolver_AWS::checkEnd(){
 	dumpSolution();
     }
 
+    if(useTiming){
+	cout << " > checkEnd   Timing: ";
+	toc();
+    }
 }
 
 void CSolver_AWS::reportAll(){

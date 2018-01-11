@@ -81,7 +81,7 @@ void transposeMatrix_Fast2(const double *in, int n, int p, double *out, int bloc
 
 void transposeXYZtoYZX(const double *in, int Nx, int Ny, int Nz, double *out){
 
-    #pragma omp parallel for schedule(static) collapse(3) num_threads(NUMTHREADS) 
+    #pragma omp parallel for schedule(static) collapse(3) num_threads(NUMTHREADSNEST) 
     for(int ip = 0; ip < Nx; ip++){
 	for(int kp = 0; kp < Nz; kp++){
 	    for(int jp = 0; jp < Ny; jp++){
@@ -94,7 +94,7 @@ void transposeXYZtoYZX(const double *in, int Nx, int Ny, int Nz, double *out){
 
 void transposeXYZtoYZX_Fast(const double *in, int Nx, int Ny, int Nz, double *out, int blocksize){
     int i, j, k, row, col, sli;
-    #pragma omp parallel for private(i, j, k, row, col, sli) collapse(3) schedule(static) num_threads(NUMTHREADS)
+    #pragma omp parallel for private(i, j, k, row, col, sli) collapse(3) schedule(static) num_threads(NUMTHREADSNEST)
     for ( i = 0; i < Nx; i += blocksize) {
 	for( k = 0; k < Nz; k += blocksize){
             for ( j = 0; j < Ny; j += blocksize){
@@ -114,7 +114,7 @@ void transposeXYZtoYZX_Fast(const double *in, int Nx, int Ny, int Nz, double *ou
 
 void transposeYZXtoZXY(const double *in, int Nx, int Ny, int Nz, double *out){
 
-    #pragma omp parallel for schedule(static) collapse(3) num_threads(NUMTHREADS)
+    #pragma omp parallel for schedule(static) collapse(3) num_threads(NUMTHREADSNEST)
     for(int jp = 0; jp < Ny; jp++){
     	for(int ip = 0; ip < Nx; ip++){
 	    for(int kp = 0; kp < Nz; kp++){
@@ -127,7 +127,7 @@ void transposeYZXtoZXY(const double *in, int Nx, int Ny, int Nz, double *out){
 
 void transposeYZXtoZXY_Fast(const double *in, int Nx, int Ny, int Nz, double *out, int blocksize){
     int i, j, k, row, col, sli;
-    #pragma omp parallel for private(i, j, k, row, col, sli) collapse(3) schedule(static) num_threads(NUMTHREADS)
+    #pragma omp parallel for private(i, j, k, row, col, sli) collapse(3) schedule(static) num_threads(NUMTHREADSNEST)
     for ( j = 0; j < Ny; j += blocksize){
         for ( i = 0; i < Nx; i += blocksize) {
 	    for( k = 0; k < Nz; k += blocksize){
@@ -147,7 +147,7 @@ void transposeYZXtoZXY_Fast(const double *in, int Nx, int Ny, int Nz, double *ou
 
 void transposeXYZtoZXY(const double *in, int Nx, int Ny, int Nz, double *out){
 
-    #pragma omp parallel for schedule(static) collapse(3) num_threads(NUMTHREADS)
+    #pragma omp parallel for schedule(static) collapse(3) num_threads(NUMTHREADSNEST)
     for(int jp = 0; jp < Ny; jp++){
     	for(int ip = 0; ip < Nx; ip++){
 	    for(int kp = 0; kp < Nz; kp++){
@@ -161,7 +161,7 @@ void transposeXYZtoZXY(const double *in, int Nx, int Ny, int Nz, double *out){
 
 void transposeXYZtoZXY_Fast(const double *in, int Nx, int Ny, int Nz, double *out, int blocksize){
     int i, j, k, row, col, sli;
-    #pragma omp parallel for private(i, j, k, row, col, sli) collapse(3) schedule(static) num_threads(NUMTHREADS)
+    #pragma omp parallel for private(i, j, k, row, col, sli) collapse(3) schedule(static) num_threads(NUMTHREADSNEST)
     for ( j = 0; j < Ny; j += blocksize){
         for ( i = 0; i < Nx; i += blocksize) {
 	    for( k = 0; k < Nz; k += blocksize){
@@ -180,7 +180,7 @@ void transposeXYZtoZXY_Fast(const double *in, int Nx, int Ny, int Nz, double *ou
 
 void transposeZXYtoXYZ(const double *in, int Nx, int Ny, int Nz, double *out){
 
-    #pragma omp parallel for schedule(static) collapse(3) num_threads(NUMTHREADS) 
+    #pragma omp parallel for schedule(static) collapse(3) num_threads(NUMTHREADSNEST) 
     for(int kp = 0; kp < Nz; kp++){
         for(int jp = 0; jp < Ny; jp++){
     	    for(int ip = 0; ip < Nx; ip++){
@@ -193,7 +193,7 @@ void transposeZXYtoXYZ(const double *in, int Nx, int Ny, int Nz, double *out){
 
 void transposeZXYtoXYZ_Fast(const double *in, int Nx, int Ny, int Nz, double *out, int blocksize){
     int i, j, k, row, col, sli;
-    #pragma omp parallel for private(i, j, k, row, col, sli) collapse(3) schedule(static) num_threads(NUMTHREADS)
+    #pragma omp parallel for private(i, j, k, row, col, sli) collapse(3) schedule(static) num_threads(NUMTHREADSNEST)
     for( k = 0; k < Nz; k += blocksize){
         for ( j = 0; j < Ny; j += blocksize){
             for ( i = 0; i < Nx; i += blocksize) {
@@ -211,7 +211,7 @@ void transposeZXYtoXYZ_Fast(const double *in, int Nx, int Ny, int Nz, double *ou
 
 void transposeYZXtoXYZ(const double *in, int Nx, int Ny, int Nz, double *out){
 
-    #pragma omp parallel for schedule(static) collapse(3) num_threads(NUMTHREADS)
+    #pragma omp parallel for schedule(static) collapse(3) num_threads(NUMTHREADSNEST)
     for(int kp = 0; kp < Nz; kp++){
     	for(int jp = 0; jp < Ny; jp++){
 	    for(int ip = 0; ip < Nx; ip++){
@@ -223,7 +223,7 @@ void transposeYZXtoXYZ(const double *in, int Nx, int Ny, int Nz, double *out){
 
 void transposeYZXtoXYZ_Fast(const double *in, int Nx, int Ny, int Nz, double *out, int blocksize){
     int i, j, k, row, col, sli;
-    #pragma omp parallel for private(i, j, k, row, col, sli) collapse(3) schedule(static) num_threads(NUMTHREADS)
+    #pragma omp parallel for private(i, j, k, row, col, sli) collapse(3) schedule(static) num_threads(NUMTHREADSNEST)
     for( k = 0; k < Nz; k += blocksize){
         for ( j = 0; j < Ny; j += blocksize){
             for ( i = 0; i < Nx; i += blocksize) {
@@ -265,3 +265,14 @@ double fRand(double fMin, double fMax)
 }
 
 
+void tic()
+{
+ t0 = Clock::now();
+}
+
+void toc()
+{
+    Clock::time_point t1 = Clock::now();
+    milliseconds ms = std::chrono::duration_cast<milliseconds>(t1 - t0);
+    std::cout <<" " << std::setw(6) << ms.count() << " ms\n";
+}

@@ -2,7 +2,7 @@
 
 void Derivatives::calc1stDerivField(double *dataIn, double *dataOut){
 
-    const int numThreads = NUMTHREADS;
+    const int numThreads = NUMTHREADSNEST;
 
     if(currentDir == DIRX){
 
@@ -50,7 +50,7 @@ void Derivatives::calc1stDerivField(double *dataIn, double *dataOut){
 
 void Derivatives::calc2ndDerivField(double *dataIn, double *dataOut){
 
-    const int numThreads = NUMTHREADS;
+    const int numThreads = NUMTHREADSNEST;
 
     if(currentDir == DIRX){
 

@@ -1,7 +1,7 @@
 #ifndef _MACROSH_
 #define _MACROSH_
 
-#define NUMTHREADS 6
+#define NUMTHREADSNEST 4
 
 //Need to be sure that Nx,Ny,Nz are defined within scope to use these
 //General indexing...
