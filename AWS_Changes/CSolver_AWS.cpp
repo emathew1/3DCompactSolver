@@ -834,7 +834,7 @@ void CSolver_AWS::preStepDerivatives(){
 
     omp_set_nested(1);
 
-    const int halfThreadCount = omp_get_num_threads()/4;
+    const int halfThreadCount = omp_get_num_threads()/NUMTHREADS;
 
     #pragma omp parallel sections num_threads(halfThreadCount) 
     {
@@ -1670,7 +1670,7 @@ void CSolver_AWS::updateConservedData(){
 
 void CSolver_AWS::filterConservedData(){
 
-    const int halfThreadCount = omp_get_num_threads()/4;
+    const int halfThreadCount = omp_get_num_threads()/NUMTHREADS;
     omp_set_nested(1);
 
 
