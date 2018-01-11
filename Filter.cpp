@@ -128,8 +128,10 @@ void Filter::compactFilter(double *phi, double *phiF){
 
 void Filter::filterField(double *dataIn, double *dataOut){
 
+    const int threads = NUMTHREADS;
+
     if(currentDir == Derivatives::DIRX){
-        #pragma omp parallel for schedule(dynamic) num_threads(2) 
+        #pragma omp parallel for schedule(dynamic) num_threads(threads) 
 	FOR_Z{
 	    FOR_Y{
                 double *dataInLocal, *dataOutLocal;
@@ -141,7 +143,7 @@ void Filter::filterField(double *dataIn, double *dataOut){
 	}
 
     }else if(currentDir == Derivatives::DIRY){
-        #pragma omp parallel for schedule(dynamic) num_threads(2) 
+        #pragma omp parallel for schedule(dynamic) num_threads(threads) 
         FOR_X{
             FOR_Z{
                 double *dataInLocal, *dataOutLocal;
@@ -153,7 +155,7 @@ void Filter::filterField(double *dataIn, double *dataOut){
         }
 
     }else if(currentDir == Derivatives::DIRZ){
-        #pragma omp parallel for schedule(dynamic) num_threads(2) 
+        #pragma omp parallel for schedule(dynamic) num_threads(threads) 
         FOR_Y{
             FOR_X{
                 double *dataInLocal, *dataOutLocal;

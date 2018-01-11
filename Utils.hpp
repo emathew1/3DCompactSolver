@@ -4,6 +4,7 @@
 #include <math.h>
 #include <cstring>
 #include <iostream>
+#include "Macros.hpp"
 
 using namespace std;
 

@@ -1,6 +1,8 @@
 #ifndef _MACROSH_
 #define _MACROSH_
 
+#define NUMTHREADS 6
+
 //Need to be sure that Nx,Ny,Nz are defined within scope to use these
 //General indexing...
 #define GET3DINDEX_XYZ k*Nx*Ny + j*Nx + i

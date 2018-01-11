@@ -815,7 +815,7 @@ void CSolver::preStepDerivatives(){
 
     omp_set_nested(1);
 
-    const int halfThreadCount = omp_get_num_threads()/4;
+    const int halfThreadCount = omp_get_num_threads()/NUMTHREADS;
 
     #pragma omp parallel sections num_threads(halfThreadCount) 
     {
@@ -1818,7 +1818,7 @@ void CSolver::updateConservedData(){
 
 void CSolver::filterConservedData(){
 
-    const int halfThreadCount = omp_get_num_threads()/4;
+    const int halfThreadCount = omp_get_num_threads()/NUMTHREADS;
     omp_set_nested(1);
 
 
