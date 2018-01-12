@@ -27,7 +27,6 @@ class CSolver_AWS: public AbstractCSolver{
         int timeStep;
         double time;
 	int filterTimeStep;
-	bool endFlag;
 	bool useTiming;
 
         std::chrono::system_clock::time_point t1Save, t2Save;

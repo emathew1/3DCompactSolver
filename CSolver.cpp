@@ -2750,3 +2750,43 @@ cout << " " << endl;
 
 
 }
+
+/////////////////////////////////////
+//Our Generalized Solver Functions //
+/////////////////////////////////////
+
+void CSolver::preStep(){
+    calcDtFromCFL();
+}
+
+void CSolver::preSubStep(){
+    preStepBCHandling();
+    preStepDerivatives();
+}
+
+void CSolver::solveEqnSet(){
+    solveContinuity();
+    solveXMomentum();
+    solveYMomentum();
+    solveZMomentum();
+    solveEnergy();
+}
+
+void CSolver::postSubStep(){
+    postStepBCHandling();
+    updateConservedData();
+    if(rkStep == 4){
+        filterConservedData();
+    }
+    updateNonConservedData();
+}
+
+void CSolver::postStep(){
+    //calcTurbulenceQuantities();
+    calcTaylorGreenQuantities();
+    updateSponge();
+    checkSolution();
+    dumpSolution();
+    checkEnd();
+    //reportAll();
+}

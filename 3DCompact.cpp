@@ -89,8 +89,7 @@ int main(int argc, char *argv[]){
     int blocksize  = 16;
     bool useTiming = false;
     AbstractCSolver *cs;
-    cs = new CSolver_AWS(dom, bc, ts, alphaF, mu_ref, blocksize, useTiming); 
-    //CSolver *cs   = new CSolver(dom, bc, ts, alphaF, mu_ref, blocksize, useTiming); 
+    cs = new CSolver(dom, bc, ts, alphaF, mu_ref, blocksize, useTiming); 
 
     /////////////////////////////
     //load in turbulence output//
