@@ -7,7 +7,7 @@ void CSolver_AWS::initializeSolverData(){
     cout << endl;
     cout << " > Allocating Solver Arrays..." << endl;
     double workSize = 0;
-    workSize = 82.0 * (double)N * 8.0;
+    workSize = 116.0 * (double)N * 8.0;
     cout << " > Need " << workSize/1024.0/1024.0/1024.0 << " Gb of memory required to allocate solver arrays " << endl;
 
     //3
@@ -136,12 +136,14 @@ void CSolver_AWS::initializeSolverData(){
     mu  = new double[N];
     Amu = new double[N];
     sos = new double[N];
-   
+  
+    //86 
     temp  = new double[Nx*Ny*Nz];
     temp2 = new double[Nx*Ny*Nz]; 
     temp3 = new double[Nx*Ny*Nz]; 
     temp4 = new double[Nx*Ny*Nz]; 
 
+    //97
     transRho = new double[Nx*Ny*Nz];
     transRhoU = new double[Nx*Ny*Nz];
     transRhoV = new double[Nx*Ny*Nz];
@@ -154,6 +156,7 @@ void CSolver_AWS::initializeSolverData(){
     transVy = new double[Nx*Ny*Nz];
     transWy = new double[Nx*Ny*Nz];
 
+    //105
     //New memory added for AWS Solver
     transTempUy = new double[N]; 
     transTempVy = new double[N]; 
@@ -164,6 +167,7 @@ void CSolver_AWS::initializeSolverData(){
     transTempTy = new double[N]; 
     transTempTyy = new double[N]; 
 
+    //116
     transTempUxy = new double[N]; 
     transTempVxy = new double[N]; 
     transTempWxy = new double[N]; 
@@ -832,6 +836,7 @@ void CSolver_AWS::preStepDerivatives(){
     double *rhoWP;
     double *rhoEP;
 
+
     if(rkStep == 1){
 	rhoP  = rho1;
 	rhoUP = rhoU1;
@@ -860,7 +865,6 @@ void CSolver_AWS::preStepDerivatives(){
     	temp3[ip] = rhoWP[ip]*U[ip];
     	temp4[ip] = rhoEP[ip]*U[ip] + U[ip]*p[ip];
     }
-
     omp_set_nested(1);
 
     const int halfThreadCount = omp_get_num_threads()/NUMTHREADSNEST;
@@ -2608,5 +2612,44 @@ cout << " " << endl;
    getRange(sos, "sos", Nx, Ny, Nz);
 cout << " " << endl;
 
+}
 
+/////////////////////////////////////
+//Our Generalized Solver Functions //
+/////////////////////////////////////
+
+void CSolver_AWS::preStep(){
+    calcDtFromCFL();
+}
+
+void CSolver_AWS::preSubStep(){
+    preStepBCHandling();
+    preStepDerivatives();
+}
+
+void CSolver_AWS::solveEqnSet(){
+    solveContinuity();
+    solveXMomentum();
+    solveYMomentum();
+    solveZMomentum();
+    solveEnergy();
+}
+
+void CSolver_AWS::postSubStep(){
+    postStepBCHandling();
+    updateConservedData();
+    if(rkStep == 4){
+        filterConservedData();
+    }
+    updateNonConservedData();
+}
+
+void CSolver_AWS::postStep(){
+    //calcTurbulenceQuantities();
+    calcTaylorGreenQuantities();
+    updateSponge();
+    checkSolution();
+    dumpSolution();
+    checkEnd();
+    //reportAll();
 }

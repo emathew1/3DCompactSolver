@@ -7,32 +7,21 @@
 #include <fstream>
 #include "Macros.hpp"
 #include "Utils.hpp"
-#include "BC.hpp"
-#include "TimeStepping.hpp"
-#include "IdealGas.hpp"
 #include "SpongeBC.hpp"
-#include "Derivatives.hpp"
-#include "Filter.hpp"
+#include "AbstractCSolver.hpp"
 
 using namespace std::chrono;
 
-class CSolver_AWS{
+class CSolver_AWS: public AbstractCSolver{
 
     public:
 
-	Domain *dom;
-	BC *bc;
-	TimeStepping *ts;
-	IdealGas *ig;
 	double alphaF;
 	double mu_ref;
 
 	//Make local copies for macros...
 	int Nx, Ny, Nz, N;
 	int blocksize;
-
-	//Track the local step in the Runge-Kutta integration...
-	int rkStep;
 	
 	//Track the current time and timestep
         int timeStep;
@@ -47,13 +36,6 @@ class CSolver_AWS{
 	//Kill solver condition
         bool done;
 
-	//initial conditions
-	double *rho0, 
-	         *U0,
-	         *V0,
-		 *W0,
-		 *p0;
-	
 	//non-conserved data
 	double  *U, 
 		*V,
@@ -87,12 +69,6 @@ class CSolver_AWS{
 	double *momZEulerX, *momZEulerY, *momZEulerZ;
 	double *engyEulerX, *engyEulerY, *engyEulerZ;
 
-	double *rho1,  *rhok,  *rhok2,  *rho2; 
-	double *rhoU1, *rhoUk, *rhoUk2, *rhoU2; 
-	double *rhoV1, *rhoVk, *rhoVk2, *rhoV2; 
-	double *rhoW1, *rhoWk, *rhoWk2, *rhoW2; 
-	double *rhoE1, *rhoEk, *rhoEk2, *rhoE2;
-
 	double *temp, *temp2, *temp3, *temp4;
 	double *transRho, *transRhoU, *transRhoV, *transRhoW, *transRhoE;
 	double *transUx, *transVx, *transWx;
@@ -120,8 +96,6 @@ class CSolver_AWS{
 	double *transTempEngEuler;
 
 
-
-
 	double *turbdiss, *uprime2, *uiprime2, *uvar, *kineticEng;
 
 	bool spongeFlag;
@@ -133,10 +107,6 @@ class CSolver_AWS{
 	double Z0WallU, Z0WallV, Z1WallU, Z1WallV;
 
 	enum Eqn {CONT, XMOM, YMOM, ZMOM, ENGY};
-
-	Derivatives *derivX, *derivY, *derivZ;
-	Filter *filtX, *filtY, *filtZ;
-
 
 	//Constructor to use for this class...
 	CSolver_AWS(Domain *dom, BC *bc, TimeStepping *ts, double alphaF, double mu_ref, int blocksize, bool useTiming){
@@ -196,47 +166,50 @@ class CSolver_AWS{
 
 	}
 
-
+	//Functions required from AbstractCSolver...
 	void initializeSolverData();
-
 	void setInitialConditions();
+	void preStep();
+	void preSubStep();
+	void solveEqnSet();
+	void postSubStep();
+	void postStep();
 
+	//Pre Step Functions...
 	void calcDtFromCFL();
 
-	inline double calcSpongeSource(double phi, double phiSpongeAvg, double sigma){
-        	return sigma*(phiSpongeAvg - phi);
-	};
-
+	//Pre Sub Step Functions...
 	void preStepBCHandling();
-
 	void preStepDerivatives();
 
+	//Solve Eqn Set Functions...
 	void solveContinuity();
 	void solveXMomentum();
 	void solveYMomentum();
 	void solveZMomentum();
 	void solveEnergy();
 
+	//Post Sub Step Functions...
 	void postStepBCHandling();
-
 	void updateConservedData();
-	
 	void filterConservedData();
-
 	void updateNonConservedData();
 
+	//Post Step Functions
 	void calcTurbulenceQuantities();
 	void calcTaylorGreenQuantities();
-
 	void updateSponge();
-
 	void checkSolution();
-
 	void dumpSolution();
-	
 	void checkEnd();
-
 	void reportAll();
+
+	//Inline, Or general solver functions
+	inline double calcSpongeSource(double phi, double phiSpongeAvg, double sigma){
+        	return sigma*(phiSpongeAvg - phi);
+	};
+
+
 
 };
 

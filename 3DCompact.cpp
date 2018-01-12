@@ -13,6 +13,8 @@ using namespace std::chrono;
 #include "Utils.hpp"
 #include "BC.hpp"
 #include "TimeStepping.hpp"
+#include "Domain.hpp"
+#include "AbstractCSolver.hpp"
 #include "CSolver.hpp"
 #include "CSolver_AWS.hpp"
 
@@ -38,7 +40,7 @@ int main(int argc, char *argv[]){
     /////////////////////////
     //Initialize the Domain//
     /////////////////////////
-    int    Nx = 256, 
+    int    Nx = 128, 
 	   Ny = 128, 
 	   Nz = 128;
     double Lx = 2.0*M_PI - (2.0*M_PI/((double)(Nx))), 
@@ -85,8 +87,9 @@ int main(int argc, char *argv[]){
     double alphaF  = 0.495;
     double mu_ref  = 0.000014625;
     int blocksize  = 16;
-    bool useTiming = true;
-    CSolver_AWS *cs   = new CSolver_AWS(dom, bc, ts, alphaF, mu_ref, blocksize, useTiming); 
+    bool useTiming = false;
+    AbstractCSolver *cs;
+    cs = new CSolver_AWS(dom, bc, ts, alphaF, mu_ref, blocksize, useTiming); 
     //CSolver *cs   = new CSolver(dom, bc, ts, alphaF, mu_ref, blocksize, useTiming); 
 
     /////////////////////////////
@@ -166,117 +169,41 @@ int main(int argc, char *argv[]){
     delete[] w_temp;
 */
     cs->setInitialConditions();
-    cs->dumpSolution();
-
-
-    double initMach = 0.0, initMu = 0.0;;
-    FOR_XYZ{
-	initMach += cs->sos[ip]/((double)(Nx*Ny*Nz));
-	initMu   += cs->mu[ip]/((double)(Nx*Ny*Nz));
-    }
-    initMach = u0/initMach;
-    cout << " > Initial Mach # = " << initMach << endl;
-    cout << " > Re = r*u0*L/mu = " << 1.0*u0*1.0/initMu << endl;
 
     while(cs->endFlag == false){
 
 	//Get the dt for this time step
-
-        cs->calcDtFromCFL();
+	cs->preStep();
 
 	//start rkStep 1
         cs->rkStep = 1;
 
-	cs->preStepBCHandling();
-
-	cs->preStepDerivatives();
-
-	cs->solveContinuity();
-	cs->solveXMomentum();
-	cs->solveYMomentum();
-	cs->solveZMomentum();
-	cs->solveEnergy();
-
-	cs->postStepBCHandling();
-
-	cs->updateConservedData();
-	cs->updateNonConservedData();
+	cs->preSubStep();
+	cs->solveEqnSet();
+	cs->postSubStep();
 
 	//start rkStep 2
         cs->rkStep = 2;
 
-	cs->preStepBCHandling();
-	
-	cs->preStepDerivatives();
-
-	cs->solveContinuity();
-	cs->solveXMomentum();
-	cs->solveYMomentum();
-	cs->solveZMomentum();
-	cs->solveEnergy();
-
-	cs->postStepBCHandling();
-
-	cs->updateConservedData();
-	cs->updateNonConservedData();
+	cs->preSubStep();
+	cs->solveEqnSet();
+	cs->postSubStep();
 
 	//start rkStep 3
         cs->rkStep = 3;
 
-	cs->preStepBCHandling();
-	
-	cs->preStepDerivatives();
-
-	cs->solveContinuity();
-	cs->solveXMomentum();
-	cs->solveYMomentum();
-	cs->solveZMomentum();
-	cs->solveEnergy();
-
-	cs->postStepBCHandling();
-
-	cs->updateConservedData();
-	cs->updateNonConservedData();
+	cs->preSubStep();
+	cs->solveEqnSet();
+	cs->postSubStep();
 
 	//start rkStep 4
         cs->rkStep = 4;
 
-	cs->preStepBCHandling();
-	
-	cs->preStepDerivatives();
+	cs->preSubStep();
+	cs->solveEqnSet();
+	cs->postSubStep();
 
-	cs->solveContinuity();
-	cs->solveXMomentum();
-	cs->solveYMomentum();
-	cs->solveZMomentum();
-	cs->solveEnergy();
-
-	cs->postStepBCHandling();
-
-	cs->updateConservedData();
-
-	//on rk step 4 we'll filter the data if need be first...
-	cs->filterConservedData();
-
-	//Then we'll update the nonconserved variables...
-	cs->updateNonConservedData();
-
-
-	//Do some extra calculations if we need too...
-	//cs->calcTurbulenceQuantities();
-	cs->calcTaylorGreenQuantities();
-
-	//Update the sponge if using it...
-	cs->updateSponge();
-
-	//Now lets output the solution info to the console...
-	cs->checkSolution();
-
-	//Dump the conserved variables if its the time to do so...
-	cs->dumpSolution();
-
-	//Check if we've met our end conditions yet...
-	cs->checkEnd();
+	cs->postStep();
 
     }
 
