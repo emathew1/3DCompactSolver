@@ -44,10 +44,10 @@ class Domain{
 	dy = y[1]-y[0];
 	dz = z[1]-z[0];
 
-	std::cout << " >Domain initialization..." << std::endl;
-	std::cout << " >Domain: " << Lx << "x" << Ly << "x" << Lz << std::endl;
-	std::cout << " >Mesh: " << Nx << "x" << Ny << "x" << Nz << std::endl;
-	std::cout << " >Total Points: " << Nx*Ny*Nz << std::endl; 
+	std::cout << " > Domain initialization..." << std::endl;
+	std::cout << " > Domain: " << Lx << "x" << Ly << "x" << Lz << std::endl;
+	std::cout << " > Mesh: " << Nx << "x" << Ny << "x" << Nz << std::endl;
+	std::cout << " > Total Points: " << Nx*Ny*Nz << std::endl; 
 
     }
 

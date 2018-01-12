@@ -2371,9 +2371,9 @@ void CSolver_AWS::dumpSolution(){
 
     if(timeStep%ts->dumpStep == 0){
         cout << endl;
-        cout << "> ===============" << endl;
-        cout << ">  DUMPING FIELD " << endl;
-        cout << "> ===============" << endl;
+        cout << " > ===============" << endl;
+        cout << " >  DUMPING FIELD " << endl;
+        cout << " > ===============" << endl;
 
         ofstream outfile;
         outfile.precision(17);
