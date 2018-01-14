@@ -11,7 +11,9 @@ class AbstractCSolver{
     public:
 	
 	int rkStep;
+	bool rkLast;
 	bool endFlag;
+	bool useTiming;
 	 
 	//Initial Conditions  
 	double *rho0, *p0, *U0, *V0, *W0;
@@ -37,6 +39,7 @@ class AbstractCSolver{
 	virtual void preSubStep() = 0;
 	virtual void solveEqnSet() = 0;
 	virtual void postSubStep() = 0;
+	virtual void updateData() = 0;
 	virtual void postStep() = 0;
 
 };

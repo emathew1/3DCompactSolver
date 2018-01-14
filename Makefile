@@ -4,7 +4,7 @@ CC=g++
 
 # CFLAGS will be the options passed to the compiler. 
 #CFLAGS= -O3 -std=c++11  
-CFLAGS= -O3 -ffast-math -funroll-loops -std=c++11 -fopenmp 
+CFLAGS= -O3 -ffast-math -funroll-loops -std=c++11 -Xpreprocessor -fopenmp -lomp
 OBJECTS  = 3DCompact.o Utils.o CSolver.o CSolver_AWS.o Derivatives.o Filter.o
 
 all: 3D_HOCFD
@@ -12,7 +12,7 @@ all: 3D_HOCFD
 3D_HOCFD:  $(OBJECTS)
 	$(CC) $(CFLAGS) $(OBJECTS) -o $@ 
 
-3DCompact.o: 3DCompact.cpp Macros.hpp Utils.hpp BC.hpp TimeStepping.hpp CSolver.hpp CSolver_AWS.hpp AbstractCSolver.hpp 
+3DCompact.o: 3DCompact.cpp Macros.hpp Utils.hpp BC.hpp TimeStepping.hpp CSolver.hpp CSolver_AWS.hpp AbstractCSolver.hpp AbstractRK.hpp RK4.hpp 
 	$(CC) $(CFLAGS) -c $< 
 
 Utils.o: Utils.cpp Utils.hpp

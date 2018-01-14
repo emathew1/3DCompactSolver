@@ -15,6 +15,8 @@ using namespace std::chrono;
 #include "TimeStepping.hpp"
 #include "Domain.hpp"
 #include "AbstractCSolver.hpp"
+#include "AbstractRK.hpp"
+#include "RK4.hpp"
 #include "CSolver.hpp"
 #include "CSolver_AWS.hpp"
 
@@ -90,6 +92,12 @@ int main(int argc, char *argv[]){
     bool useTiming = false;
     AbstractCSolver *cs;
     cs = new CSolver(dom, bc, ts, alphaF, mu_ref, blocksize, useTiming); 
+
+    ///////////////////////////////////////////
+    //Initialize Execution Loop and RK Method//
+    ///////////////////////////////////////////
+    AbstractRK *rk;
+    rk = new RK4(cs);
 
     /////////////////////////////
     //load in turbulence output//
@@ -167,46 +175,9 @@ int main(int argc, char *argv[]){
     delete[] v_temp;
     delete[] w_temp;
 */
-    cs->setInitialConditions();
 
-    while(cs->endFlag == false){
-
-	//Get the dt for this time step
-	cs->preStep();
-
-	//start rkStep 1
-        cs->rkStep = 1;
-
-	cs->preSubStep();
-	cs->solveEqnSet();
-	cs->postSubStep();
-
-	//start rkStep 2
-        cs->rkStep = 2;
-
-	cs->preSubStep();
-	cs->solveEqnSet();
-	cs->postSubStep();
-
-	//start rkStep 3
-        cs->rkStep = 3;
-
-	cs->preSubStep();
-	cs->solveEqnSet();
-	cs->postSubStep();
-
-	//start rkStep 4
-        cs->rkStep = 4;
-
-	cs->preSubStep();
-	cs->solveEqnSet();
-	cs->postSubStep();
-
-	cs->postStep();
-
-    }
-
-
+    //Run the simulation!
+    rk->executeSolverLoop();
 
 
     return 0;

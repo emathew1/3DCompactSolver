@@ -27,7 +27,6 @@ class CSolver_AWS: public AbstractCSolver{
         int timeStep;
         double time;
 	int filterTimeStep;
-	bool useTiming;
 
         std::chrono::system_clock::time_point t1Save, t2Save;
 
@@ -136,6 +135,7 @@ class CSolver_AWS: public AbstractCSolver{
             t2Save = std::chrono::system_clock::now();
 
 	    done = false;
+	    rkLast = false;
 
 	    //Allocate our arrays for the solver data
 	    initializeSolverData();		    	    
@@ -171,6 +171,7 @@ class CSolver_AWS: public AbstractCSolver{
 	void preStep();
 	void preSubStep();
 	void solveEqnSet();
+	void updateData();
 	void postSubStep();
 	void postStep();
 

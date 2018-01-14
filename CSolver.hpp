@@ -27,7 +27,6 @@ class CSolver: public AbstractCSolver{
         int timeStep;
         double time;
 	int filterTimeStep;
-	bool useTiming;
 
         std::chrono::system_clock::time_point t1Save, t2Save;
 
@@ -151,6 +150,7 @@ class CSolver: public AbstractCSolver{
 	void preSubStep();
 	void solveEqnSet();
 	void postSubStep();
+	void updateData();
 	void postStep();
 
 	//Pre Step Functions

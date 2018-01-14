@@ -2774,7 +2774,10 @@ void CSolver::solveEqnSet(){
 
 void CSolver::postSubStep(){
     postStepBCHandling();
-    updateConservedData();
+
+}
+
+void CSolver::updateData(){
     if(rkStep == 4){
         filterConservedData();
     }

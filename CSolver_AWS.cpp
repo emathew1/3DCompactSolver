@@ -561,7 +561,7 @@ void CSolver_AWS::preStepBCHandling(){
 	rhoVP = rhoV1;
 	rhoWP = rhoW1;
 	rhoEP = rhoE1;
-    }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
+    }else{
 	rhoP  = rhok;
 	rhoUP = rhoUk; 
 	rhoVP = rhoVk;
@@ -843,7 +843,7 @@ void CSolver_AWS::preStepDerivatives(){
 	rhoVP = rhoV1;
 	rhoWP = rhoW1;
 	rhoEP = rhoE1; 
-    }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
+    }else{
 	rhoP  = rhok;
 	rhoUP = rhoUk;
 	rhoVP = rhoVk;
@@ -1252,7 +1252,7 @@ void CSolver_AWS::solveContinuity(){
         double *rhoP;
   	if(rkStep == 1){
             rhoP = rho1;
-        }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
+        }else{
             rhoP = rhok;
         }
 	
@@ -1288,7 +1288,7 @@ void CSolver_AWS::solveXMomentum(){
             double *rhoUP;
             if(rkStep == 1){
                 rhoUP = rhoU1;
-            }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
+            }else{
                 rhoUP = rhoUk;
             }
 
@@ -1337,7 +1337,7 @@ void CSolver_AWS::solveYMomentum(){
         double *rhoVP;
         if(rkStep == 1){
             rhoVP = rhoV1;
-        }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
+        }else{
             rhoVP = rhoVk;
         }
 
@@ -1384,7 +1384,7 @@ void CSolver_AWS::solveZMomentum(){
         double *rhoWP;
         if(rkStep == 1){
             rhoWP = rhoW1;
-        }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
+        }else{
             rhoWP = rhoWk;
         }
 
@@ -1435,7 +1435,7 @@ void CSolver_AWS::solveEnergy(){
         double *rhoEP;
         if(rkStep == 1){
             rhoEP = rhoE1;
-        }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
+        }else{
             rhoEP = rhoEk;
         }
 
@@ -1514,7 +1514,7 @@ void CSolver_AWS::postStepBCHandling(){
 	rhoVP = rhoV1;
 	rhoWP = rhoW1;
 	rhoEP = rhoE1;
-    }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
+    }else{
 	rhoP  = rhok;
 	rhoUP = rhoUk; 
 	rhoVP = rhoVk;
@@ -1976,7 +1976,7 @@ void CSolver_AWS::updateNonConservedData(){
 
     if(useTiming) tic();
 
-    if(rkStep == 1 || rkStep == 2 || rkStep == 3){
+    if(!rkLast){
 
         #pragma omp parallel for
 	FOR_XYZ{
@@ -1990,7 +1990,7 @@ void CSolver_AWS::updateNonConservedData(){
 	    sos[ip] = ig->solveSOS(rhok[ip], p[ip]);
 	}
 
-    }else if(rkStep == 4){
+    }else if(rkLast){
 
         #pragma omp parallel for
 	FOR_XYZ{
@@ -2637,8 +2637,10 @@ void CSolver_AWS::solveEqnSet(){
 
 void CSolver_AWS::postSubStep(){
     postStepBCHandling();
-    updateConservedData();
-    if(rkStep == 4){
+}
+
+void CSolver_AWS::updateData(){
+    if(rkLast){
         filterConservedData();
     }
     updateNonConservedData();
