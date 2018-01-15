@@ -12,7 +12,7 @@ all: 3D_HOCFD
 3D_HOCFD:  $(OBJECTS)
 	$(CC) $(CFLAGS) $(OBJECTS) -o $@ 
 
-3DCompact.o: 3DCompact.cpp Macros.hpp Utils.hpp BC.hpp TimeStepping.hpp CSolver.hpp CSolver_AWS.hpp AbstractCSolver.hpp AbstractRK.hpp RK4.hpp 
+3DCompact.o: 3DCompact.cpp Macros.hpp Utils.hpp BC.hpp TimeStepping.hpp CSolver.hpp CSolver_AWS.hpp AbstractCSolver.hpp AbstractRK.hpp RK4.hpp TVDRK3.hpp
 	$(CC) $(CFLAGS) -c $< 
 
 Utils.o: Utils.cpp Utils.hpp

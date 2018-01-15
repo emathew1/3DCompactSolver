@@ -16,6 +16,7 @@ using namespace std::chrono;
 #include "Domain.hpp"
 #include "AbstractCSolver.hpp"
 #include "AbstractRK.hpp"
+#include "TVDRK3.hpp"
 #include "RK4.hpp"
 #include "CSolver.hpp"
 #include "CSolver_AWS.hpp"
@@ -54,7 +55,7 @@ int main(int argc, char *argv[]){
     //Time Stepping info intialization//
     ////////////////////////////////////
     TimeStepping::TimeSteppingType timeSteppingType = TimeStepping::CONST_CFL;
-    double CFL 	     = 1.25;
+    double CFL 	     = 1.0;
     int maxTimeStep  = 40000;
     double maxTime   = 20.0;
     int filterStep   = 1;
@@ -91,7 +92,7 @@ int main(int argc, char *argv[]){
     int blocksize  = 16;
     bool useTiming = false;
     AbstractCSolver *cs;
-    cs = new CSolver(dom, bc, ts, alphaF, mu_ref, blocksize, useTiming); 
+    cs = new CSolver_AWS(dom, bc, ts, alphaF, mu_ref, blocksize, useTiming); 
 
     ///////////////////////////////////////////
     //Initialize Execution Loop and RK Method//
