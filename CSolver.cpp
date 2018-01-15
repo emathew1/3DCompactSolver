@@ -508,7 +508,7 @@ void CSolver::preStepBCHandling(){
 	rhoVP = rhoV1;
 	rhoWP = rhoW1;
 	rhoEP = rhoE1;
-    }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
+    }else{
 	rhoP  = rhok;
 	rhoUP = rhoUk; 
 	rhoVP = rhoVk;
@@ -785,7 +785,7 @@ void CSolver::preStepDerivatives(){
 	rhoVP = rhoV1;
 	rhoWP = rhoW1;
 	rhoEP = rhoE1; 
-    }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
+    }else{
 	rhoP  = rhok;
 	rhoUP = rhoUk;
 	rhoVP = rhoVk;
@@ -1336,7 +1336,7 @@ void CSolver::solveContinuity(){
         double *rhoP;
   	if(rkStep == 1){
             rhoP = rho1;
-        }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
+        }else{
             rhoP = rhok;
         }
 	
@@ -1363,7 +1363,7 @@ void CSolver::solveXMomentum(){
             double *rhoUP;
             if(rkStep == 1){
                 rhoUP = rhoU1;
-            }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
+            }else{
                 rhoUP = rhoUk;
             }
 
@@ -1404,7 +1404,7 @@ void CSolver::solveYMomentum(){
         double *rhoVP;
         if(rkStep == 1){
             rhoVP = rhoV1;
-        }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
+        }else{
             rhoVP = rhoVk;
         }
 
@@ -1446,7 +1446,7 @@ void CSolver::solveZMomentum(){
         double *rhoWP;
         if(rkStep == 1){
             rhoWP = rhoW1;
-        }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
+        }else{
             rhoWP = rhoWk;
         }
 
@@ -1488,7 +1488,7 @@ void CSolver::solveEnergy(){
         double *rhoEP;
         if(rkStep == 1){
             rhoEP = rhoE1;
-        }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
+        }else{
             rhoEP = rhoEk;
         }
 
@@ -1560,7 +1560,7 @@ void CSolver::postStepBCHandling(){
 	rhoVP = rhoV1;
 	rhoWP = rhoW1;
 	rhoEP = rhoE1;
-    }else if(rkStep == 2 || rkStep == 3 || rkStep == 4){
+    }else{
 	rhoP  = rhok;
 	rhoUP = rhoUk; 
 	rhoVP = rhoVk;
@@ -2153,7 +2153,7 @@ void CSolver::filterConservedData(){
 };
 
 void CSolver::updateNonConservedData(){
-    if(rkStep == 1 || rkStep == 2 || rkStep == 3){
+    if(!rkLast){
 
         #pragma omp parallel for
 	FOR_XYZ U[ip]   = ig->solveU(rhok[ip], rhoUk[ip]);
@@ -2172,7 +2172,7 @@ void CSolver::updateNonConservedData(){
         #pragma omp parallel for
 	FOR_XYZ sos[ip] = ig->solveSOS(rhok[ip], p[ip]);
 
-    }else if(rkStep == 4){
+    }else if(rkLast){
 
         #pragma omp parallel for
 	FOR_XYZ U[ip]   = ig->solveU(rho1[ip], rhoU1[ip]);
@@ -2778,15 +2778,15 @@ void CSolver::postSubStep(){
 }
 
 void CSolver::updateData(){
-    if(rkStep == 4){
+    if(rkLast){
         filterConservedData();
     }
     updateNonConservedData();
 }
 
 void CSolver::postStep(){
-    //calcTurbulenceQuantities();
-    calcTaylorGreenQuantities();
+    calcTurbulenceQuantities();
+    //calcTaylorGreenQuantities();
     updateSponge();
     checkSolution();
     dumpSolution();

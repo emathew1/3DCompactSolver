@@ -46,9 +46,9 @@ int main(int argc, char *argv[]){
     int    Nx = 128, 
 	   Ny = 128, 
 	   Nz = 128;
-    double Lx = 2.0*M_PI - (2.0*M_PI/((double)(Nx))), 
-	   Ly = 2.0*M_PI - (2.0*M_PI/((double)(Ny))), 
-	   Lz = 2.0*M_PI - (2.0*M_PI/((double)(Nz)));
+    double Lx = 2.0*M_PI, 
+	   Ly = 2.0*M_PI, 
+	   Lz = 2.0*M_PI;
     Domain *dom = new Domain(Nx, Ny, Nz, Lx, Ly, Lz);
 
     ////////////////////////////////////
@@ -56,8 +56,8 @@ int main(int argc, char *argv[]){
     ////////////////////////////////////
     TimeStepping::TimeSteppingType timeSteppingType = TimeStepping::CONST_CFL;
     double CFL 	     = 1.0;
-    int maxTimeStep  = 40000;
-    double maxTime   = 20.0;
+    int maxTimeStep  = 10000;
+    double maxTime   = 10.0;
     int filterStep   = 1;
     int checkStep    = 1;
     int dumpStep     = 2500;
@@ -88,7 +88,7 @@ int main(int argc, char *argv[]){
     //Initialize the Solver//
     /////////////////////////
     double alphaF  = 0.495;
-    double mu_ref  = 0.000014625;
+    double mu_ref  = 0.000704;
     int blocksize  = 16;
     bool useTiming = false;
     AbstractCSolver *cs;
@@ -98,15 +98,15 @@ int main(int argc, char *argv[]){
     //Initialize Execution Loop and RK Method//
     ///////////////////////////////////////////
     AbstractRK *rk;
-    rk = new RK4(cs);
+    rk = new TVDRK3(cs);
 
     /////////////////////////////
     //load in turbulence output//
     /////////////////////////////
-/*    ifstream uFile, vFile, wFile;
-    uFile.open("U_Mt0p3_N128_k8.dat",ifstream::in);
-    vFile.open("V_Mt0p3_N128_k8.dat",ifstream::in);
-    wFile.open("W_Mt0p3_N128_k8.dat",ifstream::in);
+    ifstream uFile, vFile, wFile;
+    uFile.open("homogenous_turbulence/U_Mt0p3_N128_k8.dat",ifstream::in);
+    vFile.open("homogenous_turbulence/V_Mt0p3_N128_k8.dat",ifstream::in);
+    wFile.open("homogenous_turbulence/W_Mt0p3_N128_k8.dat",ifstream::in);
 
     double *u_temp = new double[Nx*Ny*Nz];
     double *v_temp = new double[Nx*Ny*Nz];
@@ -126,7 +126,6 @@ int main(int argc, char *argv[]){
     uFile.close();
     vFile.close();
     wFile.close();
-*/
 
     ///////////////////////////////
     //Set flow initial conditions//
@@ -137,19 +136,11 @@ int main(int argc, char *argv[]){
 	    FOR_X{
 		int ii = GET3DINDEX_XYZ;
 
-		cs->U0[ii]   =  u0*sin(cs->dom->x[i])*cos(cs->dom->y[j])*cos(cs->dom->z[k]);
-		cs->V0[ii]   = -u0*cos(cs->dom->x[i])*sin(cs->dom->y[j])*cos(cs->dom->z[k]);
-		cs->W0[ii]   =  0.0; 
 		cs->rho0[ii] = 1.0;
-		cs->p0[ii]   = (100.0 + (1.0/16.0)*(cos(cs->dom->x[i]*2.0) + cos(cs->dom->y[j]*2.0))*(cos(cs->dom->z[k]*2.0) + 2.0));///cs->ig->gamma;
-		
-/*
-		cs->rho0[ii] = 1.0;
-		cs->p0[ii]   = 100.0/cs->ig->gamma;
+		cs->p0[ii]   = 4.0/cs->ig->gamma;
 		cs->U0[ii]   = u_temp[ii];
 		cs->V0[ii]   = v_temp[ii];
 		cs->W0[ii]   = w_temp[ii];
-*/
 /*
 		if(cs->dom->y[j] > 0.75){
 
@@ -171,11 +162,9 @@ int main(int argc, char *argv[]){
 	    }
 	}
     }
-/*
     delete[] u_temp;
     delete[] v_temp;
     delete[] w_temp;
-*/
 
     //Run the simulation!
     rk->executeSolverLoop();

@@ -2647,8 +2647,8 @@ void CSolver_AWS::updateData(){
 }
 
 void CSolver_AWS::postStep(){
-    //calcTurbulenceQuantities();
-    calcTaylorGreenQuantities();
+    calcTurbulenceQuantities();
+    //calcTaylorGreenQuantities();
     updateSponge();
     checkSolution();
     dumpSolution();
