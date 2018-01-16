@@ -43,12 +43,12 @@ int main(int argc, char *argv[]){
     /////////////////////////
     //Initialize the Domain//
     /////////////////////////
-    int    Nx = 128, 
-	   Ny = 128, 
+    int    Nx = 256, 
+	   Ny = 192, 
 	   Nz = 128;
-    double Lx = 2.0*M_PI, 
-	   Ly = 2.0*M_PI, 
-	   Lz = 2.0*M_PI;
+    double Lx = 172.0, 
+	   Ly = 129.0, 
+	   Lz = 86.0;;
     Domain *dom = new Domain(Nx, Ny, Nz, Lx, Ly, Lz);
 
     ////////////////////////////////////
@@ -57,10 +57,10 @@ int main(int argc, char *argv[]){
     TimeStepping::TimeSteppingType timeSteppingType = TimeStepping::CONST_CFL;
     double CFL 	     = 1.0;
     int maxTimeStep  = 10000;
-    double maxTime   = 10.0;
-    int filterStep   = 1;
+    double maxTime   = 100.0;
+    int filterStep   = 50;
     int checkStep    = 1;
-    int dumpStep     = 2500;
+    int dumpStep     = 500;
     TimeStepping *ts = new TimeStepping(timeSteppingType, CFL, maxTimeStep, maxTime, filterStep, checkStep, dumpStep);
 
 
@@ -68,13 +68,13 @@ int main(int argc, char *argv[]){
     //Boundary Condition Info//
     ///////////////////////////
     BC::BCType bcXType = BC::PERIODIC_SOLVE; 
-    BC::BCType bcYType = BC::PERIODIC_SOLVE; 
+    BC::BCType bcYType = BC::DIRICHLET_SOLVE; 
     BC::BCType bcZType = BC::PERIODIC_SOLVE; 
 
     BC::BCKind bcX0 = BC::PERIODIC;
     BC::BCKind bcX1 = BC::PERIODIC;
-    BC::BCKind bcY0 = BC::PERIODIC;
-    BC::BCKind bcY1 = BC::PERIODIC;
+    BC::BCKind bcY0 = BC::SPONGE;
+    BC::BCKind bcY1 = BC::SPONGE;
     BC::BCKind bcZ0 = BC::PERIODIC;
     BC::BCKind bcZ1 = BC::PERIODIC;
 
@@ -88,11 +88,11 @@ int main(int argc, char *argv[]){
     //Initialize the Solver//
     /////////////////////////
     double alphaF  = 0.495;
-    double mu_ref  = 0.000704;
+    double mu_ref  = 0.00375;
     int blocksize  = 16;
-    bool useTiming = false;
+    bool useTiming = true;
     AbstractCSolver *cs;
-    cs = new CSolver_AWS(dom, bc, ts, alphaF, mu_ref, blocksize, useTiming); 
+    cs = new CSolver(dom, bc, ts, alphaF, mu_ref, blocksize, useTiming); 
 
     ///////////////////////////////////////////
     //Initialize Execution Loop and RK Method//
@@ -116,9 +116,13 @@ int main(int argc, char *argv[]){
 	FOR_Y{
 	    FOR_X{
 		int ii = GET3DINDEX_XYZ;
-		uFile >> u_temp[ii];
-		vFile >> v_temp[ii];
-		wFile >> w_temp[ii];
+//		uFile >> u_temp[ii];
+//		vFile >> v_temp[ii];
+//		wFile >> w_temp[ii];
+
+		u_temp[ii] = 0.0;
+		w_temp[ii] = 0.0;
+		v_temp[ii] = 0.0;
 	    }
 	}
     }
@@ -130,17 +134,17 @@ int main(int argc, char *argv[]){
     ///////////////////////////////
     //Set flow initial conditions//
     ///////////////////////////////
-    double u0 = 1.0;
+    double delta_u = 0.6;
     FOR_Z{
 	FOR_Y{
 	    FOR_X{
 		int ii = GET3DINDEX_XYZ;
 
 		cs->rho0[ii] = 1.0;
-		cs->p0[ii]   = 4.0/cs->ig->gamma;
-		cs->U0[ii]   = u_temp[ii];
-		cs->V0[ii]   = v_temp[ii];
-		cs->W0[ii]   = w_temp[ii];
+		cs->p0[ii]   = 1.0/cs->ig->gamma;
+		cs->U0[ii]   = (delta_u/2.0)*tanh(-(dom->y[j]-Ly/2.0)/2.0) + u_temp[ii];
+		cs->V0[ii]   = 0.0 + v_temp[ii];
+		cs->W0[ii]   = 0.0 + w_temp[ii];
 /*
 		if(cs->dom->y[j] > 0.75){
 

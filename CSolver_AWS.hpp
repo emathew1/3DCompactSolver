@@ -198,6 +198,7 @@ class CSolver_AWS: public AbstractCSolver{
 	//Post Step Functions
 	void calcTurbulenceQuantities();
 	void calcTaylorGreenQuantities();
+	void shearLayerInfoCalc();
 	void updateSponge();
 	void checkSolution();
 	void dumpSolution();

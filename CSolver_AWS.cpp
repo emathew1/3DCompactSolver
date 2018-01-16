@@ -2336,6 +2336,75 @@ void CSolver_AWS::calcTaylorGreenQuantities(){
 
 };
 
+void CSolver_AWS::shearLayerInfoCalc(){
+
+
+    if(useTiming) tic();
+
+	double rhoAvg[Ny], uAvg[Ny], vAvg[Ny], wAvg[Ny];
+	double rhoprime2[Ny], uprime2[Ny], vprime2[Ny], wprime2[Ny];
+	double uvprime[Ny], uwrime[Ny], vwprime[Ny];
+
+	
+	#pragma omp parallel
+	{
+
+	    double A[Ny], B[Ny], C[Ny], D[Ny];
+
+	    #pragma omp for
+	    FOR_Y{
+		A[j] = 0.0;
+		B[j] = 0.0;
+		C[j] = 0.0;
+		D[j] = 0.0;
+	    }
+
+	    #pragma omp for
+	    FOR_Y{
+		FOR_X{
+		    FOR_Z{
+			int ii = GET3DINDEX_XYZ;
+			A[j] += rho1[ii]; 
+			B[j] += rhoU1[ii]/rho1[ii]; 
+			C[j] += rhoV1[ii]/rho1[ii]; 
+			D[j] += rhoW1[ii]/rho1[ii]; 
+		    }
+		}
+	    }
+	
+	    #pragma omp critical
+	    {
+		FOR_Y{
+		    rhoAvg[j] += A[j]/((double)(Nx*Nz));
+		    uAvg[j]   += B[j]/((double)(Nx*Nz));
+		    vAvg[j]   += C[j]/((double)(Nx*Nz));
+		    wAvg[j]   += D[j]/((double)(Nx*Nz));
+		}
+	    }
+	}
+
+	/*
+        ofstream outfile;
+        outfile.precision(17);
+        string outputFileName;
+        outputFileName = "taylorgreen.out";
+        outfile.open(outputFileName, fstream::app);
+        outfile.precision(17);
+        outfile << time << " " << kineticEngSum << " " << turbDissSum << " " << enstrophySum << " " << enstrophySum2Mu << " " << meanMu << " " << dilprime;
+	outfile << endl;
+        outfile.close();
+	*/
+
+    if(useTiming){
+        cout << " > shearLayerInfoCalc Timing: ";
+        toc();
+    }
+
+
+
+};
+
+
 void CSolver_AWS::checkSolution(){
 
     if(useTiming) tic();
