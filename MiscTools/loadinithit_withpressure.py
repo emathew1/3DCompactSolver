@@ -47,7 +47,7 @@ k0 = 4
 A = 16*np.sqrt(2/np.pi)*uprime**2/k0**5
 
 #%%
-uprimeGoal = np.sqrt(1/3)
+uprimeGoal = 0.1
 Unew = U*uprimeGoal/uprime
 Vnew = V*uprimeGoal/uprime
 Wnew = W*uprimeGoal/uprime
@@ -66,6 +66,12 @@ uprime = uprime/(N-1)/(N-1)/(N-1)
 q = q/(N-1)/(N-1)/(N-1)
 uprime = np.sqrt(uprime)
 q = np.sqrt(q)
+
+#%%
+
+U = Unew
+V = Vnew
+W = Wnew
 
 #%%
 
