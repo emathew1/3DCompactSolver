@@ -96,7 +96,7 @@ program generate_init_hit
 
   integer, parameter :: N_box = 129
 
-  real(8), parameter :: k0 = 8.0_8
+  real(8), parameter :: k0 = 12.0_8
 
   integer, parameter :: divergence_flag = 0
   !            0: use the noraml construction which gives 

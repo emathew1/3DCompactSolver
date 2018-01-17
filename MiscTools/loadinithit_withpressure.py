@@ -47,7 +47,7 @@ k0 = 4
 A = 16*np.sqrt(2/np.pi)*uprime**2/k0**5
 
 #%%
-uprimeGoal = 0.1
+uprimeGoal = 1
 Unew = U*uprimeGoal/uprime
 Vnew = V*uprimeGoal/uprime
 Wnew = W*uprimeGoal/uprime
@@ -221,6 +221,67 @@ for k in range(0,N-1):
 PS = Pxx + Pyy + Pzz
 
 #%%
+
+#Chop the domain into three chunks
+#Chunk1
+U1 = Unew[:,:,0:42]
+V1 = Vnew[:,:,0:42]
+W1 = Wnew[:,:,0:42]
+P1 = ptilde1[:,:,0:42]
+
+#Chunk2
+U2 = Unew[:,:,42:84]
+V2 = Vnew[:,:,42:84]
+W2 = Wnew[:,:,42:84]
+P2 = ptilde1[:,:,42:84]
+
+#Chunk3
+U3 = Unew[:,:,84:126]
+V3 = Vnew[:,:,84:126]
+W3 = Wnew[:,:,84:126]
+P3 = ptilde1[:,:,84:126]
+
+totalX = 256
+currentX = 128*3
+totalOverlap = currentX - totalX
+
+Ufinal = np.empty((totalX,N-1,42),dtype=np.double)
+Vfinal = np.empty((totalX,N-1,42),dtype=np.double)
+Wfinal = np.empty((totalX,N-1,42),dtype=np.double)
+Pfinal = np.empty((totalX,N-1,42),dtype=np.double)
+
+Ufinal[42:86,:,:] = U1[42:86,:,:]
+Vfinal[42:86,:,:] = V1[42:86,:,:]
+Wfinal[42:86,:,:] = W1[42:86,:,:]
+Pfinal[42:86,:,:] = P1[42:86,:,:]
+
+Ufinal[128:172,:,:] = U2[42:86,:,:]
+Vfinal[128:172,:,:] = V2[42:86,:,:]
+Wfinal[128:172,:,:] = W2[42:86,:,:]
+Pfinal[128:172,:,:] = P2[42:86,:,:]
+
+Ufinal[214:256,:,:] = U3[42:84,:,:]
+Vfinal[214:256,:,:] = V3[42:84,:,:]
+Wfinal[214:256,:,:] = W3[42:84,:,:]
+Pfinal[214:256,:,:] = P3[42:84,:,:]
+for i in range(0,42):
+    theta = (np.pi/2.0)*float(i)/41.0
+    Ufinal[i,:,:] = np.cos(theta)*U3[84+i,:,:] + np.sin(theta)*U1[i,:,:]
+    Vfinal[i,:,:] = np.cos(theta)*V3[84+i,:,:] + np.sin(theta)*V1[i,:,:]
+    Wfinal[i,:,:] = np.cos(theta)*W3[84+i,:,:] + np.sin(theta)*W1[i,:,:]
+    Pfinal[i,:,:] = np.cos(theta)*P3[84+i,:,:] + np.sin(theta)*P1[i,:,:]
+    
+    Ufinal[86+i,:,:] = np.cos(theta)*U1[86+i,:,:] + np.sin(theta)*U2[i,:,:]
+    Vfinal[86+i,:,:] = np.cos(theta)*V1[86+i,:,:] + np.sin(theta)*V2[i,:,:]
+    Wfinal[86+i,:,:] = np.cos(theta)*W1[86+i,:,:] + np.sin(theta)*W2[i,:,:]
+    Pfinal[86+i,:,:] = np.cos(theta)*P1[86+i,:,:] + np.sin(theta)*P2[i,:,:]    
+
+    Ufinal[172+i,:,:] = np.cos(theta)*U2[86+i,:,:] + np.sin(theta)*U3[i,:,:]
+    Vfinal[172+i,:,:] = np.cos(theta)*V2[86+i,:,:] + np.sin(theta)*V3[i,:,:]
+    Wfinal[172+i,:,:] = np.cos(theta)*W2[86+i,:,:] + np.sin(theta)*W3[i,:,:]
+    Pfinal[172+i,:,:] = np.cos(theta)*P2[86+i,:,:] + np.sin(theta)*P3[i,:,:]    
+
+#%%
 f = open('U_Mt0p3_N128_k8.dat','w');
 g = open('V_Mt0p3_N128_k8.dat','w');
 h = open('W_Mt0p3_N128_k8.dat','w');
@@ -235,3 +296,21 @@ for k in range(0,N-1):
 f.close()
 g.close()
 h.close()
+
+#%%
+
+f = open('U_uprime1_N128_k8_256x128x42.dat','w');
+g = open('V_uprime1_N128_k8_256x128x42.dat','w');
+h = open('W_uprime1_N128_k8_256x128x42.dat','w');
+pp = open('P_uprime1_N128_k8_256x128x42.dat','w')
+for k in range(0,42):
+    for j in range(0,128):
+        for i in range(0,256):
+            f.write("".join([str(Ufinal[i,j,k]), "\n"]))
+            g.write("".join([str(Vfinal[i,j,k]), "\n"]))
+            h.write("".join([str(Wfinal[i,j,k]), "\n"]))
+            pp.write("".join([str(Pfinal[i,j,k]), "\n"]))
+f.close()
+g.close()
+h.close()
+pp.close()
