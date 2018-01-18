@@ -92,7 +92,7 @@ int main(int argc, char *argv[]){
     int blocksize  = 16;
     bool useTiming = true;
     AbstractCSolver *cs;
-    cs = new CSolver(dom, bc, ts, alphaF, mu_ref, blocksize, useTiming); 
+    cs = new CSolver_AWS(dom, bc, ts, alphaF, mu_ref, blocksize, useTiming); 
 
     ///////////////////////////////////////////
     //Initialize Execution Loop and RK Method//
@@ -118,6 +118,7 @@ int main(int argc, char *argv[]){
     double *w_temp = new double[inNx*inNy*inNz];
     double *p_temp = new double[inNx*inNy*inNz];
 
+    cout << " > Reading in perturbations...";
     for(int kp = 0; kp < inNz; kp++){
 	for(int jp = 0; jp < inNy; jp++){
 	    for(int ip = 0; ip < inNx; ip++){
@@ -134,7 +135,7 @@ int main(int argc, char *argv[]){
     vFile.close();
     wFile.close();
     pFile.close();
-
+    cout << "done!" << endl;
 
     //Only thing is we need to switch Y and Z directions...
     //Divergence Free condition should hold whether we're mirroring
@@ -144,15 +145,19 @@ int main(int argc, char *argv[]){
     //Data read in has been normalized so that u'=1
     double delta_u = 0.6;
     double intensity = 0.1*delta_u; //10% turbulence intensity?
+    cout << " > Scaling the perturbations...";
+    #pragma omp parallel for
     for(int ip = 0; ip < inNz*inNy*inNx; ip++){
 	u_temp[ip] *= intensity;
 	v_temp[ip] *= intensity;
 	w_temp[ip] *= intensity;
 	p_temp[ip] *= intensity*intensity; //scales as u^2
     }
+    cout << "done!" << endl;;
 
     //Create density perturbuations assuming constant temperature...for now?
     double *r_temp = new double[inNx*inNy*inNz];
+    #pragma omp parallel for
     for(int ip = 0; ip < inNz*inNy*inNx; ip++){
 	r_temp[ip] = p_temp[ip];
     }
@@ -165,8 +170,9 @@ int main(int argc, char *argv[]){
     double *rFluc = new double[Nx*Ny*Nz];
 
     int midNum = Ny/2;
-    int startYind = midNum - in
+    int startYind = midNum - inNz/2;
 
+    #pragma omp parallel for 
     FOR_Z{
 	FOR_Y{
 	    FOR_X{
@@ -180,43 +186,47 @@ int main(int argc, char *argv[]){
 	}
     }
 
+    #pragma omp parallel for 
+    for(int kp = 0; kp < Nz; kp++){
+	for(int jp = startYind; jp < startYind+inNz; jp++){
+	    for(int ip = 0; ip < Nx; ip++){
+		int ii  = kp*Ny*Nx + jp*Nx + ip;
+		int iip = (jp-startYind)*Nz*Nx + kp*Nx + ip; 
+
+	        double yTemp = dom->y[jp]-Ly/2.0;
+		double scalingFactor = exp(-pow(yTemp/2.0,2.0));
+
+		uFluc[ii] = u_temp[iip]*scalingFactor; 
+		vFluc[ii] = v_temp[iip]*scalingFactor; 
+		wFluc[ii] = w_temp[iip]*scalingFactor; 
+		pFluc[ii] = p_temp[iip]*scalingFactor; 
+		rFluc[ii] = r_temp[iip]*scalingFactor; 
+	    }
+	}
+    }
+
     ///////////////////////////////
     //Set flow initial conditions//
     ///////////////////////////////
+    #pragma omp parallel for
     FOR_Z{
 	FOR_Y{
 	    FOR_X{
 		int ii = GET3DINDEX_XYZ;
 
-		cs->rho0[ii] = 1.0;
-		cs->p0[ii]   = 1.0/cs->ig->gamma;
-		cs->U0[ii]   = (delta_u/2.0)*tanh(-(dom->y[j]-Ly/2.0)/2.0) + u_temp[ii];
-		cs->V0[ii]   = 0.0 + v_temp[ii];
-		cs->W0[ii]   = 0.0 + w_temp[ii];
-/*
-		if(cs->dom->y[j] > 0.75){
-
-		    cs->rho0[ii] = 1.05;
- 		    cs->p0[ii]   = 1.0/cs->ig->gamma;
-	 	    cs->U0[ii]   = -0.5;//sin(cs->dom->x[i]);
-		    cs->V0[ii]   = 0.0;//sin(cs->dom->y[j]);
-		    cs->W0[ii]   = 0.0;//sin(cs->dom->z[k]);
-		}else{
-		    cs->rho0[ii] = 0.95;
- 		    cs->p0[ii]   = 1.0/cs->ig->gamma;
-		    cs->U0[ii]   = 0.5;//sin(cs->dom->x[i]);
-		    cs->V0[ii]   = 0.0;//sin(cs->dom->y[j]);
-		    cs->W0[ii]   = 0.0;//sin(cs->dom->z[k]);
-		}
-
-		cs->V0[ii] += fRand(-0.3,0.3)*exp(-(cs->dom->y[j]-0.75)*(cs->dom->y[j]-0.75)*1000.0);
-*/
+		cs->rho0[ii] = 1.0 + rFluc[ii];
+		cs->p0[ii]   = (1.0 + pFluc[ii])/cs->ig->gamma;
+		cs->U0[ii]   = (delta_u/2.0)*tanh(-(dom->y[j]-Ly/2.0)/2.0) + uFluc[ii];
+		cs->V0[ii]   = 0.0 + vFluc[ii];
+		cs->W0[ii]   = 0.0 + wFluc[ii];
 	    }
 	}
     }
     delete[] u_temp;
     delete[] v_temp;
     delete[] w_temp;
+    delete[] p_temp;
+    delete[] r_temp;
 
     //Run the simulation!
     rk->executeSolverLoop();

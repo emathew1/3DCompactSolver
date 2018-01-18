@@ -2851,6 +2851,8 @@ cout << " " << endl;
 /////////////////////////////////////
 
 void CSolver_AWS::preStep(){
+    if(timeStep == 0) dumpSolution();
+
     calcDtFromCFL();
 }
 
