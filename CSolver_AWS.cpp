@@ -2717,6 +2717,29 @@ void CSolver_AWS::dumpSolution(){
 
 }
 
+void CSolver_AWS::writeImages(){
+    if(timeStep%25==0){
+	cout << " > Dumping images..." << endl;
+
+	//going to do our images in greyscale
+	double dataMin, dataMax;
+	getRangeValue(rho1, Nx, Ny, Nz, dataMin, dataMax);
+
+	FOR_Y{
+	    FOR_X{
+		int k = (int)(Nz/2.0);
+		int ii = GET3DINDEX_XYZ; 
+		double f = (rho1[ii] - dataMin)/(dataMax - dataMin);
+		int g = (int)(f*255.0);
+		pngXY->set(i,j,g,g,g);
+	    }
+	}
+	string imageName = "RhoTest1.png";
+	pngXY->write(imageName.c_str()); 
+
+    }
+}
+
 void CSolver_AWS::checkEnd(){
 
     if(useTiming) tic();
@@ -2851,8 +2874,11 @@ cout << " " << endl;
 /////////////////////////////////////
 
 void CSolver_AWS::preStep(){
-    if(timeStep == 0) dumpSolution();
-
+    if(timeStep == 0){
+        dumpSolution();
+	writeImages();
+    }
+    
     calcDtFromCFL();
 }
 
@@ -2887,6 +2913,7 @@ void CSolver_AWS::postStep(){
     updateSponge();
     checkSolution();
     dumpSolution();
+    writeImages();
     checkEnd();
     //reportAll();
 }

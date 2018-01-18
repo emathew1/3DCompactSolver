@@ -9,6 +9,7 @@
 #include "Utils.hpp"
 #include "SpongeBC.hpp"
 #include "AbstractCSolver.hpp"
+#include "PngWriter.hpp"
 
 using namespace std::chrono;
 
@@ -106,6 +107,11 @@ class CSolver_AWS: public AbstractCSolver{
 
 	enum Eqn {CONT, XMOM, YMOM, ZMOM, ENGY};
 
+	//For drawing images...
+	PngWriter *pngXY;
+	PngWriter *pngXZ;
+	PngWriter *pngYZ;
+
 	//Constructor to use for this class...
 	CSolver_AWS(Domain *dom, BC *bc, TimeStepping *ts, double alphaF, double mu_ref, int blocksize, bool useTiming){
 
@@ -158,6 +164,9 @@ class CSolver_AWS: public AbstractCSolver{
 	    filtY  = new Filter(alphaF, dom, bc->bcYType, Derivatives::DIRY);
 	    filtZ  = new Filter(alphaF, dom, bc->bcZType, Derivatives::DIRZ);
 
+	    pngXY = new PngWriter(Nx,Ny);
+	    pngXZ = new PngWriter(Nz,Nx);
+	    pngYZ = new PngWriter(Ny,Nz);
 
  	    X0WallV = 0.0; X0WallW = 0.0; X1WallV = 0.0; X1WallW = 0.0;
 	    Y0WallU = 0.0; Y0WallW = 0.0; Y1WallU = 0.0; Y1WallW = 0.0;
@@ -200,6 +209,7 @@ class CSolver_AWS: public AbstractCSolver{
 	void calcTaylorGreenQuantities();
 	void shearLayerInfoCalc();
 	void updateSponge();
+	void writeImages();
 	void checkSolution();
 	void dumpSolution();
 	void checkEnd();

@@ -258,6 +258,25 @@ void getRange(double *phi, std::string dataName, int Nx, int Ny, int Nz){
 
 }
 
+void getRangeValue(double *phi, int Nx, int Ny, int Nz, double &minVal, double &maxVal){
+
+    double dataMin = 1000000;
+    #pragma omp parallel for reduction(min:dataMin)
+    for(int ip = 0; ip < Nx*Ny*Nz; ip++)
+        dataMin = min(dataMin, phi[ip]);
+
+    double dataMax = -1000000;
+    #pragma omp parallel for reduction(max:dataMax)
+    for(int ip = 0; ip < Nx*Ny*Nz; ip++) 
+        dataMax = max(dataMax, phi[ip]);
+    
+
+    minVal = dataMin;
+    maxVal = dataMax;
+}
+
+
+
 double fRand(double fMin, double fMax)
 {
     double f = (double)rand() / RAND_MAX;
