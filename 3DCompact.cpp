@@ -103,26 +103,29 @@ int main(int argc, char *argv[]){
     /////////////////////////////
     //load in turbulence output//
     /////////////////////////////
-    ifstream uFile, vFile, wFile;
-    uFile.open("homogenous_turbulence/U_Mt0p3_N128_k8.dat",ifstream::in);
-    vFile.open("homogenous_turbulence/V_Mt0p3_N128_k8.dat",ifstream::in);
-    wFile.open("homogenous_turbulence/W_Mt0p3_N128_k8.dat",ifstream::in);
+    ifstream uFile, vFile, wFile, pFile;
+    uFile.open("ShearLayer/U_uprime1_N128_k12_256x128x42.dat",ifstream::in);
+    vFile.open("ShearLayer/V_uprime1_N128_k12_256x128x42.dat",ifstream::in);
+    wFile.open("ShearLayer/W_uprime1_N128_k12_256x128x42.dat",ifstream::in);
+    pFile.open("ShearLayer/P_uprime1_N128_k12_256x128x42.dat",ifstream::in);
 
-    double *u_temp = new double[Nx*Ny*Nz];
-    double *v_temp = new double[Nx*Ny*Nz];
-    double *w_temp = new double[Nx*Ny*Nz];
+    int inNx = 256;
+    int inNy = 128;
+    int inNz = 42;
 
-    FOR_Z{
-	FOR_Y{
-	    FOR_X{
-		int ii = GET3DINDEX_XYZ;
-//		uFile >> u_temp[ii];
-//		vFile >> v_temp[ii];
-//		wFile >> w_temp[ii];
+    double *u_temp = new double[inNx*inNy*inNz];
+    double *v_temp = new double[inNx*inNy*inNz];
+    double *w_temp = new double[inNx*inNy*inNz];
+    double *p_temp = new double[inNx*inNy*inNz];
 
-		u_temp[ii] = 0.0;
-		w_temp[ii] = 0.0;
-		v_temp[ii] = 0.0;
+    for(int kp = 0; kp < inNz; kp++){
+	for(int jp = 0; jp < inNy; jp++){
+	    for(int ip = 0; ip < inNx; ip++){
+		int ii =  kp*inNy*inNx + jp*inNx + ip;
+		uFile >> u_temp[ii];
+		vFile >> v_temp[ii];
+		wFile >> w_temp[ii];
+		pFile >> p_temp[ii];	
 	    }
 	}
     }
@@ -130,11 +133,56 @@ int main(int argc, char *argv[]){
     uFile.close();
     vFile.close();
     wFile.close();
+    pFile.close();
+
+
+    //Only thing is we need to switch Y and Z directions...
+    //Divergence Free condition should hold whether we're mirroring
+    //or rotating...
+
+    //Now we need to scale the data for this simulation...
+    //Data read in has been normalized so that u'=1
+    double delta_u = 0.6;
+    double intensity = 0.1*delta_u; //10% turbulence intensity?
+    for(int ip = 0; ip < inNz*inNy*inNx; ip++){
+	u_temp[ip] *= intensity;
+	v_temp[ip] *= intensity;
+	w_temp[ip] *= intensity;
+	p_temp[ip] *= intensity*intensity; //scales as u^2
+    }
+
+    //Create density perturbuations assuming constant temperature...for now?
+    double *r_temp = new double[inNx*inNy*inNz];
+    for(int ip = 0; ip < inNz*inNy*inNx; ip++){
+	r_temp[ip] = p_temp[ip];
+    }
+
+    //Lets plug these into a bigger fluc matrix to make it easier (lazy?)
+    double *uFluc = new double[Nx*Ny*Nz];
+    double *vFluc = new double[Nx*Ny*Nz];
+    double *wFluc = new double[Nx*Ny*Nz];
+    double *pFluc = new double[Nx*Ny*Nz];
+    double *rFluc = new double[Nx*Ny*Nz];
+
+    int midNum = Ny/2;
+    int startYind = midNum - in
+
+    FOR_Z{
+	FOR_Y{
+	    FOR_X{
+                int ii = GET3DINDEX_XYZ;
+	        uFluc[ii] = 0.0;
+	        vFluc[ii] = 0.0;
+	        wFluc[ii] = 0.0;
+	        pFluc[ii] = 0.0;
+	        rFluc[ii] = 0.0;
+	    }
+	}
+    }
 
     ///////////////////////////////
     //Set flow initial conditions//
     ///////////////////////////////
-    double delta_u = 0.6;
     FOR_Z{
 	FOR_Y{
 	    FOR_X{

@@ -2341,15 +2341,17 @@ void CSolver_AWS::shearLayerInfoCalc(){
 
     if(useTiming) tic();
 
-	double rhoAvg[Ny], uAvg[Ny], vAvg[Ny], wAvg[Ny];
-	double rhoprime2[Ny], uprime2[Ny], vprime2[Ny], wprime2[Ny];
-	double uvprime[Ny], uwrime[Ny], vwprime[Ny];
+    if(timeStep%25 == 0){
 
-	
+	double rhoAvg[Ny], uAvg[Ny], vAvg[Ny], wAvg[Ny], pAvg[Ny], tAvg[Ny];
+	double rhoprime2[Ny], uprime2[Ny], vprime2[Ny], wprime2[Ny], pprime2[Ny], tprime2[Ny];
+	double uvprime[Ny], uwprime[Ny], vwprime[Ny];
+
+	//Calculate the averages...	
 	#pragma omp parallel
 	{
 
-	    double A[Ny], B[Ny], C[Ny], D[Ny];
+	    double A[Ny], B[Ny], C[Ny], D[Ny], E[Ny], F[Ny];
 
 	    #pragma omp for
 	    FOR_Y{
@@ -2357,6 +2359,8 @@ void CSolver_AWS::shearLayerInfoCalc(){
 		B[j] = 0.0;
 		C[j] = 0.0;
 		D[j] = 0.0;
+		E[j] = 0.0;
+		F[j] = 0.0;
 	    }
 
 	    #pragma omp for
@@ -2365,9 +2369,11 @@ void CSolver_AWS::shearLayerInfoCalc(){
 		    FOR_Z{
 			int ii = GET3DINDEX_XYZ;
 			A[j] += rho1[ii]; 
-			B[j] += rhoU1[ii]/rho1[ii]; 
-			C[j] += rhoV1[ii]/rho1[ii]; 
-			D[j] += rhoW1[ii]/rho1[ii]; 
+			B[j] += U[ii]; 
+			C[j] += V[ii]; 
+			D[j] += W[ii];
+			E[j] += p[ii];
+			F[j] += T[ii]; 
 		    }
 		}
 	    }
@@ -2379,21 +2385,178 @@ void CSolver_AWS::shearLayerInfoCalc(){
 		    uAvg[j]   += B[j]/((double)(Nx*Nz));
 		    vAvg[j]   += C[j]/((double)(Nx*Nz));
 		    wAvg[j]   += D[j]/((double)(Nx*Nz));
+		    pAvg[j]   += E[j]/((double)(Nx*Nz));
+		    tAvg[j]   += F[j]/((double)(Nx*Nz));
 		}
 	    }
 	}
 
-	/*
+	//calculate the fluctuating variances...
+	#pragma omp parallel
+	{
+
+	    double A[Ny], B[Ny], C[Ny], D[Ny], E[Ny], F[Ny], G[Ny], H[Ny], I[Ny];
+
+	    #pragma omp for
+	    FOR_Y{
+		A[j] = 0.0;
+		B[j] = 0.0;
+		C[j] = 0.0;
+		D[j] = 0.0;
+		E[j] = 0.0;
+		F[j] = 0.0;
+		G[j] = 0.0;
+		H[j] = 0.0;
+		I[j] = 0.0;
+	    }
+
+	    #pragma omp for
+	    FOR_Y{
+		FOR_X{
+		    FOR_Z{
+			int ii = GET3DINDEX_XYZ;
+			A[j] += (rho1[ii]-rhoAvg[j])*(rho1[ii]-rhoAvg[j]); 
+			B[j] += (U[ii]-uAvg[j])*(U[ii]-uAvg[j]); 
+			C[j] += (V[ii]-vAvg[j])*(V[ii]-vAvg[j]); 
+			D[j] += (W[ii]-wAvg[j])*(W[ii]-wAvg[j]);
+			E[j] += (p[ii]-pAvg[j])*(p[ii]-pAvg[j]);
+			F[j] += (T[ii]-tAvg[j])*(T[ii]-tAvg[j]);
+			G[j] += (U[ii]-uAvg[j])*(V[ii]-vAvg[j]); 
+			H[j] += (U[ii]-uAvg[j])*(W[ii]-wAvg[j]); 
+			I[j] += (V[ii]-vAvg[j])*(W[ii]-wAvg[j]); 
+		    }
+		}
+	    }
+	
+	    #pragma omp critical
+	    {
+		FOR_Y{
+		    rhoprime2[j] += A[j]/((double)(Nx*Nz));
+		    uprime2[j]   += B[j]/((double)(Nx*Nz));
+		    vprime2[j]   += C[j]/((double)(Nx*Nz));
+		    wprime2[j]   += D[j]/((double)(Nx*Nz));
+		    pprime2[j]   += E[j]/((double)(Nx*Nz));
+		    tprime2[j]   += F[j]/((double)(Nx*Nz));
+		    uvprime[j]   += G[j]/((double)(Nx*Nz));
+		    uwprime[j]   += H[j]/((double)(Nx*Nz));
+		    vwprime[j]   += I[j]/((double)(Nx*Nz));
+		}
+	    }
+	}
+
+	
         ofstream outfile;
         outfile.precision(17);
         string outputFileName;
-        outputFileName = "taylorgreen.out";
+
+        outputFileName = "rhoprime2.out";
         outfile.open(outputFileName, fstream::app);
         outfile.precision(17);
-        outfile << time << " " << kineticEngSum << " " << turbDissSum << " " << enstrophySum << " " << enstrophySum2Mu << " " << meanMu << " " << dilprime;
+	outfile << time << " ";
+	FOR_Y{
+            outfile << rhoprime2[j] << " ";
+	}
 	outfile << endl;
         outfile.close();
-	*/
+
+	
+        outputFileName = "uprime2.out";
+        outfile.open(outputFileName, fstream::app);
+        outfile.precision(17);
+	outfile << time << " ";
+	FOR_Y{
+            outfile << uprime2[j] << " ";
+	}
+	outfile << endl;
+        outfile.close();
+
+
+        outputFileName = "vprime2.out";
+        outfile.open(outputFileName, fstream::app);
+        outfile.precision(17);
+	outfile << time << " ";
+	FOR_Y{
+            outfile << vprime2[j] << " ";
+	}
+	outfile << endl;
+        outfile.close();
+
+
+        outputFileName = "wprime2.out";
+        outfile.open(outputFileName, fstream::app);
+        outfile.precision(17);
+	outfile << time << " ";
+	FOR_Y{
+            outfile << wprime2[j] << " ";
+	}
+	outfile << endl;
+        outfile.close();
+
+
+        outputFileName = "pprime2.out";
+        outfile.open(outputFileName, fstream::app);
+        outfile.precision(17);
+	outfile << time << " ";
+	FOR_Y{
+            outfile << pprime2[j] << " ";
+	}
+	outfile << endl;
+        outfile.close();
+
+
+        outputFileName = "tprime2.out";
+        outfile.open(outputFileName, fstream::app);
+        outfile.precision(17);
+	outfile << time << " ";
+	FOR_Y{
+            outfile << tprime2[j] << " ";
+	}
+	outfile << endl;
+        outfile.close();
+
+
+        outputFileName = "uvprime.out";
+        outfile.open(outputFileName, fstream::app);
+        outfile.precision(17);
+	outfile << time << " ";
+	FOR_Y{
+            outfile << uvprime[j] << " ";
+	}
+	outfile << endl;
+        outfile.close();
+
+        outputFileName = "uwprime.out";
+        outfile.open(outputFileName, fstream::app);
+        outfile.precision(17);
+	outfile << time << " ";
+	FOR_Y{
+            outfile << uwprime[j] << " ";
+	}
+	outfile << endl;
+        outfile.close();
+
+        outputFileName = "vwprime.out";
+        outfile.open(outputFileName, fstream::app);
+        outfile.precision(17);
+	outfile << time << " ";
+	FOR_Y{
+            outfile << vwprime[j] << " ";
+	}
+	outfile << endl;
+        outfile.close();
+
+        outputFileName = "uAvg.out";
+        outfile.open(outputFileName, fstream::app);
+        outfile.precision(17);
+	outfile << time << " ";
+	FOR_Y{
+            outfile << uAvg[j] << " ";
+	}
+	outfile << endl;
+        outfile.close();
+
+    }
+
 
     if(useTiming){
         cout << " > shearLayerInfoCalc Timing: ";
@@ -2716,7 +2879,8 @@ void CSolver_AWS::updateData(){
 }
 
 void CSolver_AWS::postStep(){
-    calcTurbulenceQuantities();
+    //calcTurbulenceQuantities();
+    shearLayerInfoCalc();
     //calcTaylorGreenQuantities();
     updateSponge();
     checkSolution();
