@@ -2559,7 +2559,7 @@ void CSolver_AWS::shearLayerInfoCalc(){
 
 
     if(useTiming){
-        cout << " > shearLayerInfoCalc Timing: ";
+        cout << " > shrLyrInfo Timing: ";
         toc();
     }
 
@@ -2574,6 +2574,7 @@ void CSolver_AWS::checkSolution(){
 
     if(timeStep%ts->checkStep == 0){
         t2Save = std::chrono::system_clock::now();
+	cout << endl;
         cout << "-------------------------------------------------" << endl;
         cout << " Step = "<< timeStep << ", time = " << time << ", dt = " << ts->dt << endl;
         cout << "-------------------------------------------------" << endl;
@@ -2718,11 +2719,16 @@ void CSolver_AWS::dumpSolution(){
 }
 
 void CSolver_AWS::writeImages(){
+
+    if(useTiming) tic();
+
     if(timeStep%25==0){
 	cout << " > Dumping images..." << endl;
 
 	//going to do our images in greyscale
 	double dataMin, dataMax;
+	
+	//Density...
 	getRangeValue(rho1, Nx, Ny, Nz, dataMin, dataMax);
 
 	FOR_Y{
@@ -2734,10 +2740,148 @@ void CSolver_AWS::writeImages(){
 		pngXY->set(i,j,g,g,g);
 	    }
 	}
-	string imageName = "RhoTest1.png";
+	string imageName = "imagesXY/rhoXY.";
+	imageName.append(to_string(timeStep));
+	imageName.append(".png");
 	pngXY->write(imageName.c_str()); 
 
+	//Pressure...
+	getRangeValue(p, Nx, Ny, Nz, dataMin, dataMax);
+
+	FOR_Y{
+	    FOR_X{
+		int k = (int)(Nz/2.0);
+		int ii = GET3DINDEX_XYZ; 
+		double f = (p[ii] - dataMin)/(dataMax - dataMin);
+		int g = (int)(f*255.0);
+		pngXY->set(i,j,g,g,g);
+	    }
+	}
+	imageName = "imagesXY/pXY.";
+	imageName.append(to_string(timeStep));
+	imageName.append(".png");
+	pngXY->write(imageName.c_str()); 
+
+	//U...
+	getRangeValue(U, Nx, Ny, Nz, dataMin, dataMax);
+
+	FOR_Y{
+	    FOR_X{
+		int k = (int)(Nz/2.0);
+		int ii = GET3DINDEX_XYZ; 
+		double f = (U[ii] - dataMin)/(dataMax - dataMin);
+		int g = (int)(f*255.0);
+		pngXY->set(i,j,g,g,g);
+	    }
+	}
+	imageName = "imagesXY/UXY.";
+	imageName.append(to_string(timeStep));
+	imageName.append(".png");
+	pngXY->write(imageName.c_str()); 
+
+	//V...
+	getRangeValue(V, Nx, Ny, Nz, dataMin, dataMax);
+
+	FOR_Y{
+	    FOR_X{
+		int k = (int)(Nz/2.0);
+		int ii = GET3DINDEX_XYZ; 
+		double f = (V[ii] - dataMin)/(dataMax - dataMin);
+		int g = (int)(f*255.0);
+		pngXY->set(i,j,g,g,g);
+	    }
+	}
+	imageName = "imagesXY/VXY.";
+	imageName.append(to_string(timeStep));
+	imageName.append(".png");
+	pngXY->write(imageName.c_str()); 
+
+	//Dilataion...
+	double *dil = new double[N];
+
+	#pragma omp parallel for
+	FOR_XYZ dil[ip] = Ux[ip] + Vy[ip] + Wz[ip];
+
+	getRangeValue(dil, Nx, Ny, Nz, dataMin, dataMax);
+
+	FOR_Y{
+	    FOR_X{
+		int k = (int)(Nz/2.0);
+		int ii = GET3DINDEX_XYZ; 
+		double f = (dil[ii] - dataMin)/(dataMax - dataMin);
+		int g = (int)(f*255.0);
+		pngXY->set(i,j,g,g,g);
+	    }
+	}
+	imageName = "imagesXY/dilXY.";
+	imageName.append(to_string(timeStep));
+	imageName.append(".png");
+	pngXY->write(imageName.c_str()); 
+
+	delete[] dil;
+
+	//XZ Plane,
+	//U
+	getRangeValue(U, Nx, Ny, Nz, dataMin, dataMax);
+
+	FOR_X{
+	    FOR_Z{
+		int j = (int)(Ny/2.0);
+		int ii = GET3DINDEX_XYZ; 
+		double f = (U[ii] - dataMin)/(dataMax - dataMin);
+		int g = (int)(f*255.0);
+		pngXZ->set(k,i,g,g,g);
+	    }
+	}
+	imageName = "imagesXZ/UXZ.";
+	imageName.append(to_string(timeStep));
+	imageName.append(".png");
+	pngXZ->write(imageName.c_str()); 
+
+	//V
+	getRangeValue(V, Nx, Ny, Nz, dataMin, dataMax);
+
+	FOR_X{
+	    FOR_Z{
+		int j = (int)(Ny/2.0);
+		int ii = GET3DINDEX_XYZ; 
+		double f = (V[ii] - dataMin)/(dataMax - dataMin);
+		int g = (int)(f*255.0);
+		pngXZ->set(k,i,g,g,g);
+	    }
+	}
+	imageName = "imagesXZ/VXZ.";
+	imageName.append(to_string(timeStep));
+	imageName.append(".png");
+	pngXZ->write(imageName.c_str()); 
+
+	//P
+	getRangeValue(p, Nx, Ny, Nz, dataMin, dataMax);
+
+	FOR_X{
+	    FOR_Z{
+		int j = (int)(Ny/2.0);
+		int ii = GET3DINDEX_XYZ; 
+		double f = (p[ii] - dataMin)/(dataMax - dataMin);
+		int g = (int)(f*255.0);
+		pngXZ->set(k,i,g,g,g);
+	    }
+	}
+	imageName = "imagesXZ/pXZ.";
+	imageName.append(to_string(timeStep));
+	imageName.append(".png");
+	pngXZ->write(imageName.c_str()); 
+
+
+
     }
+
+    if(useTiming){
+        cout << " > writeImage Timing: ";
+        toc();
+    }
+
+
 }
 
 void CSolver_AWS::checkEnd(){
