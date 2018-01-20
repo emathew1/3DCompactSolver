@@ -2348,102 +2348,58 @@ void CSolver_AWS::shearLayerInfoCalc(){
 	double uvprime[Ny], uwprime[Ny], vwprime[Ny];
 
 	//Calculate the averages...	
-	#pragma omp parallel
-	{
+	#pragma omp parallel for
+	FOR_Y{
+	    rhoAvg[j] = 0.0;
+	    uAvg[j] = 0.0;
+	    vAvg[j] = 0.0;
+	    wAvg[j] = 0.0;
+	    pAvg[j] = 0.0;
+	    tAvg[j] = 0.0;
 
-	    double A[Ny], B[Ny], C[Ny], D[Ny], E[Ny], F[Ny];
+	    rhoprime2[j] = 0.0;
+	    uprime2[j] = 0.0;
+	    vprime2[j] = 0.0;
+	    wprime2[j] = 0.0;
+	    pprime2[j] = 0.0;
+	    tprime2[j] = 0.0;
 
-	    #pragma omp for
-	    FOR_Y{
-		A[j] = 0.0;
-		B[j] = 0.0;
-		C[j] = 0.0;
-		D[j] = 0.0;
-		E[j] = 0.0;
-		F[j] = 0.0;
-	    }
+	    uvprime[j] = 0.0;
+	    vwprime[j] = 0.0;
+	    uwprime[j] = 0.0;
+	}
 
-	    #pragma omp for
+	FOR_Z{
 	    FOR_Y{
 		FOR_X{
-		    FOR_Z{
-			int ii = GET3DINDEX_XYZ;
-			A[j] += rho1[ii]; 
-			B[j] += U[ii]; 
-			C[j] += V[ii]; 
-			D[j] += W[ii];
-			E[j] += p[ii];
-			F[j] += T[ii]; 
-		    }
-		}
-	    }
-	
-	    #pragma omp critical
-	    {
-		FOR_Y{
-		    rhoAvg[j] += A[j]/((double)(Nx*Nz));
-		    uAvg[j]   += B[j]/((double)(Nx*Nz));
-		    vAvg[j]   += C[j]/((double)(Nx*Nz));
-		    wAvg[j]   += D[j]/((double)(Nx*Nz));
-		    pAvg[j]   += E[j]/((double)(Nx*Nz));
-		    tAvg[j]   += F[j]/((double)(Nx*Nz));
+		    int ii = GET3DINDEX_XYZ;
+		    rhoAvg[j] += rho1[ii]/((double)(Nx*Nz));
+		    uAvg[j]   += U[ii]/((double)(Nx*Nz));
+		    vAvg[j]   += V[ii]/((double)(Nx*Nz));
+		    wAvg[j]   += W[ii]/((double)(Nx*Nz));
+		    pAvg[j]   += p[ii]/((double)(Nx*Nz));
+		    tAvg[j]   += T[ii]/((double)(Nx*Nz));
 		}
 	    }
 	}
 
-	//calculate the fluctuating variances...
-	#pragma omp parallel
-	{
-
-	    double A[Ny], B[Ny], C[Ny], D[Ny], E[Ny], F[Ny], G[Ny], H[Ny], I[Ny];
-
-	    #pragma omp for
+	FOR_Z{
 	    FOR_Y{
-		A[j] = 0.0;
-		B[j] = 0.0;
-		C[j] = 0.0;
-		D[j] = 0.0;
-		E[j] = 0.0;
-		F[j] = 0.0;
-		G[j] = 0.0;
-		H[j] = 0.0;
-		I[j] = 0.0;
-	    }
-
-	    #pragma omp for
-	    FOR_Y{
-		FOR_X{
-		    FOR_Z{
-			int ii = GET3DINDEX_XYZ;
-			A[j] += (rho1[ii]-rhoAvg[j])*(rho1[ii]-rhoAvg[j]); 
-			B[j] += (U[ii]-uAvg[j])*(U[ii]-uAvg[j]); 
-			C[j] += (V[ii]-vAvg[j])*(V[ii]-vAvg[j]); 
-			D[j] += (W[ii]-wAvg[j])*(W[ii]-wAvg[j]);
-			E[j] += (p[ii]-pAvg[j])*(p[ii]-pAvg[j]);
-			F[j] += (T[ii]-tAvg[j])*(T[ii]-tAvg[j]);
-			G[j] += (U[ii]-uAvg[j])*(V[ii]-vAvg[j]); 
-			H[j] += (U[ii]-uAvg[j])*(W[ii]-wAvg[j]); 
-			I[j] += (V[ii]-vAvg[j])*(W[ii]-wAvg[j]); 
-		    }
-		}
-	    }
-	
-	    #pragma omp critical
-	    {
-		FOR_Y{
-		    rhoprime2[j] += A[j]/((double)(Nx*Nz));
-		    uprime2[j]   += B[j]/((double)(Nx*Nz));
-		    vprime2[j]   += C[j]/((double)(Nx*Nz));
-		    wprime2[j]   += D[j]/((double)(Nx*Nz));
-		    pprime2[j]   += E[j]/((double)(Nx*Nz));
-		    tprime2[j]   += F[j]/((double)(Nx*Nz));
-		    uvprime[j]   += G[j]/((double)(Nx*Nz));
-		    uwprime[j]   += H[j]/((double)(Nx*Nz));
-		    vwprime[j]   += I[j]/((double)(Nx*Nz));
-		}
+	        FOR_X{
+		    int ii = GET3DINDEX_XYZ;
+		    rhoprime2[j] += (rho1[ii]-rhoAvg[j])*(rho1[ii]-rhoAvg[j])/((double)(Nx*Nz)); 
+		    uprime2[j] += (U[ii]-uAvg[j])*(U[ii]-uAvg[j])/((double)(Nx*Nz)); 
+		    vprime2[j] += (V[ii]-vAvg[j])*(V[ii]-vAvg[j])/((double)(Nx*Nz)); 
+		    wprime2[j] += (W[ii]-wAvg[j])*(W[ii]-wAvg[j])/((double)(Nx*Nz));
+		    pprime2[j] += (p[ii]-pAvg[j])*(p[ii]-pAvg[j])/((double)(Nx*Nz));
+		    tprime2[j] += (T[ii]-tAvg[j])*(T[ii]-tAvg[j])/((double)(Nx*Nz));
+		    uvprime[j] += (U[ii]-uAvg[j])*(V[ii]-vAvg[j])/((double)(Nx*Nz)); 
+		    uwprime[j] += (U[ii]-uAvg[j])*(W[ii]-wAvg[j])/((double)(Nx*Nz)); 
+		    uwprime[j] += (V[ii]-vAvg[j])*(W[ii]-wAvg[j])/((double)(Nx*Nz)); 
+	        }
 	    }
 	}
-
+	
 	
         ofstream outfile;
         outfile.precision(17);

@@ -55,10 +55,10 @@ int main(int argc, char *argv[]){
     //Time Stepping info intialization//
     ////////////////////////////////////
     TimeStepping::TimeSteppingType timeSteppingType = TimeStepping::CONST_CFL;
-    double CFL 	     = 1.0;
-    int maxTimeStep  = 10000;
-    double maxTime   = 100.0;
-    int filterStep   = 50;
+    double CFL 	     = 0.75;
+    int maxTimeStep  = 25000;
+    double maxTime   = 3000.0;
+    int filterStep   = 5;
     int checkStep    = 1;
     int dumpStep     = 500;
     TimeStepping *ts = new TimeStepping(timeSteppingType, CFL, maxTimeStep, maxTime, filterStep, checkStep, dumpStep);
@@ -90,7 +90,7 @@ int main(int argc, char *argv[]){
     double alphaF  = 0.495;
     double mu_ref  = 0.00375;
     int blocksize  = 16;
-    bool useTiming = true;
+    bool useTiming = false;
     AbstractCSolver *cs;
     cs = new CSolver_AWS(dom, bc, ts, alphaF, mu_ref, blocksize, useTiming); 
 
