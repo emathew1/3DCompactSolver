@@ -2511,6 +2511,18 @@ void CSolver_AWS::shearLayerInfoCalc(){
 	outfile << endl;
         outfile.close();
 
+        outputFileName = "rhoAvg.out";
+        outfile.open(outputFileName, fstream::app);
+        outfile.precision(17);
+	outfile << time << " ";
+	FOR_Y{
+            outfile << rhoAvg[j] << " ";
+	}
+	outfile << endl;
+        outfile.close();
+
+
+
     }
 
 

@@ -53,10 +53,10 @@ class SpongeBC{
 	    spongeRhoWAvg = new double[Nx*Ny*Nz];
 	    spongeRhoEAvg = new double[Nx*Ny*Nz];
 
-	    avgT = 1.0;
+	    avgT = 15.0;
 	    epsP = 0.005;
 	    spongeP = 1.0/idealGas->gamma;
-	    spongeStrength = 12.0;
+	    spongeStrength = 6.0;
 	    spongeLX = 0.25*domain->Lx;
 	    spongeLY = 0.125*domain->Ly;
 	    spongeLZ = 0.25*domain->Lz;

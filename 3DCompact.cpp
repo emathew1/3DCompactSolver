@@ -55,12 +55,12 @@ int main(int argc, char *argv[]){
     //Time Stepping info intialization//
     ////////////////////////////////////
     TimeStepping::TimeSteppingType timeSteppingType = TimeStepping::CONST_CFL;
-    double CFL 	     = 0.75;
+    double CFL 	     = 0.8;
     int maxTimeStep  = 25000;
     double maxTime   = 3000.0;
-    int filterStep   = 5;
+    int filterStep   = 8;
     int checkStep    = 1;
-    int dumpStep     = 500;
+    int dumpStep     = 2500;
     TimeStepping *ts = new TimeStepping(timeSteppingType, CFL, maxTimeStep, maxTime, filterStep, checkStep, dumpStep);
 
 
@@ -144,7 +144,7 @@ int main(int argc, char *argv[]){
     //Now we need to scale the data for this simulation...
     //Data read in has been normalized so that u'=1
     double delta_u = 0.6;
-    double intensity = 0.1*delta_u; //10% turbulence intensity?
+    double intensity = 0.1*delta_u; //17.5% turbulence intensity?
     cout << " > Scaling the perturbations...";
     #pragma omp parallel for
     for(int ip = 0; ip < inNz*inNy*inNx; ip++){
@@ -194,13 +194,77 @@ int main(int argc, char *argv[]){
 		int iip = (jp-startYind)*Nz*Nx + kp*Nx + ip; 
 
 	        double yTemp = dom->y[jp]-Ly/2.0;
-		double scalingFactor = exp(-pow(yTemp/2.0,2.0));
+		double scalingFactor = exp(-pow(yTemp,2.0));
 
 		uFluc[ii] = u_temp[iip]*scalingFactor; 
 		vFluc[ii] = v_temp[iip]*scalingFactor; 
 		wFluc[ii] = w_temp[iip]*scalingFactor; 
 		pFluc[ii] = p_temp[iip]*scalingFactor; 
 		rFluc[ii] = r_temp[iip]*scalingFactor; 
+	    }
+	}
+    }
+
+
+    //Now we're going to take the curl of the perturbations, expecimental...
+    double *cUx, *cUy, *cUz;
+    double *cVx, *cVy, *cVz;
+    double *cWx, *cWy, *cWz;
+
+    cUx = new double[Nx*Ny*Nz];
+    cUy = new double[Nx*Ny*Nz];
+    cUz = new double[Nx*Ny*Nz];
+    cVx = new double[Nx*Ny*Nz];
+    cVy = new double[Nx*Ny*Nz];
+    cVz = new double[Nx*Ny*Nz];
+    cWx = new double[Nx*Ny*Nz];
+    cWy = new double[Nx*Ny*Nz];
+    cWz = new double[Nx*Ny*Nz];
+
+    double *temp1 = new double[Nx*Ny*Nz];
+    double *temp2 = new double[Nx*Ny*Nz];
+
+    cout << " > X Derivatives..." << endl;
+    cs->derivX->calc1stDerivField(uFluc, cUx);
+    cs->derivX->calc1stDerivField(vFluc, cVx);
+    cs->derivX->calc1stDerivField(wFluc, cWx);
+    
+    cout << " > Y Derivatives..." << endl;
+    transposeXYZtoYZX_Fast(uFluc, Nx, Ny, Nz, temp1, blocksize);
+    cs->derivY->calc1stDerivField(temp1, temp2);
+    transposeYZXtoXYZ_Fast(temp2, Nx, Ny, Nz, cUy, blocksize);
+
+    transposeXYZtoYZX_Fast(vFluc, Nx, Ny, Nz, temp1, blocksize);
+    cs->derivY->calc1stDerivField(temp1, temp2);
+    transposeYZXtoXYZ_Fast(temp2, Nx, Ny, Nz, cVy, blocksize);
+
+    transposeXYZtoYZX_Fast(wFluc, Nx, Ny, Nz, temp1, blocksize);
+    cs->derivY->calc1stDerivField(temp1, temp2);
+    transposeYZXtoXYZ_Fast(temp2, Nx, Ny, Nz, cWy, blocksize);
+
+    cout << " > Z Derivatives..." << endl;
+    transposeXYZtoZXY_Fast(uFluc, Nx, Ny, Nz, temp1, blocksize);
+    cs->derivY->calc1stDerivField(temp1, temp2);
+    transposeZXYtoXYZ_Fast(temp2, Nx, Ny, Nz, cUz, blocksize);
+
+    transposeXYZtoZXY_Fast(vFluc, Nx, Ny, Nz, temp1, blocksize);
+    cs->derivY->calc1stDerivField(temp1, temp2);
+    transposeZXYtoXYZ_Fast(temp2, Nx, Ny, Nz, cVz, blocksize);
+
+    transposeXYZtoZXY_Fast(wFluc, Nx, Ny, Nz, temp1, blocksize);
+    cs->derivY->calc1stDerivField(temp1, temp2);
+    transposeZXYtoXYZ_Fast(temp2, Nx, Ny, Nz, cWz, blocksize);
+
+    #pragma omp parallel for
+    FOR_Z{
+	FOR_Y{
+	    FOR_X{
+                int ii = GET3DINDEX_XYZ;
+	        uFluc[ii] = cWy[ii] - cVz[ii];
+	        vFluc[ii] = cUz[ii] - cWx[ii];
+	        wFluc[ii] = cVx[ii] - cUy[ii];
+	        pFluc[ii] = 0.0;
+	        rFluc[ii] = 0.0;
 	    }
 	}
     }
@@ -227,6 +291,26 @@ int main(int argc, char *argv[]){
     delete[] w_temp;
     delete[] p_temp;
     delete[] r_temp;
+
+    delete[] uFluc;
+    delete[] vFluc;
+    delete[] wFluc;
+    delete[] pFluc;
+    delete[] rFluc;
+
+    delete[] temp1;
+    delete[] temp2;
+ 
+    delete[] cUx;
+    delete[] cUy;
+    delete[] cUz;
+    delete[] cVx;
+    delete[] cVy;
+    delete[] cVz;
+    delete[] cWx;
+    delete[] cWy;
+    delete[] cWz;
+
 
     //Run the simulation!
     rk->executeSolverLoop();
