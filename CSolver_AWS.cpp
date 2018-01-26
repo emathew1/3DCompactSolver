@@ -2693,6 +2693,10 @@ void CSolver_AWS::writeImages(){
     if(timeStep%25==0){
 	cout << " > Dumping images..." << endl;
 
+	string timeStepString = to_string(timeStep);
+	int zeroPad = 6;
+	timeStepString = string(zeroPad - timeStepString.length(), '0') + timeStepString;
+
 	//going to do our images in greyscale
 	double dataMin, dataMax;
 	
@@ -2709,7 +2713,7 @@ void CSolver_AWS::writeImages(){
 	    }
 	}
 	string imageName = "imagesXY/rhoXY.";
-	imageName.append(to_string(timeStep));
+	imageName.append(timeStepString);
 	imageName.append(".png");
 	pngXY->write(imageName.c_str()); 
 
@@ -2726,7 +2730,7 @@ void CSolver_AWS::writeImages(){
 	    }
 	}
 	imageName = "imagesXY/pXY.";
-	imageName.append(to_string(timeStep));
+	imageName.append(timeStepString);
 	imageName.append(".png");
 	pngXY->write(imageName.c_str()); 
 
@@ -2743,7 +2747,7 @@ void CSolver_AWS::writeImages(){
 	    }
 	}
 	imageName = "imagesXY/UXY.";
-	imageName.append(to_string(timeStep));
+	imageName.append(timeStepString);
 	imageName.append(".png");
 	pngXY->write(imageName.c_str()); 
 
@@ -2760,7 +2764,7 @@ void CSolver_AWS::writeImages(){
 	    }
 	}
 	imageName = "imagesXY/VXY.";
-	imageName.append(to_string(timeStep));
+	imageName.append(timeStepString);
 	imageName.append(".png");
 	pngXY->write(imageName.c_str()); 
 
@@ -2782,7 +2786,7 @@ void CSolver_AWS::writeImages(){
 	    }
 	}
 	imageName = "imagesXY/dilXY.";
-	imageName.append(to_string(timeStep));
+	imageName.append(timeStepString);
 	imageName.append(".png");
 	pngXY->write(imageName.c_str()); 
 
@@ -2802,7 +2806,7 @@ void CSolver_AWS::writeImages(){
 	    }
 	}
 	imageName = "imagesXZ/UXZ.";
-	imageName.append(to_string(timeStep));
+	imageName.append(timeStepString);
 	imageName.append(".png");
 	pngXZ->write(imageName.c_str()); 
 
@@ -2819,7 +2823,7 @@ void CSolver_AWS::writeImages(){
 	    }
 	}
 	imageName = "imagesXZ/VXZ.";
-	imageName.append(to_string(timeStep));
+	imageName.append(timeStepString);
 	imageName.append(".png");
 	pngXZ->write(imageName.c_str()); 
 
@@ -2836,7 +2840,7 @@ void CSolver_AWS::writeImages(){
 	    }
 	}
 	imageName = "imagesXZ/pXZ.";
-	imageName.append(to_string(timeStep));
+	imageName.append(timeStepString);
 	imageName.append(".png");
 	pngXZ->write(imageName.c_str()); 
 
