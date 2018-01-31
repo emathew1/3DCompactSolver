@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 
 filename1 = './init_field_hit.dat'
-filename2 = './init_field_hit2.dat'
+filename2 = './init_field_hit_2.dat'
 dataIn1 = np.loadtxt(filename1,dtype=np.double)
 dataIn2 = np.loadtxt(filename2,dtype=np.double)
 
@@ -369,36 +369,68 @@ Pfinal = np.empty((totalX,N-1,42),dtype=np.double)
 
 #%%
 
-Ufinal[42:86,:,:] = U1[42:86,:,:]
-Vfinal[42:86,:,:] = V1[42:86,:,:]
-Wfinal[42:86,:,:] = W1[42:86,:,:]
-Pfinal[42:86,:,:] = P1[42:86,:,:]
+Ufinal[42:86,:,:] = U1a[42:86,:,:]
+Vfinal[42:86,:,:] = V1a[42:86,:,:]
+Wfinal[42:86,:,:] = W1a[42:86,:,:]
+Pfinal[42:86,:,:] = P1a[42:86,:,:]
 
-Ufinal[128:172,:,:] = U2[42:86,:,:]
-Vfinal[128:172,:,:] = V2[42:86,:,:]
-Wfinal[128:172,:,:] = W2[42:86,:,:]
-Pfinal[128:172,:,:] = P2[42:86,:,:]
+Ufinal[128:172,:,:] = U2a[42:86,:,:]
+Vfinal[128:172,:,:] = V2a[42:86,:,:]
+Wfinal[128:172,:,:] = W2a[42:86,:,:]
+Pfinal[128:172,:,:] = P2a[42:86,:,:]
 
-Ufinal[214:256,:,:] = U3[42:84,:,:]
-Vfinal[214:256,:,:] = V3[42:84,:,:]
-Wfinal[214:256,:,:] = W3[42:84,:,:]
-Pfinal[214:256,:,:] = P3[42:84,:,:]
+Ufinal[214:258,:,:] = U3a[42:86,:,:]
+Vfinal[214:258,:,:] = V3a[42:86,:,:]
+Wfinal[214:258,:,:] = W3a[42:86,:,:]
+Pfinal[214:258,:,:] = P3a[42:86,:,:]
+
+Ufinal[300:344,:,:] = U4a[42:86,:,:]
+Vfinal[300:344,:,:] = U4a[42:86,:,:]
+Wfinal[300:344,:,:] = U4a[42:86,:,:]
+Pfinal[300:344,:,:] = U4a[42:86,:,:]
+
+Ufinal[386:430,:,:] = U5a[42:86,:,:]
+Vfinal[386:430,:,:] = U5a[42:86,:,:]
+Wfinal[386:430,:,:] = U5a[42:86,:,:]
+Pfinal[386:430,:,:] = U5a[42:86,:,:]
+
+Ufinal[472:512,:,:] = U6a[42:82,:,:]
+Vfinal[472:512,:,:] = U6a[42:82,:,:]
+Wfinal[472:512,:,:] = U6a[42:82,:,:]
+Pfinal[472:512,:,:] = U6a[42:82,:,:]
+
+
 for i in range(0,42):
     theta = (np.pi/2.0)*float(i)/41.0
-    Ufinal[i,:,:] = np.cos(theta)*U3[84+i,:,:] + np.sin(theta)*U1[i,:,:]
-    Vfinal[i,:,:] = np.cos(theta)*V3[84+i,:,:] + np.sin(theta)*V1[i,:,:]
-    Wfinal[i,:,:] = np.cos(theta)*W3[84+i,:,:] + np.sin(theta)*W1[i,:,:]
-    Pfinal[i,:,:] = np.cos(theta)*P3[84+i,:,:] + np.sin(theta)*P1[i,:,:]
+    Ufinal[i,:,:] = np.cos(theta)*U6a[82+i,:,:] + np.sin(theta)*U1a[i,:,:]
+    Vfinal[i,:,:] = np.cos(theta)*V6a[82+i,:,:] + np.sin(theta)*V1a[i,:,:]
+    Wfinal[i,:,:] = np.cos(theta)*W6a[82+i,:,:] + np.sin(theta)*W1a[i,:,:]
+    Pfinal[i,:,:] = np.cos(theta)*P6a[82+i,:,:] + np.sin(theta)*P1a[i,:,:]
     
-    Ufinal[86+i,:,:] = np.cos(theta)*U1[86+i,:,:] + np.sin(theta)*U2[i,:,:]
-    Vfinal[86+i,:,:] = np.cos(theta)*V1[86+i,:,:] + np.sin(theta)*V2[i,:,:]
-    Wfinal[86+i,:,:] = np.cos(theta)*W1[86+i,:,:] + np.sin(theta)*W2[i,:,:]
-    Pfinal[86+i,:,:] = np.cos(theta)*P1[86+i,:,:] + np.sin(theta)*P2[i,:,:]    
+    Ufinal[86+i,:,:] = np.cos(theta)*U1a[86+i,:,:] + np.sin(theta)*U2a[i,:,:]
+    Vfinal[86+i,:,:] = np.cos(theta)*V1a[86+i,:,:] + np.sin(theta)*V2a[i,:,:]
+    Wfinal[86+i,:,:] = np.cos(theta)*W1a[86+i,:,:] + np.sin(theta)*W2a[i,:,:]
+    Pfinal[86+i,:,:] = np.cos(theta)*P1a[86+i,:,:] + np.sin(theta)*P2a[i,:,:]    
 
-    Ufinal[172+i,:,:] = np.cos(theta)*U2[86+i,:,:] + np.sin(theta)*U3[i,:,:]
-    Vfinal[172+i,:,:] = np.cos(theta)*V2[86+i,:,:] + np.sin(theta)*V3[i,:,:]
-    Wfinal[172+i,:,:] = np.cos(theta)*W2[86+i,:,:] + np.sin(theta)*W3[i,:,:]
-    Pfinal[172+i,:,:] = np.cos(theta)*P2[86+i,:,:] + np.sin(theta)*P3[i,:,:]    
+    Ufinal[172+i,:,:] = np.cos(theta)*U2a[86+i,:,:] + np.sin(theta)*U3a[i,:,:]
+    Vfinal[172+i,:,:] = np.cos(theta)*V2a[86+i,:,:] + np.sin(theta)*V3a[i,:,:]
+    Wfinal[172+i,:,:] = np.cos(theta)*W2a[86+i,:,:] + np.sin(theta)*W3a[i,:,:]
+    Pfinal[172+i,:,:] = np.cos(theta)*P2a[86+i,:,:] + np.sin(theta)*P3a[i,:,:]    
+
+    Ufinal[258+i,:,:] = np.cos(theta)*U3a[86+i,:,:] + np.sin(theta)*U4a[i,:,:]
+    Vfinal[258+i,:,:] = np.cos(theta)*V3a[86+i,:,:] + np.sin(theta)*V4a[i,:,:]
+    Wfinal[258+i,:,:] = np.cos(theta)*W3a[86+i,:,:] + np.sin(theta)*W4a[i,:,:]
+    Pfinal[258+i,:,:] = np.cos(theta)*P3a[86+i,:,:] + np.sin(theta)*P4a[i,:,:]
+    
+    Ufinal[344+i,:,:] = np.cos(theta)*U4a[86+i,:,:] + np.sin(theta)*U5a[i,:,:]
+    Vfinal[344+i,:,:] = np.cos(theta)*V4a[86+i,:,:] + np.sin(theta)*V5a[i,:,:]
+    Wfinal[344+i,:,:] = np.cos(theta)*W4a[86+i,:,:] + np.sin(theta)*W5a[i,:,:]
+    Pfinal[344+i,:,:] = np.cos(theta)*P4a[86+i,:,:] + np.sin(theta)*P5a[i,:,:]
+
+    Ufinal[430+i,:,:] = np.cos(theta)*U5a[86+i,:,:] + np.sin(theta)*U6a[i,:,:]
+    Vfinal[430+i,:,:] = np.cos(theta)*V5a[86+i,:,:] + np.sin(theta)*V6a[i,:,:]
+    Wfinal[430+i,:,:] = np.cos(theta)*W5a[86+i,:,:] + np.sin(theta)*W6a[i,:,:]
+    Pfinal[430+i,:,:] = np.cos(theta)*P5a[86+i,:,:] + np.sin(theta)*P6a[i,:,:]  
 
 #%%
 f = open('U_Mt0p3_N128_k8.dat','w');
@@ -418,13 +450,13 @@ h.close()
 
 #%%
 
-f = open('U_uprime1_N128_k8_256x128x42.dat','w');
-g = open('V_uprime1_N128_k8_256x128x42.dat','w');
-h = open('W_uprime1_N128_k8_256x128x42.dat','w');
-pp = open('P_uprime1_N128_k8_256x128x42.dat','w')
+f = open('U_uprime1_N128_k8_512x128x42.dat','w');
+g = open('V_uprime1_N128_k8_512x128x42.dat','w');
+h = open('W_uprime1_N128_k8_512x128x42.dat','w');
+pp = open('P_uprime1_N128_k8_512x128x42.dat','w')
 for k in range(0,42):
     for j in range(0,128):
-        for i in range(0,256):
+        for i in range(0,512):
             f.write("".join([str(Ufinal[i,j,k]), "\n"]))
             g.write("".join([str(Vfinal[i,j,k]), "\n"]))
             h.write("".join([str(Wfinal[i,j,k]), "\n"]))
