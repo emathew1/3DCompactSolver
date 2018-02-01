@@ -361,6 +361,9 @@ totalX = 512
 currentX = 128*6
 totalOverlap = currentX - totalX
 
+
+#%%
+
 Ufinal = np.empty((totalX,N-1,42),dtype=np.double)
 Vfinal = np.empty((totalX,N-1,42),dtype=np.double)
 Wfinal = np.empty((totalX,N-1,42),dtype=np.double)
@@ -385,23 +388,25 @@ Wfinal[214:258,:,:] = W3a[42:86,:,:]
 Pfinal[214:258,:,:] = P3a[42:86,:,:]
 
 Ufinal[300:344,:,:] = U4a[42:86,:,:]
-Vfinal[300:344,:,:] = U4a[42:86,:,:]
-Wfinal[300:344,:,:] = U4a[42:86,:,:]
-Pfinal[300:344,:,:] = U4a[42:86,:,:]
+Vfinal[300:344,:,:] = V4a[42:86,:,:]
+Wfinal[300:344,:,:] = W4a[42:86,:,:]
+Pfinal[300:344,:,:] = P4a[42:86,:,:]
 
 Ufinal[386:430,:,:] = U5a[42:86,:,:]
-Vfinal[386:430,:,:] = U5a[42:86,:,:]
-Wfinal[386:430,:,:] = U5a[42:86,:,:]
-Pfinal[386:430,:,:] = U5a[42:86,:,:]
+Vfinal[386:430,:,:] = V5a[42:86,:,:]
+Wfinal[386:430,:,:] = W5a[42:86,:,:]
+Pfinal[386:430,:,:] = P5a[42:86,:,:]
 
 Ufinal[472:512,:,:] = U6a[42:82,:,:]
-Vfinal[472:512,:,:] = U6a[42:82,:,:]
-Wfinal[472:512,:,:] = U6a[42:82,:,:]
-Pfinal[472:512,:,:] = U6a[42:82,:,:]
+Vfinal[472:512,:,:] = V6a[42:82,:,:]
+Wfinal[472:512,:,:] = W6a[42:82,:,:]
+Pfinal[472:512,:,:] = P6a[42:82,:,:]
 
 
 for i in range(0,42):
-    theta = (np.pi/2.0)*float(i)/41.0
+    #beta = 1 - np.cos((np.pi/2.0)*float(i)/41.0)
+    beta = float(i)/41.0
+    theta = (np.pi/2.0)*beta
     Ufinal[i,:,:] = np.cos(theta)*U6a[82+i,:,:] + np.sin(theta)*U1a[i,:,:]
     Vfinal[i,:,:] = np.cos(theta)*V6a[82+i,:,:] + np.sin(theta)*V1a[i,:,:]
     Wfinal[i,:,:] = np.cos(theta)*W6a[82+i,:,:] + np.sin(theta)*W1a[i,:,:]
@@ -432,21 +437,7 @@ for i in range(0,42):
     Wfinal[430+i,:,:] = np.cos(theta)*W5a[86+i,:,:] + np.sin(theta)*W6a[i,:,:]
     Pfinal[430+i,:,:] = np.cos(theta)*P5a[86+i,:,:] + np.sin(theta)*P6a[i,:,:]  
 
-#%%
-f = open('U_Mt0p3_N128_k8.dat','w');
-g = open('V_Mt0p3_N128_k8.dat','w');
-h = open('W_Mt0p3_N128_k8.dat','w');
-pp = open('Pdiv_gamma_rho_M2_N128_k8.dat','w')
-for k in range(0,N-1):
-    for j in range(0,N-1):
-        for i in range(0,N-1):
-            f.write("".join([str(Unew[i,j,k]), "\n"]))
-            g.write("".join([str(Vnew[i,j,k]), "\n"]))
-            h.write("".join([str(Wnew[i,j,k]), "\n"]))
-            pp.write("".join([str(ptilde1[i,j,k]),"\n]))
-f.close()
-g.close()
-h.close()
+
 
 #%%
 
