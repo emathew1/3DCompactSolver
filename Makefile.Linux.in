@@ -1,0 +1,9 @@
+C=g++
+
+# CFLAGS will be the options passed to the compiler.
+CFLAGS= -O3 -ffast-math -funroll-loops -std=c++11 -fopenmp
+
+LIB = /usr/lib 
+LIBF = -lpng -lm -lstdc++
+INC = /usr/include
+
