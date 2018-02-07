@@ -15,6 +15,7 @@ using namespace std::chrono;
 #include "Derivatives.hpp"
 #include "BC.hpp"
 #include "IdealGas.hpp"
+#include "VisitWriter.hpp"
 
 int main(int argc, char *argv[]){
 

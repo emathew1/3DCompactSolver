@@ -2,7 +2,7 @@
 include Makefile.in
 
 OBJECTS  = 3DCompact.o Utils.o CSolver.o CSolver_AWS.o Derivatives.o Filter.o
-POSTPROOBJ = Utils.o Derivatives.o PostProcess.o
+POSTPROOBJ = Utils.o Derivatives.o PostProcess.o VisitWriter.o
 
 all: 3D_HOCFD POST_HOCFD
 
@@ -24,7 +24,10 @@ Derivatives.o: Derivatives.cpp Derivatives.hpp Macros.hpp Utils.hpp Domain.hpp B
 Filter.o: Filter.cpp Filter.hpp Derivatives.hpp BC.hpp Utils.hpp
 	$(CC) $(CFLAGS) -c $<
 
-PostProcess.o:	PostProcess.cpp Macros.hpp Utils.hpp Domain.hpp Derivatives.hpp BC.hpp IdealGas.hpp
+VisitWriter.o: VisitWriter.cpp VisitWriter.hpp
+	$(CC) $(CFLAGS) -c $<
+
+PostProcess.o:	PostProcess.cpp Macros.hpp Utils.hpp Domain.hpp Derivatives.hpp BC.hpp IdealGas.hpp VisitWriter.hpp
 	$(CC) $(CFLAGS) -c $<
 
 3D_HOCFD:  $(OBJECTS)
