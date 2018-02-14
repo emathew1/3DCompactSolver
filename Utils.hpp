@@ -7,6 +7,7 @@
 #include <iostream>
 #include <iomanip>
 #include "Macros.hpp"
+#include "Domain.hpp"
 
 using namespace std;
 using namespace std::chrono;
@@ -33,6 +34,7 @@ void transposeZXYtoXYZ_Fast(const double *in, int Nx, int Ny, int Nz, double *ou
 void transposeYZXtoXYZ(const double *in, int Nx, int Ny, int Nz, double *out);
 void transposeYZXtoXYZ_Fast(const double *in, int Nx, int Ny, int Nz, double *out, int blocksize);
 
+void getBaseNodeIndex(Domain *dom, double xp[3], int (&ind)[3]); 
 
 void getRange(double *phi, std::string dataName, int Nx, int Ny, int Nz);
 void getRangeValue(double *phi, int Nx, int Ny, int Nz, double &minVal, double &maxVal);

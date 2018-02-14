@@ -239,6 +239,23 @@ void transposeYZXtoXYZ_Fast(const double *in, int Nx, int Ny, int Nz, double *ou
     }
 }
 
+void getBaseNodeIndex(Domain *dom, double xp[3], int (&ind)[3]){
+
+    if( xp[0] < 0.0 || xp[0] > dom->Lx || 
+	xp[1] < 0.0 || xp[1] < dom->Ly || 
+	xp[2] < 0.0 || xp[2] > dom->Lz){
+
+	cout << "Error: in findNearestNodeIndices point entered was out of bounds!" << endl;
+	cout << "xp = { " << xp[0] << ", " << xp[1] << ", " << xp[2] << "}" << endl;
+    }else{
+
+	ind[0] = xp[0]/dom->dx;
+	ind[1] = xp[1]/dom->dy;
+	ind[2] = xp[2]/dom->dz;
+
+    }
+
+}
 
 
 void getRange(double *phi, std::string dataName, int Nx, int Ny, int Nz){
