@@ -242,18 +242,92 @@ void transposeYZXtoXYZ_Fast(const double *in, int Nx, int Ny, int Nz, double *ou
 void getBaseNodeIndex(Domain *dom, double xp[3], int (&ind)[3]){
 
     if( xp[0] < 0.0 || xp[0] > dom->Lx || 
-	xp[1] < 0.0 || xp[1] < dom->Ly || 
+	xp[1] < 0.0 || xp[1] > dom->Ly || 
 	xp[2] < 0.0 || xp[2] > dom->Lz){
 
 	cout << "Error: in findNearestNodeIndices point entered was out of bounds!" << endl;
 	cout << "xp = { " << xp[0] << ", " << xp[1] << ", " << xp[2] << "}" << endl;
+	cout << "dom = { " << dom->Lx << ", " << dom->Ly << ", " << dom->Lz << "}" << endl;
     }else{
 
 	ind[0] = xp[0]/dom->dx;
 	ind[1] = xp[1]/dom->dy;
 	ind[2] = xp[2]/dom->dz;
 
+	cout << "ind = {" << ind[0] << " " << ind[1] << " " << ind[2] <<"}" << endl;
     }
+
+}
+
+double linearInterpolation(Domain *dom, double *fieldIn, double xp[3]){
+
+    int baseIndex[3];
+    double Nx = dom->Nx, Ny = dom->Ny, Nz = dom->Nz;
+    double c000, c001, c010, c011, c100, c101, c110, c111;
+    double c00, c01, c10, c11, c0, c1;
+    int    i000, i001, i010, i011, i100, i101, i110, i111;
+    int    i, j, k;
+    double x0, x1, y0, y1, z0, z1, xd, yd, zd;
+
+   
+    getBaseNodeIndex(dom, xp, baseIndex);
+
+    x0 = dom->x[baseIndex[0]];
+    x1 = dom->x[baseIndex[0]+1];
+    y0 = dom->y[baseIndex[1]];
+    y1 = dom->y[baseIndex[1]+1];
+    z0 = dom->z[baseIndex[2]];
+    z1 = dom->z[baseIndex[2]+1];
+
+    xd = (xp[0] - x0)/(x1 - x0);
+    yd = (xp[1] - y0)/(y1 - y0);
+    zd = (xp[2] - z0)/(z1 - z0);
+
+    i = baseIndex[0];   j = baseIndex[1];   k = baseIndex[2];    
+    i000 = GET3DINDEX_XYZ;
+
+    i = baseIndex[0];   j = baseIndex[1];   k = baseIndex[2]+1;
+    i001 = GET3DINDEX_XYZ;
+
+    i = baseIndex[0];   j = baseIndex[1]+1; k = baseIndex[2];
+    i010 = GET3DINDEX_XYZ;
+
+    i = baseIndex[0];   j = baseIndex[1]+1; k = baseIndex[2]+1;
+    i011 = GET3DINDEX_XYZ;
+
+    i = baseIndex[0]+1; j = baseIndex[1];   k = baseIndex[2];
+    i100 = GET3DINDEX_XYZ;
+
+    i = baseIndex[0]+1; j = baseIndex[1];   k = baseIndex[2]+1;
+    i101 = GET3DINDEX_XYZ;
+
+    i = baseIndex[0]+1; j = baseIndex[1]+1; k = baseIndex[2];
+    i110 = GET3DINDEX_XYZ;
+
+    i = baseIndex[0]+1; j = baseIndex[1]+1; k = baseIndex[2]+1;
+    i111 = GET3DINDEX_XYZ;
+
+    c000 = fieldIn[i000];
+    c001 = fieldIn[i001];
+    c010 = fieldIn[i010];
+    c011 = fieldIn[i011];
+    c100 = fieldIn[i100];
+    c101 = fieldIn[i101];
+    c110 = fieldIn[i110];
+    c111 = fieldIn[i111];
+
+    //Interpolation in the x direction first
+    c00  = c000*(1 - xd) + c100*xd;
+    c01  = c001*(1 - xd) + c101*xd;
+    c10  = c010*(1 - xd) + c110*xd;
+    c11  = c011*(1 - xd) + c111*xd;
+
+    //Interpolation in the y direction second
+    c0   = c00*(1 - yd) + c10*yd;
+    c1   = c01*(1 - yd) + c11*yd;
+
+    //Interpolation in the z direction last
+    return  c0*(1 - zd) + c1*zd; 
 
 }
 
