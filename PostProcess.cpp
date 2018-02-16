@@ -201,18 +201,21 @@ int main(int argc, char *argv[]){
     cout << "  > Done!" << endl;
 
     //Calculating cross derivatives of velocity to get vorticity...
-    double *Uy, *Uz;
-    double *Vx, *Vz;
-    double *Wx, *Wy;
+    double *Ux, *Uy, *Uz;
+    double *Vx, *Vy, *Vz;
+    double *Wx, *Wy, *Wz;;
     double *transTemp1, *transTemp2;
 
     cout << "  > Allocating memory to calculate vorticity..." << endl;
+    Ux = new double[Nx*Ny*Nz];
     Uy = new double[Nx*Ny*Nz];
     Uz = new double[Nx*Ny*Nz];
     Vx = new double[Nx*Ny*Nz];
+    Vy = new double[Nx*Ny*Nz];
     Vz = new double[Nx*Ny*Nz];
     Wx = new double[Nx*Ny*Nz];
     Wy = new double[Nx*Ny*Nz];
+    Wz = new double[Nx*Ny*Nz];
     transTemp1 = new double[Nx*Ny*Nz];
     transTemp2 = new double[Nx*Ny*Nz];
     cout << "  > Done!" << endl;
@@ -221,6 +224,7 @@ int main(int argc, char *argv[]){
     
     //X-Derivatives...
     cout << "  > X-Derivatives..." << endl;
+    derivX->calc1stDerivField(U, Ux);
     derivX->calc1stDerivField(V, Vx);
     derivX->calc1stDerivField(W, Wx);
 
@@ -229,6 +233,10 @@ int main(int argc, char *argv[]){
     transposeXYZtoYZX_Fast(U, Nx, Ny, Nz, transTemp1, blocksize);
     derivY->calc1stDerivField(transTemp1, transTemp2);
     transposeYZXtoXYZ_Fast(transTemp2, Nx, Ny, Nz, Uy, blocksize);
+
+    transposeXYZtoYZX_Fast(V, Nx, Ny, Nz, transTemp1, blocksize);
+    derivY->calc1stDerivField(transTemp1, transTemp2);
+    transposeYZXtoXYZ_Fast(transTemp2, Nx, Ny, Nz, Vy, blocksize);
 
     transposeXYZtoYZX_Fast(W, Nx, Ny, Nz, transTemp1, blocksize);
     derivY->calc1stDerivField(transTemp1, transTemp2);
@@ -242,22 +250,67 @@ int main(int argc, char *argv[]){
     transposeXYZtoZXY_Fast(V, Nx, Ny, Nz, transTemp1, blocksize);
     derivZ->calc1stDerivField(transTemp1, transTemp2);
     transposeZXYtoXYZ_Fast(transTemp2, Nx, Ny, Nz, Vz, blocksize);
+
+    transposeXYZtoZXY_Fast(W, Nx, Ny, Nz, transTemp1, blocksize);
+    derivZ->calc1stDerivField(transTemp1, transTemp2);
+    transposeZXYtoXYZ_Fast(transTemp2, Nx, Ny, Nz, Wz, blocksize);
+
     cout << " > Done! " << endl;
 
     delete[] transTemp1;
     delete[] transTemp2;
 
     double *vortMag = new double[Nx*Ny*Nz];
-    
+    double *qCrit   = new double[Nx*Ny*Nz];    
+
     #pragma omp parallel for
     FOR_XYZ{
 	double vortx = Wy[ip] - Vz[ip];
 	double vorty = Uz[ip] - Wx[ip];
 	double vortz = Vx[ip] - Uy[ip];
 	vortMag[ip] = sqrt(vortx*vortx + vorty*vorty + vortz*vortz);
+
+	double sij[3][3], wij[3][3];
+	
+	sij[0][0] = Ux[ip];
+	sij[1][1] = Vy[ip];
+	sij[2][2] = Wz[ip];
+
+	sij[0][1] = 0.5*(Uy[ip] + Vx[ip]);
+	sij[1][2] = 0.5*(Vz[ip] + Wy[ip]);
+	sij[0][2] = 0.5*(Uz[ip] + Wx[ip]);
+
+	wij[0][0] = 0.0;
+	wij[1][1] = 0.0;
+	wij[2][2] = 0.0;
+
+	wij[0][1] = 0.5*(Uy[ip] - Vx[ip]);
+	wij[1][2] = 0.5*(Vz[ip] - Wy[ip]);
+	wij[0][2] = 0.5*(Uz[ip] - Wx[ip]);
+
+	sij[1][0] = sij[0][1];
+	sij[2][1] = sij[1][2];
+	sij[2][0] = sij[0][2];
+
+	wij[1][0] = -wij[0][1];
+	wij[2][1] = -wij[1][2];
+	wij[2][0] = -wij[0][2];
+
+	double omega2, strte2;
+
+        omega2 = 0.5*( wij[0][0]*wij[0][0] + wij[0][1]*wij[0][1] + wij[0][2]*wij[0][2] +
+                     wij[1][0]*wij[1][0] + wij[1][1]*wij[1][1] + wij[1][2]*wij[1][2] +
+                     wij[2][0]*wij[2][0] + wij[2][1]*wij[2][1] + wij[2][2]*wij[2][2] );
+        strte2 = 0.5*( sij[0][0]*sij[0][0] + sij[0][1]*sij[0][1] + sij[0][2]*sij[0][2] +
+                     sij[1][0]*sij[1][0] + sij[1][1]*sij[1][1] + sij[1][2]*sij[1][2] +
+                     sij[2][0]*sij[2][0] + sij[2][1]*sij[2][1] + sij[2][2]*sij[2][2] );
+
+	qCrit[ip] = omega2 - strte2;
+
     }
 
     getRange(vortMag, "VORTMAG", Nx, Ny, Nz);
+    getRange(qCrit, "QCRIT", Nx, Ny, Nz);
 
 
     //output needs to be in float format...
@@ -268,6 +321,7 @@ int main(int argc, char *argv[]){
     float *Vf = new float[Nx*Ny*Nz];
     float *Wf = new float[Nx*Ny*Nz];
     float *vortMagf = new float[Nx*Ny*Nz];
+    float *qCritf = new float[Nx*Ny*Nz];
   
     #pragma omp parallel for
     FOR_XYZ{
@@ -278,16 +332,16 @@ int main(int argc, char *argv[]){
 	Vf[ip]   = (float)V[ip];
 	Wf[ip] 	 = (float)W[ip];
 	vortMagf[ip] = (float)vortMag[ip];
-
+	qCritf[ip] = (float)qCrit[ip];
     }
    
 
-    const int numvars = 7;
+    const int numvars = 8;
     int dims[] = {Nx, Ny, Nz};
-    int vardims[] = {1, 1, 1, 1, 1, 1, 1};
-    int centering[] = {1, 1, 1, 1, 1, 1, 1};
-    const char * const varnames[] = {"RHO", "P", "U", "V", "W", "T", "VORTMAG"};
-    float *arrays[] = {(float*)rhof, (float*)pf, (float*)Uf, (float*)Vf, (float*)Wf, (float*)Tf, (float*)vortMagf};
+    int vardims[] = {1, 1, 1, 1, 1, 1, 1, 1};
+    int centering[] = {1, 1, 1, 1, 1, 1, 1, 1};
+    const char * const varnames[] = {"RHO", "P", "U", "V", "W", "T", "VORTMAG", "QCRIT"};
+    float *arrays[] = {(float*)rhof, (float*)pf, (float*)Uf, (float*)Vf, (float*)Wf, (float*)Tf, (float*)vortMagf, (float*)qCritf};
     write_regular_mesh("test.vtk", !0, dims, numvars, vardims,  centering, varnames, arrays);
 
     return 0;
