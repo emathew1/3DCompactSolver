@@ -1,7 +1,7 @@
 
 include Makefile.in
 
-OBJECTS  = 3DCompact.o Utils.o CSolver.o CSolver_AWS.o Derivatives.o Filter.o
+OBJECTS  = 3DCompact.o Utils.o CSolver.o CSolver_AWS.o Derivatives.o Filter.o AeroOptics.o
 POSTPROOBJ = Utils.o Derivatives.o PostProcess.o VisitWriter.o
 
 all: 3D_HOCFD POST_HOCFD
@@ -22,6 +22,9 @@ Derivatives.o: Derivatives.cpp Derivatives.hpp Macros.hpp Utils.hpp Domain.hpp B
 	$(CC) $(CFLAGS) -c $<
 
 Filter.o: Filter.cpp Filter.hpp Derivatives.hpp BC.hpp Utils.hpp
+	$(CC) $(CFLAGS) -c $<
+
+AeroOptics.o: AeroOptics.cpp AeroOptics.hpp Macros.hpp Utils.hpp Domain.hpp IdealGas.hpp
 	$(CC) $(CFLAGS) -c $<
 
 VisitWriter.o: VisitWriter.cpp VisitWriter.hpp
