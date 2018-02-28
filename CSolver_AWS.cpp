@@ -2586,47 +2586,32 @@ void CSolver_AWS::dumpSolution(){
 
         outputFileName = "rho.out.";
         outputFileName.append(to_string(timeStep));
-        outfile.open(outputFileName);
-        outfile.precision(17);
-        FOR_XYZ{
-            outfile << rho1[ip] << " ";
-        }
+        outfile.open(outputFileName, ios::binary | ios::out);
+	outfile.write((char*)rho1, sizeof(double)*Nx*Ny*Nz);
         outfile.close();
 
         outputFileName = "rhoU.out.";
         outputFileName.append(to_string(timeStep));
-        outfile.open(outputFileName);
-        outfile.precision(17);
-	FOR_XYZ{
-            outfile << rhoU1[ip] << " ";
-        }
+        outfile.open(outputFileName, ios::binary | ios::out);
+	outfile.write((char*)rhoU1, sizeof(double)*Nx*Ny*Nz);
         outfile.close();
 
         outputFileName = "rhoV.out.";
         outputFileName.append(to_string(timeStep));
-        outfile.open(outputFileName);
-        outfile.precision(17);
-	FOR_XYZ{
-            outfile << rhoV1[ip] << " ";
-        }
+        outfile.open(outputFileName, ios::binary | ios::out);
+	outfile.write((char*)rhoV1, sizeof(double)*Nx*Ny*Nz);
         outfile.close();
 
         outputFileName = "rhoW.out.";
         outputFileName.append(to_string(timeStep));
-        outfile.open(outputFileName);
-        outfile.precision(17);
-	FOR_XYZ{
-            outfile << rhoW1[ip] << " ";
-        }
+        outfile.open(outputFileName, ios::binary | ios::out);
+	outfile.write((char*)rhoW1, sizeof(double)*Nx*Ny*Nz);
         outfile.close();
 
         outputFileName = "rhoE.out.";
         outputFileName.append(to_string(timeStep));
-        outfile.open(outputFileName);
-        outfile.precision(17);
-	FOR_XYZ{
-            outfile << rhoE1[ip] << " ";
-        }
+        outfile.open(outputFileName, ios::binary | ios::out);
+	outfile.write((char*)rhoE1, sizeof(double)*Nx*Ny*Nz);
         outfile.close();
 
 	int dumpSigma = 0;
