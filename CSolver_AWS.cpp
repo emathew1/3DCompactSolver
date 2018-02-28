@@ -1678,86 +1678,6 @@ void CSolver_AWS::postStepBCHandling(){
 
 }
 
-void CSolver_AWS::updateConservedData(){
-
-    if(useTiming) tic();
-
-    if(rkStep == 1){
-
-        #pragma omp parallel for
-	FOR_XYZ{
-	    //Add to final solution
-	    rho2[ip]  = rho1[ip]  + rhok2[ip]/6.0;
-	    rhoU2[ip] = rhoU1[ip] + rhoUk2[ip]/6.0;
-	    rhoV2[ip] = rhoV1[ip] + rhoVk2[ip]/6.0;
-	    rhoW2[ip] = rhoW1[ip] + rhoWk2[ip]/6.0;
-	    rhoE2[ip] = rhoE1[ip] + rhoEk2[ip]/6.0;
-
- 	    //Calculate intermediate solution
-	    rhok[ip]  = rho1[ip]  + rhok2[ip]/2.0; 
-	    rhoUk[ip] = rhoU1[ip] + rhoUk2[ip]/2.0; 
-	    rhoVk[ip] = rhoV1[ip] + rhoVk2[ip]/2.0; 
-	    rhoWk[ip] = rhoW1[ip] + rhoWk2[ip]/2.0; 
-	    rhoEk[ip] = rhoE1[ip] + rhoEk2[ip]/2.0; 
- 	}
-
-    }else if(rkStep == 2){
-
-        #pragma omp parallel for
-	FOR_XYZ{
-	    //Add to final solution
-	    rho2[ip]  += rhok2[ip]/3.0;
-	    rhoU2[ip] += rhoUk2[ip]/3.0;
-	    rhoV2[ip] += rhoVk2[ip]/3.0;
-	    rhoW2[ip] += rhoWk2[ip]/3.0;
-	    rhoE2[ip] += rhoEk2[ip]/3.0;
-
-	    //Calculate intermediate solution
-	    rhok[ip]  = rho1[ip]  + rhok2[ip]/2.0; 
-	    rhoUk[ip] = rhoU1[ip] + rhoUk2[ip]/2.0; 
-	    rhoVk[ip] = rhoV1[ip] + rhoVk2[ip]/2.0; 
-	    rhoWk[ip] = rhoW1[ip] + rhoWk2[ip]/2.0; 
-	    rhoEk[ip] = rhoE1[ip] + rhoEk2[ip]/2.0; 
-	}
-
-    }else if(rkStep == 3){
-
-        #pragma omp parallel for
-	FOR_XYZ{
-	    //Add to final solution
-	    rho2[ip]  += rhok2[ip]/3.0;
-	    rhoU2[ip] += rhoUk2[ip]/3.0;
-	    rhoV2[ip] += rhoVk2[ip]/3.0;
-	    rhoW2[ip] += rhoWk2[ip]/3.0;
-	    rhoE2[ip] += rhoEk2[ip]/3.0;
-
-	    //Calculate intermediate solution
-	    rhok[ip]  = rho1[ip]  + rhok2[ip]; 
-	    rhoUk[ip] = rhoU1[ip] + rhoUk2[ip]; 
-	    rhoVk[ip] = rhoV1[ip] + rhoVk2[ip]; 
-	    rhoWk[ip] = rhoW1[ip] + rhoWk2[ip]; 
-	    rhoEk[ip] = rhoE1[ip] + rhoEk2[ip]; 
-	}
-
-    }else if(rkStep == 4){
-
-        #pragma omp parallel for
-	FOR_XYZ{
-	    //Add to final solution
-	    rho2[ip]  += rhok2[ip]/6.0;
-	    rhoU2[ip] += rhoUk2[ip]/6.0;
-	    rhoV2[ip] += rhoVk2[ip]/6.0;
-	    rhoW2[ip] += rhoWk2[ip]/6.0;
-	    rhoE2[ip] += rhoEk2[ip]/6.0;
-	}
-    }
-
-    if(useTiming){
-        cout << " > updateCons Timing: ";
-        toc();
-    }
-
-}
 
 void CSolver_AWS::filterConservedData(){
 
@@ -3008,13 +2928,19 @@ void CSolver_AWS::updateData(){
 }
 
 void CSolver_AWS::postStep(){
+
     //calcTurbulenceQuantities();
     shearLayerInfoCalc();
     //calcTaylorGreenQuantities();
+
     updateSponge();
     checkSolution();
     dumpSolution();
     writeImages();
+
+    if(timeStep%aoWriteStep == 0)
+        ao->computeAO();
+
     checkEnd();
     //reportAll();
 }

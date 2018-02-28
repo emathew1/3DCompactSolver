@@ -87,6 +87,7 @@ void AeroOptics::computeAO(){
     }
 
     //write a function to output the OPL files...
+    writeOPLFiles();
 
 }
 

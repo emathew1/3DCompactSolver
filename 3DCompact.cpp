@@ -18,7 +18,6 @@ using namespace std::chrono;
 #include "AbstractRK.hpp"
 #include "TVDRK3.hpp"
 #include "RK4.hpp"
-#include "CSolver.hpp"
 #include "CSolver_AWS.hpp"
 
 int main(int argc, char *argv[]){
@@ -43,30 +42,15 @@ int main(int argc, char *argv[]){
     /////////////////////////
     //Initialize the Domain//
     /////////////////////////
-    int    Nx = 512, 
-	   Ny = 256, 
-	   Nz = 128;
+    int    Nx = 64,//512, 
+	   Ny = 64,//256, 
+	   Nz = 64;//128;
     double Lx = 172.0, 
 	   Ly = 129.0, 
 	   Lz = 86.0;;
     Domain *dom = new Domain(Nx, Ny, Nz, Lx, Ly, Lz);
 
-    double *test = new double[Nx*Ny*Nz];
-    FOR_Z{
-	FOR_Y{
-	    FOR_X{
-		int ip = GET3DINDEX_XYZ;
-		test[ip] = dom->y[j];
-	    }
-	}
-    }
 
-    double dataOut = 0.0;
-    double interpPoint[3] = {0.0, 85.6, 45.0};
-    dataOut = linearInterpolation(dom, test, interpPoint);
-    cout << "Linear Interpolation result = " << dataOut << endl;
-
-/*
     ////////////////////////////////////
     //Time Stepping info intialization//
     ////////////////////////////////////
@@ -110,12 +94,14 @@ int main(int argc, char *argv[]){
     AbstractCSolver *cs;
     cs = new CSolver_AWS(dom, bc, ts, alphaF, mu_ref, blocksize, useTiming); 
 
+
     ///////////////////////////////////////////
     //Initialize Execution Loop and RK Method//
     ///////////////////////////////////////////
     AbstractRK *rk;
     rk = new TVDRK3(cs);
 
+/*
     /////////////////////////////
     //load in turbulence output//
     /////////////////////////////
@@ -124,11 +110,12 @@ int main(int argc, char *argv[]){
     vFile.open("ShearLayer/V_uprime1_N128_k6_512x128x42.dat",ifstream::in);
     wFile.open("ShearLayer/W_uprime1_N128_k6_512x128x42.dat",ifstream::in);
     pFile.open("ShearLayer/P_uprime1_N128_k6_512x128x42.dat",ifstream::in);
-
+*/
     int inNx = 512;
     int inNy = 128;
     int inNz = 42;
-
+    double delta_u = 0.6;
+/*
     double *u_temp = new double[inNx*inNy*inNz];
     double *v_temp = new double[inNx*inNy*inNz];
     double *w_temp = new double[inNx*inNy*inNz];
@@ -159,7 +146,6 @@ int main(int argc, char *argv[]){
 
     //Now we need to scale the data for this simulation...
     //Data read in has been normalized so that u'=1
-    double delta_u = 0.6;
     double intensity = 0.2*delta_u; //17.5% turbulence intensity?
     cout << " > Scaling the perturbations...";
     #pragma omp parallel for
@@ -177,6 +163,7 @@ int main(int argc, char *argv[]){
     for(int ip = 0; ip < inNz*inNy*inNx; ip++){
 	r_temp[ip] = p_temp[ip];
     }
+*/
 
     //Lets plug these into a bigger fluc matrix to make it easier (lazy?)
     double *uFluc = new double[Nx*Ny*Nz];
@@ -201,7 +188,7 @@ int main(int argc, char *argv[]){
 	    }
 	}
     }
-
+/*
     #pragma omp parallel for 
     for(int kp = 0; kp < Nz; kp++){
 	for(int jp = startYind; jp < startYind+inNz; jp++){
@@ -220,7 +207,7 @@ int main(int argc, char *argv[]){
 	    }
 	}
     }
-
+*/
 
     ///////////////////////////////
     //Set flow initial conditions//
@@ -239,11 +226,13 @@ int main(int argc, char *argv[]){
 	    }
 	}
     }
+/*
     delete[] u_temp;
     delete[] v_temp;
     delete[] w_temp;
     delete[] p_temp;
     delete[] r_temp;
+*/
 
     delete[] uFluc;
     delete[] vFluc;
@@ -251,9 +240,20 @@ int main(int argc, char *argv[]){
     delete[] pFluc;
     delete[] rFluc;
 
+
+
+
+
+
+
     //Run the simulation!
     rk->executeSolverLoop();
-*/
+
+
+
+
+
+
 
     return 0;
 }

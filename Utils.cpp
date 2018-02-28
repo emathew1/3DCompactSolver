@@ -254,7 +254,6 @@ void getBaseNodeIndex(Domain *dom, double xp[3], int (&ind)[3]){
 	ind[1] = xp[1]/dom->dy;
 	ind[2] = xp[2]/dom->dz;
 
-	cout << "ind = {" << ind[0] << " " << ind[1] << " " << ind[2] <<"}" << endl;
     }
 
 }

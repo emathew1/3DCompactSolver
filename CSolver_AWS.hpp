@@ -9,6 +9,7 @@
 #include "Utils.hpp"
 #include "SpongeBC.hpp"
 #include "AbstractCSolver.hpp"
+#include "AeroOptics.hpp"
 #include "PngWriter.hpp"
 
 using namespace std::chrono;
@@ -105,7 +106,9 @@ class CSolver_AWS: public AbstractCSolver{
 	double Y0WallU, Y0WallW, Y1WallU, Y1WallW;
 	double Z0WallU, Z0WallV, Z1WallU, Z1WallV;
 
-	enum Eqn {CONT, XMOM, YMOM, ZMOM, ENGY};
+	//Aero Optics Stuff
+	AeroOptics *ao;
+	int aoWriteStep;
 
 	//For drawing images...
 	PngWriter *pngXY;
@@ -146,6 +149,7 @@ class CSolver_AWS: public AbstractCSolver{
 	    //Allocate our arrays for the solver data
 	    initializeSolverData();		    	    
 
+
 	    //Initialize the sponge boundary conditions if necessary
 	    if(bc->bcX0 == BC::SPONGE || bc->bcX1 == BC::SPONGE || bc->bcY0 == BC::SPONGE || bc->bcY1 == BC::SPONGE || bc->bcZ0 == BC::SPONGE || bc->bcZ1 == BC::SPONGE){
 		spongeFlag = true;
@@ -153,6 +157,12 @@ class CSolver_AWS: public AbstractCSolver{
 	    }else{
 		spg = NULL;
 	    }
+
+	    //Initialize Aero Optics Solver
+	    int numAngles = 5;
+	    double maxAngle = 70.0;
+	    aoWriteStep = 1;
+	    ao = new AeroOptics(dom, ig, rho2, p, T, numAngles, maxAngle); 
 
 	    //Initialize our derivative calculations for each direction...
 	    derivX = new Derivatives(dom, bc->bcXType, Derivatives::DIRX);
@@ -200,7 +210,6 @@ class CSolver_AWS: public AbstractCSolver{
 
 	//Post Sub Step Functions...
 	void postStepBCHandling();
-	void updateConservedData();
 	void filterConservedData();
 	void updateNonConservedData();
 

@@ -1,3 +1,6 @@
 *.o
 3D_HOCFD
+POST_HOCFD
 *.out.*
+*.pem
+IgnoreFiles/
