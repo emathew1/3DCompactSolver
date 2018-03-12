@@ -51,6 +51,7 @@ void AeroOptics::computeAO(){
 	generateBaseBeamDiff(ap);
 
 	//Going thru all of the positions in the x-z plane
+	#pragma omp parallel for collapse(2)
         FOR_Z{
 	    FOR_X{
 		

@@ -42,9 +42,9 @@ int main(int argc, char *argv[]){
     /////////////////////////
     //Initialize the Domain//
     /////////////////////////
-    int    Nx = 64,//512, 
-	   Ny = 64,//256, 
-	   Nz = 64;//128;
+    int    Nx = 512, 
+	   Ny = 256, 
+	   Nz = 128;
     double Lx = 172.0, 
 	   Ly = 129.0, 
 	   Lz = 86.0;;
@@ -101,7 +101,7 @@ int main(int argc, char *argv[]){
     AbstractRK *rk;
     rk = new TVDRK3(cs);
 
-/*
+
     /////////////////////////////
     //load in turbulence output//
     /////////////////////////////
@@ -110,12 +110,12 @@ int main(int argc, char *argv[]){
     vFile.open("ShearLayer/V_uprime1_N128_k6_512x128x42.dat",ifstream::in);
     wFile.open("ShearLayer/W_uprime1_N128_k6_512x128x42.dat",ifstream::in);
     pFile.open("ShearLayer/P_uprime1_N128_k6_512x128x42.dat",ifstream::in);
-*/
+
     int inNx = 512;
     int inNy = 128;
     int inNz = 42;
     double delta_u = 0.6;
-/*
+
     double *u_temp = new double[inNx*inNy*inNz];
     double *v_temp = new double[inNx*inNy*inNz];
     double *w_temp = new double[inNx*inNy*inNz];
@@ -163,7 +163,7 @@ int main(int argc, char *argv[]){
     for(int ip = 0; ip < inNz*inNy*inNx; ip++){
 	r_temp[ip] = p_temp[ip];
     }
-*/
+
 
     //Lets plug these into a bigger fluc matrix to make it easier (lazy?)
     double *uFluc = new double[Nx*Ny*Nz];
@@ -188,7 +188,7 @@ int main(int argc, char *argv[]){
 	    }
 	}
     }
-/*
+
     #pragma omp parallel for 
     for(int kp = 0; kp < Nz; kp++){
 	for(int jp = startYind; jp < startYind+inNz; jp++){
@@ -207,7 +207,7 @@ int main(int argc, char *argv[]){
 	    }
 	}
     }
-*/
+
 
     ///////////////////////////////
     //Set flow initial conditions//
@@ -226,13 +226,13 @@ int main(int argc, char *argv[]){
 	    }
 	}
     }
-/*
+
     delete[] u_temp;
     delete[] v_temp;
     delete[] w_temp;
     delete[] p_temp;
     delete[] r_temp;
-*/
+
 
     delete[] uFluc;
     delete[] vFluc;
